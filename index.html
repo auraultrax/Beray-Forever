@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5b21b6">
+  <meta name="description" content="Forever by Beray — anılarını paylaş, bağlan.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Forever">
+  <title>Forever · Beray</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0b0b12;
+      --surface: #14141f;
+      --surface2: #1a1a28;
+      --line: rgba(255,255,255,.08);
+      --text: #f4f2ff;
+      --muted: #9b97b0;
+      --primary: #7c3aed;
+      --primary2: #a78bfa;
+      --danger: #ef4444;
+      --ok: #34d399;
+      --radius: 16px;
+      --shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      line-height: 1.45;
+    }
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,58,237,.22), transparent 55%),
+        radial-gradient(ellipse 40% 30% at 100% 50%, rgba(167,139,250,.06), transparent);
+    }
+    .wrap { position: relative; z-index: 1; width: min(680px, 100%); margin: 0 auto; padding: 0 14px 100px; }
+    .hidden { display: none !important; }
+
+    /* Top bar */
+    .top {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 0; margin-bottom: 8px;
+      background: rgba(11,11,18,.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-logo {
+      width: 40px; height: 40px; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(167,139,250,.35), 0 8px 24px rgba(124,58,237,.25);
+      flex-shrink: 0;
+    }
+    .brand-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .brand-text strong { display: block; font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; }
+    .brand-text span { font-size: .7rem; color: var(--muted); font-weight: 600; }
+    .brand-text span b { color: var(--primary2); font-weight: 700; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .user-chip {
+      display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--primary);
+      display: grid; place-items: center; font-weight: 800; font-size: .85rem; flex-shrink: 0;
+    }
+    .user-chip .meta { display: none; }
+    @media (min-width: 520px) {
+      .user-chip .meta { display: block; min-width: 0; }
+      .user-chip .meta div { font-size: .78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+      .user-chip .meta small { font-size: .65rem; color: var(--muted); }
+    }
+    .btn {
+      border: 0; cursor: pointer; font-family: inherit; font-weight: 700; font-size: .82rem;
+      border-radius: 12px; padding: 10px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      transition: .15s ease; background: var(--primary); color: #fff;
+    }
+    .btn:hover { filter: brightness(1.08); }
+    .btn:disabled { opacity: .55; cursor: wait; }
+    .btn-ghost {
+      background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 8px 12px;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(167,139,250,.4); }
+    .btn-icon { width: 40px; height: 40px; padding: 0; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--text); }
+
+    /* Cards */
+    .card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow);
+    }
+    .card h3 { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
+
+    /* Stories */
+    .stories { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 8px; scrollbar-width: none; }
+    .stories::-webkit-scrollbar { display: none; }
+    .story-item { flex: 0 0 auto; width: 72px; text-align: center; cursor: pointer; }
+    .story-ring {
+      width: 64px; height: 64px; margin: 0 auto 6px; border-radius: 50%; padding: 2px;
+      background: linear-gradient(135deg, #7c3aed, #ec4899, #f59e0b);
+    }
+    .story-ring > div, .story-ring img {
+      width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+      border: 2px solid var(--bg); background: var(--surface2);
+      display: grid; place-items: center; font-weight: 800; font-size: .9rem;
+    }
+    .story-item span { font-size: .65rem; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Composer */
+    .composer textarea {
+      width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--line);
+      background: var(--surface2); color: var(--text); border-radius: 12px; padding: 12px;
+      font: inherit; font-size: .9rem; outline: none;
+    }
+    .composer textarea:focus { border-color: rgba(124,58,237,.5); }
+    .composer-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .composer-tools { display: flex; align-items: center; gap: 8px; }
+    .file-btn {
+      cursor: pointer; color: var(--primary2); font-size: .8rem; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px;
+      border: 1px solid var(--line); background: transparent;
+    }
+    .file-btn input { display: none; }
+    #postImagePreview, #storyImagePreview {
+      display: none; margin-top: 10px; width: 100%; max-height: 220px; object-fit: cover;
+      border-radius: 12px; border: 1px solid var(--line);
+    }
+    #postImagePreview.show, #storyImagePreview.show { display: block; }
+
+    /* Feed posts */
+    .post { padding: 16px; }
+    .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .post-head .name { font-weight: 700; font-size: .9rem; }
+    .post-head .time { font-size: .7rem; color: var(--muted); }
+    .post-body { font-size: .92rem; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 10px; }
+    .post-img { width: 100%; border-radius: 14px; border: 1px solid var(--line); margin-bottom: 10px; display: block; }
+    .post-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .post-actions button {
+      border: 1px solid var(--line); background: transparent; color: var(--muted);
+      border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer;
+    }
+    .post-actions button:hover { color: var(--text); border-color: rgba(167,139,250,.4); }
+    .comments { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .comment { font-size: .8rem; margin-bottom: 6px; color: var(--muted); }
+    .comment strong { color: var(--text); }
+    .comment-row { display: flex; gap: 8px; margin-top: 8px; }
+    .comment-row input {
+      flex: 1; border: 1px solid var(--line); background: var(--surface2); color: var(--text);
+      border-radius: 10px; padding: 8px 10px; font: inherit; font-size: .8rem; outline: none;
+    }
+
+    /* Footer */
+    .foot {
+      text-align: center; padding: 28px 8px; color: var(--muted); font-size: .75rem;
+    }
+    .foot strong { color: var(--primary2); }
+
+    /* Modals */
+    .modal {
+      position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: rgba(5,5,10,.82); backdrop-filter: blur(10px);
+    }
+    .modal-card {
+      width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line);
+      border-radius: 20px; padding: 24px; box-shadow: var(--shadow);
+    }
+    .modal-card h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; }
+    .modal-card .sub { color: var(--muted); font-size: .82rem; margin-bottom: 18px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: .72rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .field input {
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--surface2); color: var(--text); font: inherit; font-size: .9rem; outline: none;
+    }
+    .field input:focus { border-color: rgba(124,58,237,.55); }
+    .alert { padding: 10px 12px; border-radius: 12px; font-size: .78rem; margin-bottom: 12px; border: 1px solid; }
+    .btn-block { width: 100%; margin-top: 4px; }
+    .auth-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+    .auth-logo img { width: 48px; height: 48px; border-radius: 14px; }
+    .divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .72rem; margin: 14px 0; }
+    .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+    .google-btn { background: #fff; color: #111; width: 100%; }
+    .toggle-line { text-align: center; margin-top: 14px; font-size: .8rem; color: var(--muted); }
+    .toggle-line button { background: none; border: 0; color: var(--primary2); font-weight: 700; cursor: pointer; font: inherit; }
+
+    /* Story viewer */
+    #storyViewerModal .viewer-box {
+      width: min(360px, 100%); height: min(70vh, 640px); border-radius: 20px; overflow: hidden;
+      position: relative; background: #000; border: 1px solid var(--line);
+    }
+    #viewerImage { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .viewer-top { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 14px; background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent); }
+    .status-ok { color: var(--ok); font-weight: 700; font-size: .75rem; }
+    .status-warn { color: #fbbf24; font-weight: 700; font-size: .75rem; }
+
+    .empty { text-align: center; padding: 32px 16px; color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 480px) {
+      .wrap { padding-bottom: 88px; }
+    }
+
+    /* Dinamik gönderi kartları (eski class isimleri) */
+    .bg-slate-900 { background: var(--surface); }
+    .bg-slate-950 { background: var(--surface2); }
+    .bg-brand-600 { background: var(--primary); }
+    .bg-brand-500, .hover\:bg-brand-500:hover { background: #8b5cf6; }
+    .border { border-width: 1px; border-style: solid; }
+    .border-slate-800, .border-slate-800\/50, .border-slate-800\/60 { border-color: var(--line); }
+    .rounded-2xl { border-radius: 16px; }
+    .rounded-xl { border-radius: 12px; }
+    .rounded-full { border-radius: 999px; }
+    .p-5 { padding: 1.15rem; }
+    .p-8 { padding: 2rem; }
+    .p-2\.5 { padding: .65rem; }
+    .px-3 { padding-left: .75rem; padding-right: .75rem; }
+    .py-2 { padding-top: .5rem; padding-bottom: .5rem; }
+    .pt-3 { padding-top: .75rem; }
+    .mb-2 { margin-bottom: .5rem; }
+    .mt-1 { margin-top: .25rem; }
+    .ml-1 { margin-left: .25rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+    .space-y-3 > * + * { margin-top: .75rem; }
+    .space-y-2 > * + * { margin-top: .5rem; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-3 { gap: .75rem; }
+    .gap-2 { gap: .5gap; gap: .5rem; }
+    .gap-1\.5 { gap: .35rem; }
+    .w-10 { width: 2.5rem; }
+    .h-10 { height: 2.5rem; }
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+    .max-h-48 { max-height: 12rem; }
+    .overflow-y-auto { overflow-y: auto; }
+    .overflow-hidden { overflow: hidden; }
+    .object-cover { object-fit: cover; }
+    .text-white { color: #fff; }
+    .text-slate-100 { color: #f1f5f9; }
+    .text-slate-200 { color: #e2e8f0; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-500 { color: #64748b; }
+    .text-slate-600 { color: #475569; }
+    .text-brand-500 { color: var(--primary2); }
+    .text-red-400 { color: #f87171; }
+    .text-xs { font-size: .75rem; }
+    .text-sm { font-size: .875rem; }
+    .text-\[10px\] { font-size: 10px; }
+    .text-\[11px\] { font-size: 11px; }
+    .text-3xl { font-size: 1.75rem; }
+    .font-bold { font-weight: 700; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+    .italic { font-style: italic; }
+    .text-center { text-align: center; }
+    .shadow-sm { box-shadow: var(--shadow); }
+    .hover\:text-brand-400:hover { color: var(--primary2); }
+    .hover\:text-red-400:hover { color: #f87171; }
+    .transition-colors { transition: color .15s; }
+    .flex-1 { flex: 1; }
+    .max-h-80 { max-height: 20rem; }
+
+
+    .flex-col { flex-direction: column; }
+    .shrink-0 { flex-shrink: 0; }
+    .w-14 { width: 3.5rem; }
+    .h-14 { height: 3.5rem; }
+    .p-0\.5 { padding: 2px; }
+    .gap-1\.5 { gap: .35rem; }
+    .transition-transform { transition: transform .15s; }
+    .group:hover .group-hover\:scale-105, .group-hover\:scale-105:hover { transform: scale(1.05); }
+    #postsFeed > article { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+  <!-- Auth -->
+  <div id="authModal" class="modal">
+    <div class="modal-card">
+      <div class="auth-logo">
+        <img src="./icons/icon-192.png" alt="Forever">
+        <div>
+          <strong style="font-size:1.2rem;">Forever</strong>
+          <div style="font-size:.72rem;color:var(--muted);">from <b style="color:var(--primary2);">Beray</b></div>
+        </div>
+      </div>
+      <p class="sub" style="text-align:center;">Anılarını paylaş, topluluğa bağlan.</p>
+      <div id="authAlert" class="alert hidden"></div>
+      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google ile devam et</button>
+      <div class="divider">veya e-posta</div>
+      <form onsubmit="handleAuthSubmit(event)">
+        <div id="nameField" class="field hidden">
+          <label>Ad Soyad</label>
+          <input type="text" id="authName" autocomplete="name" placeholder="Adın">
+        </div>
+        <div class="field">
+          <label>E-posta</label>
+          <input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com">
+        </div>
+        <div class="field">
+          <label>Şifre</label>
+          <input type="password" id="authPassword" required autocomplete="current-password" placeholder="••••••••" minlength="6">
+        </div>
+        <button type="submit" id="authSubmitBtn" class="btn btn-block">Giriş Yap</button>
+      </form>
+      <p class="toggle-line">
+        <button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button>
+      </p>
+      <p class="toggle-line" id="authToggleText">
+        Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button>
+      </p>
+    </div>
+  </div>
+
+  <div id="forgotPasswordModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Şifre sıfırla</h2>
+      <p class="sub">E-posta adresine bağlantı gönderilir.</p>
+      <div id="forgotAlert" class="alert hidden"></div>
+      <form onsubmit="handleForgotPassword(event)">
+        <div class="field"><label>E-posta</label><input type="email" id="forgotEmail" required></div>
+        <button type="submit" id="forgotSubmitBtn" class="btn btn-block">Bağlantı Gönder</button>
+      </form>
+      <button type="button" class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="closeForgotPasswordModal()">Kapat</button>
+    </div>
+  </div>
+
+  <div id="usernameModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Kullanıcı adı</h2>
+      <p class="sub">Forever’da görünecek adın.</p>
+      <form onsubmit="handleUsernameSubmit(event)">
+        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24"></div>
+        <button type="submit" class="btn btn-block">Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="storyModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Hikâye</h2>
+      <p class="sub">Galerinden bir fotoğraf seç.</p>
+      <form onsubmit="handleStorySubmit(event)">
+        <label class="file-btn" style="width:100%;justify-content:center;">
+          <i class="fa-regular fa-image"></i> Fotoğraf seç
+          <input type="file" id="storyImageFile" accept="image/*">
+        </label>
+        <img id="storyImagePreview" alt="">
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closeStoryModal()">İptal</button>
+          <button type="submit" id="storySubmitBtn" class="btn" style="flex:1;">Paylaş</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="storyViewerModal" class="modal hidden" onclick="if(event.target===this)closeStoryViewer()">
+    <div class="viewer-box">
+      <button type="button" onclick="closeStoryViewer()" class="btn-icon" style="position:absolute;top:12px;right:12px;z-index:3;background:rgba(0,0,0,.45);border:0;color:#fff;"><i class="fa-solid fa-xmark"></i></button>
+      <img id="viewerImage" src="" alt="">
+      <div class="viewer-top">
+        <div id="viewerAvatar" class="avatar">?</div>
+        <div>
+          <div id="viewerName" style="font-weight:700;font-size:.85rem;">—</div>
+          <div id="viewerTime" style="font-size:.7rem;opacity:.8;">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="brand-logo"><img src="./icons/icon-192.png" alt="Forever"></div>
+        <div class="brand-text">
+          <strong>Forever</strong>
+          <span>from <b>Beray</b></span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span id="networkAuthStatus" class="status-warn" style="display:none;"></span>
+        <div class="user-chip">
+          <div id="userHeaderAvatar" class="avatar">?</div>
+          <div class="meta">
+            <div id="userHeaderName">—</div>
+            <small id="userHeaderEmail"></small>
+          </div>
+        </div>
+        <button type="button" class="btn-icon" title="Çıkış" onclick="handleSignOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+      </div>
+    </header>
+
+    <section class="card" style="padding:12px 12px 8px;">
+      <div class="stories" id="storiesContainer">
+        <div class="story-item" onclick="openStoryModal()">
+          <div class="story-ring"><div style="font-size:1.2rem;color:var(--primary2);">+</div></div>
+          <span>Senin</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card composer">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div id="postCreatorAvatar" class="avatar">?</div>
+        <div style="flex:1;min-width:0;">
+          <textarea id="postContent" rows="3" placeholder="Ne paylaşmak istersin?"></textarea>
+          <div id="imageUrlContainer" class="hidden">
+            <label class="file-btn" style="margin-top:8px;">
+              <i class="fa-regular fa-image"></i> Fotoğraf
+              <input type="file" id="postImageFile" accept="image/*">
+            </label>
+            <img id="postImagePreview" alt="">
+          </div>
+          <div class="composer-row">
+            <div class="composer-tools">
+              <button type="button" class="file-btn" onclick="toggleImageInput()"><i class="fa-regular fa-image"></i> Foto</button>
+            </div>
+            <button type="button" class="btn" id="publishPostBtn" onclick="submitPost()">Paylaş <i class="fa-solid fa-paper-plane" style="font-size:.7rem;"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="postsFeed">
+      <div class="card empty"><i class="fa-solid fa-circle-notch fa-spin"></i><br><br>Akış yükleniyor…</div>
+    </div>
+
+    <!-- Gizli yan panel ID uyumu (eski JS) -->
+    <div class="hidden" aria-hidden="true">
+      <span id="sideUserAvatar"></span>
+      <span id="sideUserName"></span>
+      <span id="sideUserHandle"></span>
+    </div>
+
+    <footer class="foot">
+      <strong>Forever</strong> · from <strong>Beray</strong>
+    </footer>
+  </div>
+
+  <script>
+    // PWA minimal
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+    }
+    // Preview helpers for file inputs
+    function bindPrev(inputId, imgId) {
+      const input = document.getElementById(inputId);
+      const img = document.getElementById(imgId);
+      if (!input || !img) return;
+      input.addEventListener('change', () => {
+        const f = input.files && input.files[0];
+        if (!f) { img.classList.remove('show'); img.removeAttribute('src'); return; }
+        img.src = URL.createObjectURL(f);
+        img.classList.add('show');
+      });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      bindPrev('postImageFile', 'postImagePreview');
+      bindPrev('storyImageFile', 'storyImagePreview');
+    });
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged,
+      updateProfile,
+      GoogleAuthProvider,
+      signInWithPopup,
+      sendPasswordResetEmail
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      getDoc,
+      addDoc, 
+      deleteDoc,
+      onSnapshot, 
+      updateDoc, 
+      arrayUnion, 
+      arrayRemove, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
+      authDomain: "project-c443f992-d19d-4d35-a16.firebaseapp.com",
+      projectId: "project-c443f992-d19d-4d35-a16",
+      storageBucket: "project-c443f992-d19d-4d35-a16.firebasestorage.app",
+      messagingSenderId: "509248282221",
+      appId: "1:509248282221:web:84b49536d26d7d755ba964"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
+    // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
+    // 2) Yoksa → görseli sıkıştırıp Firestore belgesine data URL olarak yaz (Storage gerekmez)
+    const FOREVER_UPLOAD_KEY = 'FOREVER_UPLOAD_URL';
+
+    function getUploadServerUrl() {
+      try { return (localStorage.getItem(FOREVER_UPLOAD_KEY) || '').trim(); } catch { return ''; }
+    }
+
+    window.fxSaveUploadServer = function () {
+      const v = (document.getElementById('fxUploadServerInput')?.value || '').trim();
+      try { localStorage.setItem(FOREVER_UPLOAD_KEY, v); } catch {}
+      if (typeof fxToast === 'function') {
+        fxToast(v ? 'Sunucu kaydedildi. Fotoğraflar oraya gidecek.' : 'Sunucu temizlendi. Fotoğraflar uygulama veritabanına (sıkıştırılmış) kaydolur.');
+      }
+    };
+
+    async function compressImageFile(file, maxSide = 1280, quality = 0.72) {
+      if (!file || !file.type.startsWith('image/')) throw new Error('Geçerli bir görsel seçin');
+      const bitmap = await createImageBitmap(file);
+      let side = maxSide;
+      let q = quality;
+      let outBlob = null;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+        const w = Math.max(1, Math.round(bitmap.width * scale));
+        const h = Math.max(1, Math.round(bitmap.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+        outBlob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', q));
+        if (outBlob && outBlob.size <= 700 * 1024) break;
+        side = Math.floor(side * 0.75);
+        q = Math.max(0.45, q - 0.12);
+      }
+      if (bitmap.close) bitmap.close();
+      if (!outBlob || outBlob.size > 700 * 1024) throw new Error('Görsel çok büyük. Daha küçük bir fotoğraf dene.');
+      return new File([outBlob], 'photo.jpg', { type: 'image/jpeg' });
+    }
+
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => reject(new Error('Dosya okunamadı'));
+        r.readAsDataURL(file);
+      });
+    }
+
+    async function uploadToLocalServer(file, folder) {
+      const endpoint = getUploadServerUrl();
+      if (!endpoint) return null;
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', folder || 'forever');
+      if (currentUser) fd.append('userId', currentUser.uid);
+      const res = await fetch(endpoint, { method: 'POST', body: fd, mode: 'cors' });
+      if (!res.ok) throw new Error('Sunucu yükleme hatası: HTTP ' + res.status);
+      const data = await res.json().catch(() => ({}));
+      const url = data.url || data.path || data.publicUrl;
+      if (!url) throw new Error('Sunucu yanıtında url yok');
+      if (String(url).startsWith('http')) return url;
+      try {
+        const base = new URL(endpoint).origin;
+        return base + (String(url).startsWith('/') ? url : '/' + url);
+      } catch {
+        return url;
+      }
+    }
+
+    /** Kendi sunucun varsa oraya; yoksa sıkıştırılmış data URL (Storage yok) */
+    async function uploadForeverImage(file, folder = 'posts') {
+      const compressed = await compressImageFile(file);
+      const endpoint = getUploadServerUrl();
+      if (endpoint) {
+        return await uploadToLocalServer(compressed, folder);
+      }
+      // Ücretsiz yol: Firestore içine gömülü küçük JPEG
+      return await fileToDataURL(compressed);
+    }
+
+    function bindImagePreview(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const prev = document.getElementById(previewId);
+      if (!input || !prev) return;
+      input.addEventListener('change', () => {
+        const f = input.files && input.files[0];
+        if (!f) { prev.classList.add('hidden'); prev.removeAttribute('src'); return; }
+        prev.src = URL.createObjectURL(f);
+        prev.classList.remove('hidden');
+      });
+    }
+    setTimeout(() => {
+      bindImagePreview('postImageFile', 'postImagePreview');
+      bindImagePreview('storyImageFile', 'storyImagePreview');
+      const inp = document.getElementById('fxUploadServerInput');
+      if (inp) inp.value = getUploadServerUrl();
+    }, 0);
+
+
+
+    let currentUser = null;
+    let isSignUpMode = false;
+    let unsubscribePosts = null;
+    let unsubscribeStories = null;
+
+    // Google ile Giriş
+    window.handleGoogleSignIn = async function() {
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        const userDocRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (!docSnap.exists()) {
+          // İlk kez giriş yapıyor, Kullanıcı adı oluştur modalı aç
+          document.getElementById('usernameModal').classList.remove('hidden');
+        } else {
+          document.getElementById('authModal').classList.add('hidden');
+        }
+      } catch (error) {
+        showAlert(error.message, 'error');
+      }
+    };
+
+    window.handleUsernameSubmit = async function(e) {
+      e.preventDefault();
+      const newUsername = document.getElementById('newUsername').value.trim();
+      if (!newUsername || !currentUser) return;
+
+      try {
+        await setDoc(doc(db, "users", currentUser.uid), {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || newUsername,
+          username: newUsername,
+          email: currentUser.email,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+
+        document.getElementById('usernameModal').classList.add('hidden');
+        document.getElementById('authModal').classList.add('hidden');
+      } catch (err) {
+        console.error("Kullanıcı adı kaydedilemedi:", err);
+      }
+    };
+
+    // Şifremi Unuttum Modalleri
+    window.openForgotPasswordModal = function() {
+      document.getElementById('forgotPasswordModal').classList.remove('hidden');
+    };
+    window.closeForgotPasswordModal = function() {
+      document.getElementById('forgotPasswordModal').classList.add('hidden');
+    };
+
+    window.handleForgotPassword = async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('forgotEmail').value.trim();
+      const submitBtn = document.getElementById('forgotSubmitBtn');
+      const forgotAlert = document.getElementById('forgotAlert');
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        forgotAlert.className = "mb-3 p-3 rounded-xl text-xs border bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
+        forgotAlert.textContent = "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.";
+        forgotAlert.classList.remove('hidden');
+      } catch (err) {
+        forgotAlert.className = "mb-3 p-3 rounded-xl text-xs border bg-red-500/10 border-red-500/30 text-red-400";
+        forgotAlert.textContent = "Hata: " + err.message;
+        forgotAlert.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Bağlantı Gönder";
+      }
+    };
+
+    // Form Modları
+    window.toggleAuthMode = function() {
+      isSignUpMode = !isSignUpMode;
+      const nameField = document.getElementById('nameField');
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const toggleText = document.getElementById('authToggleText');
+      const alertBox = document.getElementById('authAlert');
+
+      alertBox.classList.add('hidden');
+      if (isSignUpMode) {
+        nameField.classList.remove('hidden');
+        submitBtn.textContent = 'Kayıt Ol';
+        toggleText.innerHTML = `Zaten hesabınız var mı? <button type="button" onclick="toggleAuthMode()" class="text-brand-400 font-semibold hover:underline">Giriş Yap</button>`;
+      } else {
+        nameField.classList.add('hidden');
+        submitBtn.textContent = 'Giriş Yap';
+        toggleText.innerHTML = `Hesabınız yok mu? <button type="button" onclick="toggleAuthMode()" class="text-brand-400 font-semibold hover:underline">Kayıt Ol</button>`;
+      }
+    };
+
+    function showAlert(message, type = 'error') {
+      const alertBox = document.getElementById('authAlert');
+      alertBox.classList.remove('hidden', 'bg-red-500/10', 'border-red-500/30', 'text-red-400', 'bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+      if (type === 'error') {
+        alertBox.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-400');
+      } else {
+        alertBox.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+      }
+      alertBox.textContent = message;
+    }
+
+    // Normal E-Posta ile Giriş / Kayıt
+    window.handleAuthSubmit = async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value.trim();
+      const name = document.getElementById('authName').value.trim();
+      const submitBtn = document.getElementById('authSubmitBtn');
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> İşleniyor...`;
+
+      try {
+        if (isSignUpMode) {
+          if (!name) throw new Error("Lütfen ad ve soyadınızı girin.");
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          await updateProfile(user, { displayName: name });
+          await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            displayName: name,
+            email: email,
+            createdAt: serverTimestamp()
+          });
+
+          showAlert("Hesabınız başarıyla oluşturuldu!", "success");
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+          showAlert("Başarıyla giriş yapıldı!", "success");
+        }
+        document.getElementById('authModal').classList.add('hidden');
+      } catch (err) {
+        let errText = err.message;
+        if (errText.includes("user-not-found")) errText = "Kullanıcı bulunamadı.";
+        else if (errText.includes("wrong-password")) errText = "Hatalı şifre girdiniz.";
+        else if (errText.includes("email-already-in-use")) errText = "Bu e-posta adresi zaten kullanımda.";
+        else if (errText.includes("weak-password")) errText = "Şifre en az 6 karakter olmalıdır.";
+        showAlert(errText.replace("Firebase: ", ""), 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = isSignUpMode ? 'Kayıt Ol' : 'Giriş Yap';
+      }
+    };
+
+    window.handleSignOut = function() {
+      signOut(auth).then(() => {
+        document.getElementById('authModal').classList.remove('hidden');
+      });
+    };
+
+    // Hikaye Modalleri
+    window.openStoryModal = function() { document.getElementById('storyModal').classList.remove('hidden'); };
+    window.closeStoryModal = function() { document.getElementById('storyModal').classList.add('hidden'); };
+    
+    window.handleStorySubmit = async function(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+      const fileInput = document.getElementById('storyImageFile');
+      const file = fileInput && fileInput.files && fileInput.files[0];
+      if (!file) {
+        if (typeof fxToast === 'function') fxToast('Bir fotoğraf seç');
+        else alert('Bir fotoğraf seç');
+        return;
+      }
+      const btn = document.getElementById('storySubmitBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Yükleniyor...'; }
+      try {
+        const imageUrl = await uploadForeverImage(file, 'stories');
+        await addDoc(collection(db, "stories"), {
+          userId: currentUser.uid,
+          authorName: currentUser.displayName || currentUser.email.split('@')[0],
+          imageUrl: imageUrl,
+          createdAt: serverTimestamp()
+        });
+        closeStoryModal();
+        if (fileInput) fileInput.value = '';
+        const prev = document.getElementById('storyImagePreview');
+        if (prev) { prev.classList.add('hidden'); prev.removeAttribute('src'); }
+        if (typeof fxToast === 'function') fxToast('Hikaye paylaşıldı');
+        if (typeof fxBumpStreak === 'function') fxBumpStreak();
+      } catch (err) {
+        console.error("Hikaye eklenemedi:", err);
+        alert('Hikaye yüklenemedi: ' + (err.message || err));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Paylaş'; }
+      }
+    };
+
+    function listenToStories() {
+      if (unsubscribeStories) unsubscribeStories();
+      unsubscribeStories = onSnapshot(collection(db, "stories"), (snapshot) => {
+        const storiesContainer = document.getElementById('storiesContainer');
+        const existingAddBtn = storiesContainer.firstElementChild;
+        storiesContainer.innerHTML = '';
+        storiesContainer.appendChild(existingAddBtn);
+
+        snapshot.forEach(docSnap => {
+          const story = docSnap.data();
+          const storyElem = document.createElement('div');
+          storyElem.className = "flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group";
+          storyElem.onclick = () => openStoryViewer(story);
+          storyElem.innerHTML = `
+            <div class="w-14 h-14 rounded-full p-0.5 story-ring group-hover:scale-105 transition-transform">
+              <div class="w-full h-full rounded-full bg-slate-950 p-0.5">
+                <img src="${story.imageUrl}" class="w-full h-full rounded-full object-cover">
+              </div>
+            </div>
+            <span class="text-[11px] text-slate-300 font-medium">${escapeHTML(story.authorName.split(' ')[0])}</span>
+          `;
+          storiesContainer.appendChild(storyElem);
+        });
+      });
+    }
+
+    window.openStoryViewer = function(story) {
+      document.getElementById('viewerAvatar').textContent = story.authorName.charAt(0).toUpperCase();
+      document.getElementById('viewerName').textContent = story.authorName;
+      document.getElementById('viewerImage').src = story.imageUrl;
+      document.getElementById('storyViewerModal').classList.remove('hidden');
+    };
+    window.closeStoryViewer = function() {
+      document.getElementById('storyViewerModal').classList.add('hidden');
+    };
+
+    // Görsel Alanı
+    window.toggleImageInput = function() {
+      document.getElementById('imageUrlContainer').classList.toggle('hidden');
+    };
+
+    // Gönderi Paylaşma
+    window.submitPost = async function() {
+      if (!currentUser) return;
+      const contentInput = document.getElementById('postContent');
+      const fileInput = document.getElementById('postImageFile');
+      const content = contentInput.value.trim();
+      const file = fileInput && fileInput.files && fileInput.files[0];
+      const publishBtn = document.getElementById('publishPostBtn');
+
+      if (!content && !file) {
+        if (typeof fxToast === 'function') fxToast('Metin veya fotoğraf ekle');
+        return;
+      }
+
+      publishBtn.disabled = true;
+      publishBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${file ? 'Foto yükleniyor...' : 'Paylaşılıyor...'}`;
+
+      try {
+        let imageUrl = null;
+        if (file) imageUrl = await uploadForeverImage(file, 'posts');
+
+        await addDoc(collection(db, "posts"), {
+          userId: currentUser.uid,
+          authorName: currentUser.displayName || currentUser.email.split('@')[0],
+          authorEmail: currentUser.email,
+          content: content || (file ? '📷' : ''),
+          imageUrl: imageUrl || null,
+          likes: [],
+          comments: [],
+          createdAt: serverTimestamp()
+        });
+
+        contentInput.value = '';
+        if (fileInput) fileInput.value = '';
+        const prev = document.getElementById('postImagePreview');
+        if (prev) { prev.classList.add('hidden'); prev.removeAttribute('src'); }
+        document.getElementById('imageUrlContainer')?.classList.add('hidden');
+        if (typeof fxToast === 'function') fxToast('Gönderi paylaşıldı');
+        if (typeof fxBumpStreak === 'function') fxBumpStreak();
+      } catch (error) {
+        console.error("Gönderi paylaşılırken hata oluştu:", error);
+        alert('Paylaşılamadı: ' + (error.message || error));
+      } finally {
+        publishBtn.disabled = false;
+        publishBtn.innerHTML = `<span>Paylaş</span> <i class="fa-solid fa-paper-plane text-xs"></i>`;
+      }
+    };
+
+    // Gönderi Silme
+    window.deletePost = async function(postId) {
+      if (!confirm("Bu gönderiyi silmek istediğinizden emin misiniz?")) return;
+      try {
+        await deleteDoc(doc(db, "posts", postId));
+      } catch (err) {
+        console.error("Gönderi silinemedi:", err);
+      }
+    };
+
+    // Firestore Akış Dinleyici
+    function listenToPosts() {
+      const postsFeed = document.getElementById('postsFeed');
+      if (unsubscribePosts) unsubscribePosts();
+
+      unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
+        const posts = [];
+        let myPostCount = 0;
+
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          posts.push({ id: docSnap.id, ...data });
+          if (currentUser && data.userId === currentUser.uid) {
+            myPostCount++;
+          }
+        });
+
+        const postCountElem = document.getElementById('userPostCount');
+        if (postCountElem) postCountElem.textContent = myPostCount;
+
+        posts.sort((a, b) => (b.createdAt?.toMillis() || Date.now()) - (a.createdAt?.toMillis() || Date.now()));
+
+        if (posts.length === 0) {
+          postsFeed.innerHTML = `
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
+              <i class="fa-regular fa-comments text-3xl mb-2 text-slate-600"></i>
+              <p class="text-sm font-semibold">Henüz hiç gönderi yok!</p>
+              <p class="text-xs text-slate-500 mt-1">Forever platformunda ilk gönderiyi sen paylaş.</p>
+            </div>
+          `;
+          return;
+        }
+
+        postsFeed.innerHTML = '';
+        posts.forEach(post => {
+          const isLiked = currentUser && post.likes && post.likes.includes(currentUser.uid);
+          const isOwner = currentUser && post.userId === currentUser.uid;
+          const initialLetter = (post.authorName || 'K').charAt(0).toUpperCase();
+
+          const card = document.createElement('article');
+          card.className = "card post bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm";
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center">
+                  ${initialLetter}
+                </div>
+                <div>
+                  <h4 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
+                    ${escapeHTML(post.authorName)} <i class="fa-solid fa-circle-check text-brand-500 text-[11px]"></i>
+                  </h4>
+                  <p class="text-[10px] text-slate-500">${post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Az önce'}</p>
+                </div>
+              </div>
+              ${isOwner ? `
+                <button onclick="window.deletePost('${post.id}')" title="Gönderiyi Sil" class="text-slate-500 hover:text-red-400 p-2 text-xs transition-colors">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              ` : ''}
+            </div>
+
+            <p class="text-sm text-slate-200 leading-relaxed whitespace-pre-line">${escapeHTML(post.content)}</p>
+
+            ${post.imageUrl ? `
+              <div class="rounded-xl overflow-hidden bg-slate-950 border border-slate-800/80 max-h-96">
+                <img src="${post.imageUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'">
+              </div>
+            ` : ''}
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+              <button onclick="window.togglePostLike('${post.id}', ${isLiked})" class="flex items-center gap-2 ${isLiked ? 'text-red-500 font-bold' : 'hover:text-red-400'} transition-colors">
+                <i class="${isLiked ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart'} text-sm"></i>
+                <span>${post.likes ? post.likes.length : 0} Beğeni</span>
+              </button>
+
+              <button onclick="window.toggleComments('${post.id}')" class="flex items-center gap-2 hover:text-brand-400 transition-colors">
+                <i class="fa-regular fa-comment text-sm"></i>
+                <span>${post.comments ? post.comments.length : 0} Yorum</span>
+              </button>
+            </div>
+
+            <div id="comments-${post.id}" class="hidden space-y-3 pt-3 border-t border-slate-800/50">
+              <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                ${post.comments && post.comments.length > 0 ? post.comments.map(c => `
+                  <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/60 text-xs">
+                    <span class="font-bold text-slate-300">${escapeHTML(c.author)}:</span>
+                    <span class="text-slate-400 ml-1">${escapeHTML(c.text)}</span>
+                  </div>
+                `).join('') : '<p class="text-[11px] text-slate-500 italic">Henüz yorum yapılmamış.</p>'}
+              </div>
+
+              <div class="flex gap-2">
+                <input type="text" id="comment-input-${post.id}" placeholder="Yorum yazın..." class="flex-1 bg-slate-950 border border-slate-800 text-xs px-3 py-2 rounded-xl text-slate-200 focus:outline-none focus:border-brand-500">
+                <button onclick="window.addComment('${post.id}')" class="px-3 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold hover:bg-brand-500">
+                  Gönder
+                </button>
+              </div>
+            </div>
+          `;
+
+          postsFeed.appendChild(card);
+        });
+      });
+    }
+
+    window.togglePostLike = async function(postId, isLiked) {
+      if (!currentUser) return;
+      const postRef = doc(db, "posts", postId);
+      if (isLiked) {
+        await updateDoc(postRef, { likes: arrayRemove(currentUser.uid) });
+      } else {
+        await updateDoc(postRef, { likes: arrayUnion(currentUser.uid) });
+      }
+    };
+
+    window.toggleComments = function(postId) {
+      document.getElementById(`comments-${postId}`).classList.toggle('hidden');
+    };
+
+    window.addComment = async function(postId) {
+      if (!currentUser) return;
+      const input = document.getElementById(`comment-input-${postId}`);
+      const text = input.value.trim();
+      if (!text) return;
+
+      const postRef = doc(db, "posts", postId);
+      await updateDoc(postRef, {
+        comments: arrayUnion({
+          userId: currentUser.uid,
+          author: currentUser.displayName || currentUser.email.split('@')[0],
+          text: text,
+          createdAt: new Date().toISOString()
+        })
+      });
+
+      input.value = '';
+    };
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    // Oturum Kontrolü
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      const authModal = document.getElementById('authModal');
+      const networkAuthStatus = document.getElementById('networkAuthStatus');
+
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (!docSnap.exists()) {
+          document.getElementById('usernameModal').classList.remove('hidden');
+        } else {
+          authModal.classList.add('hidden');
+        }
+
+        const name = user.displayName || user.email.split('@')[0];
+        const initial = name.charAt(0).toUpperCase();
+
+        document.getElementById('userHeaderAvatar').textContent = initial;
+        document.getElementById('userHeaderName').textContent = name;
+        document.getElementById('userHeaderEmail').textContent = user.email;
+
+        const sideAv = document.getElementById('sideUserAvatar'); if (sideAv) sideAv.textContent = initial;
+        const sideNm = document.getElementById('sideUserName'); if (sideNm) sideNm.textContent = name;
+        const sideHd = document.getElementById('sideUserHandle'); if (sideHd) sideHd.textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
+        const postAv = document.getElementById('postCreatorAvatar'); if (postAv) postAv.textContent = initial;
+        if (networkAuthStatus) {
+          networkAuthStatus.textContent = 'Çevrimiçi';
+          networkAuthStatus.className = 'status-ok';
+        }
+
+        listenToPosts();
+        listenToStories();
+      } else {
+        authModal.classList.remove('hidden');
+        if (networkAuthStatus) {
+          networkAuthStatus.textContent = 'Giriş gerekli';
+          networkAuthStatus.className = 'status-warn';
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
