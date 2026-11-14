@@ -2221,6 +2221,28 @@
         listenToPosts();
         listenToStories();
       } else {
+        // Aura X yerel oturumu varsa modalı kapat
+        try {
+          const aurax = JSON.parse(localStorage.getItem('forever_aurax_user') || 'null');
+          if (aurax && aurax.username) {
+            authModal.classList.add('hidden');
+            const name = aurax.username;
+            const initial = name.charAt(0).toUpperCase();
+            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            set('userHeaderAvatar', initial);
+            set('userHeaderName', name);
+            set('userHeaderEmail', name + ' (Aura X)');
+            set('sideUserAvatar', initial);
+            set('sideUserName', name);
+            set('sideUserHandle', '@' + name.toLowerCase());
+            set('postCreatorAvatar', initial);
+            if (networkAuthStatus) {
+              networkAuthStatus.textContent = 'Aura X ile bağlı';
+              networkAuthStatus.className = 'status-ok';
+            }
+            return;
+          }
+        } catch (_) {}
         authModal.classList.remove('hidden');
         if (networkAuthStatus) {
           networkAuthStatus.textContent = 'Giriş gerekli';
