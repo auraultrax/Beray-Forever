@@ -845,6 +845,11 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
+    const birthDateInput = document.getElementById('regBirthDate');
+    if (birthDateInput) {
+      const today = new Date();
+      birthDateInput.max = [today.getFullYear(), String(today.getMonth()+1).padStart(2,'0'), String(today.getDate()).padStart(2,'0')].join('-');
+    }
     // Supabase Storage medya hazırlığı
     async function compressImageFile(file, maxSide = 1280, quality = 0.72) {
       if (!file || !file.type.startsWith('image/')) throw new Error('Geçerli bir görsel seçin');
