@@ -546,7 +546,7 @@ language sql
 stable
 security definer
 set search_path = public, storage
-as $
+as $$
   select auth.uid() is not null and (
     public.is_forever_admin()
     or (
@@ -558,7 +558,7 @@ as $
         and o.created_at >= date_trunc('day', now())
     )
   );
-$;
+$$;
 grant execute on function public.can_upload_forever_media() to authenticated;
 
 drop policy if exists forever_media_public_read on storage.objects;
