@@ -535,6 +535,15 @@
         <div style="min-width:0;">
           <div id="profileName" style="font-weight:800;font-size:1.05rem;">—</div>
           <div id="profileHandle" style="font-size:.75rem;color:var(--muted);">—</div>
+          <div id="plusIconSettings" class="hidden" style="margin-top:8px;">
+            <small style="display:block;color:var(--muted);margin-bottom:6px;">Plus uygulama simgesi</small>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('violet')">Mor</button>
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('emerald')">Zümrüt</button>
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('ocean')">Okyanus</button>
+            </div>
+          </div>
+          <div id="plusIconLocked" class="sub" style="margin-top:8px;">Özel uygulama simgeleri Plus üyelerine özeldir 🔒</div>
         </div>
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
@@ -1498,7 +1507,9 @@
         const imageUrl = await uploadForeverImage(file, 'stories');
         await addDoc(collection(db, "stories"), {
           userId: currentUser.uid,
-          authorName: currentUser.displayName || currentUser.email.split('@')[0],
+          authorName: currentUser.username || currentUser.displayName || 'Kullanıcı',
+          authorUsername: currentUser.username || '',
+          authorIsPlus: Boolean(currentUser.isPlus),
           imageUrl: imageUrl,
           mediaType: mediaType,
           createdAt: serverTimestamp()
@@ -1691,17 +1702,28 @@
     window.openProfile = async function() {
       if (!currentUser) return;
       await refreshProfileStats();
-      const name = profileCache.displayName || currentUser.displayName || currentUser.email.split('@')[0];
+      const name = currentUser.username || profileCache.displayName || currentUser.displayName || 'Kullanıcı';
       document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
-      document.getElementById('profileName').textContent = name;
-      document.getElementById('profileHandle').textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
+      document.getElementById('profileName').innerHTML = escapeHTML(name) + foreverBadges(currentUser.isPlus);
+      document.getElementById('profileHandle').textContent = '@' + (currentUser.username || name.toLowerCase().replace(/\s+/g, ''));
+      document.getElementById('plusIconSettings')?.classList.toggle('hidden', !currentUser.isPlus);
+      document.getElementById('plusIconLocked')?.classList.toggle('hidden', Boolean(currentUser.isPlus));
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
       document.getElementById('profileModal').classList.remove('hidden');
     };
-    window.closeProfile = function() {
-      document.getElementById('profileModal').classList.add('hidden');
+    window.closeProfile = function() { document.getElementById('profileModal').classList.add('hidden'); };
+    window.changeAppIcon = function(theme) {
+      if (!currentUser?.isPlus) { alert('Özel uygulama simgeleri Plus özelliğidir.'); return; }
+      if (!['violet','emerald','ocean'].includes(theme)) return;
+      const manifest = document.querySelector('link[rel="manifest"]');
+      const favicon = document.querySelector('link[rel="icon"]');
+      if (manifest) manifest.href = './manifest-' + theme + '.json';
+      if (favicon) favicon.href = './icons/forever-' + theme + '.svg';
+      localStorage.setItem('forever_app_icon', theme);
+      fxToast('Uygulama simgesi değiştirildi. Ana ekrana eklerken seçtiğin simge kullanılabilir.');
     };
+
     window.toggleProfileEdit = function() {
       const box = document.getElementById('profileEditBox');
       box.classList.toggle('hidden');
