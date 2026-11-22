@@ -688,3 +688,14 @@ body.room-chat-open .main-content { min-height:100dvh; padding-bottom:0; }
 .admin-report-head span { color:var(--text-muted); font-size:.68rem; }
 .admin-report-card p { margin:5px 0; color:var(--text-muted); font-size:.75rem; overflow-wrap:anywhere; }
 .admin-report-card p b { color:var(--text-main); }
+
+
+/* Animate the sticker glyph after it has been posted into the conversation. */
+.room-animated-sticker.sticker-heart { animation:sticker-heartbeat .9s ease-in-out infinite; }
+.room-animated-sticker.sticker-sparkle { animation:sticker-spark 1.4s ease-in-out infinite; }
+.room-animated-sticker.sticker-rainbow { animation:sticker-rainbow 2.4s ease-in-out infinite; }
+.room-animated-sticker.sticker-butterfly { animation:sticker-wing .65s ease-in-out infinite alternate; }
+.room-animated-sticker.sticker-comet { animation:sticker-comet 1.8s ease-in-out infinite; }
+.room-animated-sticker.sticker-flower { animation:sticker-spin 5s linear infinite; }
+.room-animated-sticker.sticker-rocket { animation:sticker-rocket 1.6s ease-in-out infinite; }
+.room-animated-sticker.sticker-star { animation:sticker-star 1.3s ease-in-out infinite; }
