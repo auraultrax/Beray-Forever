@@ -76,18 +76,35 @@ create or replace function public.is_forever_room_member(p_room_id text)
 returns boolean
 language sql stable security definer
 set search_path = public
-as $$
+as $
   select auth.uid() is not null and exists (
     select 1 from public.forever_documents m
     where m.collection_name = 'room_members'
       and m.data ->> 'roomId' = p_room_id
       and m.data ->> 'userId' = auth.uid()::text
   );
-$$;
+$;
+
+create or replace function public.can_view_forever_story(p_author_id text)
+returns boolean
+language sql stable security definer
+set search_path = public
+as $
+  select auth.uid() is not null and (
+    p_author_id = auth.uid()::text
+    or exists (
+      select 1 from public.forever_documents profile
+      where profile.collection_name = 'users'
+        and profile.id = auth.uid()::text
+        and coalesce(profile.data -> 'following', '[]'::jsonb) @> jsonb_build_array(p_author_id)
+    )
+  );
+$;
 
 grant execute on function public.is_forever_admin() to authenticated;
 grant execute on function public.is_forever_plus() to authenticated;
 grant execute on function public.is_forever_room_member(text) to authenticated;
+grant execute on function public.can_view_forever_story(text) to authenticated;
 
 drop policy if exists forever_documents_select on public.forever_documents;
 create policy forever_documents_select on public.forever_documents
@@ -95,7 +112,8 @@ for select to authenticated
 using (
   public.is_forever_admin()
   or owner_id = auth.uid()
-  or collection_name in ('users','usernames','posts','stories','rooms','stickers')
+  or collection_name in ('users','usernames','posts','rooms','stickers')
+  or (collection_name = 'stories' and public.can_view_forever_story(data ->> 'userId'))
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
   or (collection_name = 'reports' and data ->> 'reporterId' = auth.uid()::text)
   or (collection_name = 'room_members' and public.is_forever_room_member(data ->> 'roomId'))
@@ -515,10 +533,10 @@ begin
 
   if new.collection_name in ('posts','stories') then
     if tg_op='INSERT' then
-      v_new_media := (new.data ->> 'imageUrl') is not null;
+      v_new_media := coalesce(new.data ->> 'imageUrl', new.data ->> 'imagePath') is not null;
     else
-      v_new_media := (new.data ->> 'imageUrl') is not null
-        and (new.data ->> 'imageUrl') is distinct from (old.data ->> 'imageUrl');
+      v_new_media := coalesce(new.data ->> 'imageUrl', new.data ->> 'imagePath') is not null
+        and coalesce(new.data ->> 'imageUrl', new.data ->> 'imagePath') is distinct from coalesce(old.data ->> 'imageUrl', old.data ->> 'imagePath');
     end if;
     if v_new_media then
       select count(*) into v_count
@@ -603,7 +621,7 @@ as $$
     or (
       select count(*) < case when public.is_forever_plus() then 10 else 5 end
       from storage.objects o
-      where o.bucket_id = 'forever-media'
+      where o.bucket_id in ('forever-media','forever-stories')
         and (storage.foldername(o.name))[1] = auth.uid()::text
         and (storage.foldername(o.name))[2] in ('posts','stories')
         and o.created_at >= date_trunc('day', now())
@@ -622,6 +640,7 @@ for insert to authenticated
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
+  and (storage.foldername(name))[2] <> 'stories'
   and (
     (storage.foldername(name))[2] not in ('posts','stories')
     or public.can_upload_forever_media()
@@ -635,6 +654,7 @@ using (bucket_id='forever-media' and (storage.foldername(name))[1]=auth.uid()::t
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
+  and (storage.foldername(name))[2] <> 'stories'
   and (
     (storage.foldername(name))[2] not in ('posts','stories')
     or public.can_upload_forever_media()
@@ -646,6 +666,54 @@ create policy forever_media_owner_delete on storage.objects
 for delete to authenticated
 using (
   bucket_id='forever-media'
+  and ((storage.foldername(name))[1]=auth.uid()::text or public.is_forever_admin())
+);
+
+-- Private story media: only the owner and accounts following them may create signed URLs.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'forever-stories','forever-stories',false,26214400,
+  array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','video/quicktime']
+)
+on conflict(id) do update set public=false,file_size_limit=26214400,
+  allowed_mime_types=excluded.allowed_mime_types;
+
+drop policy if exists forever_stories_owner_insert on storage.objects;
+create policy forever_stories_owner_insert on storage.objects
+for insert to authenticated
+with check (
+  bucket_id='forever-stories'
+  and (storage.foldername(name))[1]=auth.uid()::text
+  and (storage.foldername(name))[2]='stories'
+  and public.can_upload_forever_media()
+);
+
+drop policy if exists forever_stories_followers_read on storage.objects;
+create policy forever_stories_followers_read on storage.objects
+for select to authenticated
+using (
+  bucket_id='forever-stories'
+  and public.can_view_forever_story((storage.foldername(name))[1])
+);
+
+drop policy if exists forever_stories_owner_update on storage.objects;
+create policy forever_stories_owner_update on storage.objects
+for update to authenticated
+using (
+  bucket_id='forever-stories'
+  and (storage.foldername(name))[1]=auth.uid()::text
+)
+with check (
+  bucket_id='forever-stories'
+  and (storage.foldername(name))[1]=auth.uid()::text
+  and public.can_upload_forever_media()
+);
+
+drop policy if exists forever_stories_owner_delete on storage.objects;
+create policy forever_stories_owner_delete on storage.objects
+for delete to authenticated
+using (
+  bucket_id='forever-stories'
   and ((storage.foldername(name))[1]=auth.uid()::text or public.is_forever_admin())
 );
 
