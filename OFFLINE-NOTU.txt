@@ -1,1 +1,5 @@
-Forever uygulama kabuğu çevrimdışı açılabilir; giriş, Google oturumu, gönderi akışı, beğeni/yorum ve hikâyeler için internet ve Firebase bağlantısı gerekir. İlk başarılı çevrimiçi açılıştan sonra temel dosyalar önbelleğe alınır.
+Forever Plus uygulama kabuğu service worker ile çevrimdışı açılabilir. Google hesabı ile kayıt/giriş, oda keşfi, oda sohbeti, gönderi akışı ve medya yüklemeleri için internet ve Firebase bağlantısı gerekir.
+
+Doğum tarihi privateProfiles/{uid} içinde tutulur ve Firestore kurallarıyla yalnızca hesap sahibine açılır. Odalar ve oda mesajları için güncel firestore.rules kurallarını Firebase Console'a yayınlamadan oda özellikleri çalışmaz.
+
+İlk çevrimiçi açılıştan sonra temel dosyalar önbelleğe alınır. Yeni Forever Plus kabuğu için service-worker cache sürümü güncellenmiştir.
