@@ -475,6 +475,7 @@
     <div class="modal-card">
       <h2>Forever'a hoş geldin ✨</h2>
       <p class="sub">Profilini oluşturmak için bilgilerini tamamla.</p>
+      <div id="registerAlert" class="alert hidden"></div>
       <form onsubmit="handleUsernameSubmit(event)">
         <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" autocomplete="username"></div>
         <div class="field"><label>Ad</label><input type="text" id="regFirstName" required maxlength="50" autocomplete="given-name"></div>
@@ -1285,18 +1286,26 @@
       }
     };
 
+    function showRegisterAlert(message) {
+      const box = document.getElementById('registerAlert');
+      if (!box) { alert(message); return; }
+      box.textContent = message; box.classList.remove('hidden');
+      box.style.color = '#fecaca'; box.style.borderColor = 'rgba(251,113,133,.45)';
+      box.style.background = 'rgba(251,113,133,.08)';
+    }
     window.handleUsernameSubmit = async function(e) {
       e.preventDefault();
-      if (!currentUser) { showAlert('Önce Google hesabınla giriş yapmalısın.','error'); return; }
+      if (!currentUser) { showRegisterAlert('Önce Google hesabınla giriş yapmalısın.','error'); return; }
       const username = normalizeUsername(document.getElementById('newUsername')?.value);
       const firstName = (document.getElementById('regFirstName')?.value || '').trim();
       const lastName = (document.getElementById('regLastName')?.value || '').trim();
       const birthDate = document.getElementById('regBirthDate')?.value;
       const privacyAccepted = Boolean(document.getElementById('privacyConsent')?.checked);
       const termsAccepted = Boolean(document.getElementById('termsConsent')?.checked);
-      if (!isValidUsername(username)) return showAlert('Kullanıcı adı 3-24 karakter olmalı; küçük harf, rakam ve alt çizgi kullanabilirsin.','error');
-      if (firstName.length < 2 || lastName.length < 2 || !birthDate) return showAlert('Ad, soyad ve doğum tarihi zorunludur.','error');
-      if (!privacyAccepted || !termsAccepted) return showAlert('Devam etmek için KVKK Aydınlatma Metni ve Kullanım Koşulları onayı gereklidir.','error');
+      if (!isValidUsername(username)) return showRegisterAlert('Kullanıcı adı 3-24 karakter olmalı; küçük harf, rakam ve alt çizgi kullanabilirsin.','error');
+      if (firstName.length < 2 || lastName.length < 2 || !birthDate) return showRegisterAlert('Ad, soyad ve doğum tarihi zorunludur.','error');
+      if (!privacyAccepted || !termsAccepted) return showRegisterAlert('Devam etmek için KVKK Aydınlatma Metni ve Kullanım Koşulları onayı gereklidir.','error');
+      const alertBox = document.getElementById('registerAlert'); if (alertBox) alertBox.classList.add('hidden');
       const button = document.getElementById('registerProfileBtn');
       if (button) { button.disabled = true; button.textContent = 'Hesap oluşturuluyor…'; }
       try {
@@ -1320,7 +1329,7 @@
         fxToast('Forever hesabın oluşturuldu! ✨');
       } catch (err) {
         console.error('Profil kaydı başarısız:', err);
-        showAlert(err.message || 'Profil kaydı tamamlanamadı.','error');
+        showRegisterAlert(err.message || 'Profil kaydı tamamlanamadı.','error');
       } finally {
         if (button) { button.disabled = false; button.textContent = 'Hesabımı oluştur'; }
       }
