@@ -46,14 +46,6 @@ function watchRoomPlusUsers() {
       if (activeRoom) await loadRoomMessages();
     }).subscribe();
 }
-function applyRoomTheme(themeName) {
-  const chat = $('roomChat');
-  const theme = roomThemes.find(item => item.name === themeName) || roomThemes[0];
-  if (!chat) return;
-  chat.style.setProperty('--room-accent', theme.accent);
-  chat.style.setProperty('--room-bubble', theme.bubble);
-  themeIndex = Math.max(0, roomThemes.findIndex(item => item.name === theme.name));
-}
 function syncPlusControls(){
   const label=$('roomPlanLabel');if(label)label.textContent=isPlus?'✦ Plus: oda sınırı yok':'Ücretsiz: en fazla 3 oda';
   const features=activeRoom?.data?.features||{},stickersEnabled=features.stickers!==false,drawingEnabled=features.drawing!==false;
@@ -309,7 +301,7 @@ async function loadRoomMembers(){
 }
 function setRoomTheme(){openRoomTheme();}
 async function toggleRoomPrivacy() {
-  if (!roomOwner()) return toast('Bu ayarı yalnızca oda sahibi değiştirebilir.');
+  if (!roomOwner() && !isAppAdmin) return toast('Bu ayarı yalnızca oda sahibi veya sistem yöneticisi değiştirebilir.');
   try {
     const isPrivate = !Boolean(activeRoom.data.isPrivate);
     await updateActiveRoomSettings({ isPrivate });
