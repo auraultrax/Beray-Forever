@@ -443,6 +443,9 @@
       border: 0; background: #ef4444; color: #fff; font-size: 10px; cursor: pointer; z-index: 2;
       display: grid; place-items: center;
     }
+    .plus-membership{margin-top:10px;padding:11px 13px;border:1px solid rgba(52,211,153,.3);border-radius:14px;background:linear-gradient(120deg,rgba(7,127,85,.18),rgba(255,255,255,.035));font-weight:800;font-size:.8rem;color:#a7f3d0}
+    .plus-apply-btn{background:linear-gradient(120deg,#064e3b,#10b981,#a7f3d0);color:#052417;box-shadow:0 9px 26px rgba(16,185,129,.22)}
+    .plus-hint{font-size:.68rem;color:var(--muted);text-align:center;margin-top:7px}
     .room-create{display:grid;gap:8px;padding:12px;border:1px solid var(--glass-border);border-radius:16px;background:rgba(16,185,129,.06);margin-bottom:14px}
     .room-create input,.room-send input{width:100%;min-width:0;border:1px solid var(--glass-border);background:rgba(0,0,0,.22);color:var(--text);border-radius:11px;padding:10px 12px;font:inherit;outline:none}
     .room-create input:focus,.room-send input:focus{border-color:var(--primary2);box-shadow:0 0 0 3px rgba(16,185,129,.14)}
@@ -563,6 +566,7 @@
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
       <p id="profileRegion" style="margin-top:4px;font-size:.72rem;color:var(--muted);"></p>
+      <div id="profileMembership" class="plus-membership" aria-live="polite"></div>
       <div class="profile-stats">
         <button type="button" onclick="openFollowList('followers')"><strong id="statFollowers">0</strong><span>Takipçi</span></button>
         <button type="button" onclick="openFollowList('following')"><strong id="statFollowing">0</strong><span>Takip</span></button>
@@ -575,6 +579,8 @@
         <button type="button" class="btn btn-block" onclick="saveProfile()">Kaydet</button>
       </div>
       <button type="button" id="profileEditBtn" class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="toggleProfileEdit()">Profili düzenle</button>
+      <button type="button" id="plusApplyBtn" class="btn plus-apply-btn btn-block" style="margin-top:8px;" onclick="goToPlusApplication()">✦ Plus'a başvur</button>
+      <div id="plusBenefitsHint" class="plus-hint">Daha fazla oda, çıkartma, çizim, özel mesaj ve medya hakkı açılır.</div>
       <div id="followListBox" class="hidden" style="margin-top:14px;max-height:240px;overflow:auto;">
         <h3 id="followListTitle" style="font-size:.8rem;color:var(--muted);margin-bottom:8px;"></h3>
         <div id="followListItems"></div>
@@ -1444,7 +1450,6 @@
           uid: user.uid,
           displayName: profile.displayName,
           username: profile.username,
-          email: user.email,
           region: profile.region,
           following: [],
           followers: [],
@@ -1454,6 +1459,7 @@
         // Doğum tarihi herkese açık users belgesinde değil, yalnızca sahibinin okuyabildiği özel belgede tutulur.
         await setDoc(doc(db, 'privateProfiles', user.uid), {
           uid: user.uid,
+          email: user.email,
           dateOfBirth: profile.dateOfBirth,
           updatedAt: serverTimestamp()
         }, { merge: true });
@@ -1790,7 +1796,6 @@
           await setDoc(meRef, {
             uid: currentUser.uid,
             displayName: currentUser.displayName || '',
-            email: currentUser.email || '',
             following: [],
             followers: [],
             bio: '',
@@ -1835,6 +1840,8 @@
           followers: Array.isArray(d.followers) ? d.followers : [],
           bio: d.bio || '',
           region: d.region || '',
+          plusMember: d.plusMember === true,
+          roomCount: Number(d.roomCount || 0),
           displayName: d.displayName || currentUser.displayName || currentUser.email.split('@')[0]
         };
         followingIds = new Set(profileCache.following);
@@ -1860,12 +1867,32 @@
         if (stripBio) stripBio.textContent = profileCache.bio || 'Profilini düzenle';
         const regionEl = document.getElementById('profileRegion');
         if (regionEl) regionEl.textContent = profileCache.region ? '📍 ' + profileCache.region : '';
+        const membership = document.getElementById('profileMembership');
+        const applyBtn = document.getElementById('plusApplyBtn');
+        const plusHint = document.getElementById('plusBenefitsHint');
+        if (membership) membership.textContent = profileCache.plusMember ? '✦ FOREVER PLUS ÜYESİ · Zümrüt ayrıcalıkları açık' : 'FOREVER · Normal üyelik';
+        if (applyBtn) applyBtn.classList.toggle('hidden', profileCache.plusMember);
+        if (plusHint) plusHint.classList.toggle('hidden', profileCache.plusMember);
         const stripName = document.getElementById('stripName');
         if (stripName) stripName.textContent = profileCache.displayName;
         const stripAv = document.getElementById('stripAvatar');
         if (stripAv) stripAv.textContent = profileCache.displayName.charAt(0).toUpperCase();
       } catch (e) { console.warn(e); }
     }
+
+    window.goToPlusApplication = function() {
+      const configured = String(window.FOREVER_PLUS_CONFIG?.applicationUrl || './plus-apply.html').trim();
+      try {
+        const target = new URL(configured, location.href);
+        if (target.protocol !== 'https:' && target.hostname !== 'localhost' && target.hostname !== '127.0.0.1') {
+          fxToast('Başvuru sayfası güvenli HTTPS adresi olmalı.');
+          return;
+        }
+        location.href = target.href;
+      } catch {
+        fxToast('Plus başvuru adresi geçersiz. plus-config.js dosyasını kontrol et.');
+      }
+    };
 
     window.openProfile = async function() {
       if (!currentUser) return;
@@ -1904,7 +1931,6 @@
         await setDoc(doc(db, "users", currentUser.uid), {
           uid: currentUser.uid,
           displayName: name,
-          email: currentUser.email || '',
           bio: bio,
           region: region,
           following: profileCache.following || [],
@@ -1913,6 +1939,10 @@
         profileCache.displayName = name;
         profileCache.bio = bio;
         profileCache.region = region;
+        await setDoc(doc(db, 'privateProfiles', currentUser.uid), {
+          uid: currentUser.uid,
+          email: currentUser.email || ''
+        }, { merge: true });
         document.getElementById('userHeaderName').textContent = name;
         document.getElementById('userHeaderAvatar').textContent = name.charAt(0).toUpperCase();
         const postAv = document.getElementById('postCreatorAvatar');
@@ -2581,6 +2611,18 @@
         }
         hideSuspension();
         watchModeration(user.uid);
+        sendSecurityEvent(user, 'session').catch(() => {});
+        try {
+          await setDoc(doc(db, 'privateProfiles', user.uid), {
+            uid: user.uid,
+            email: user.email || ''
+          }, { merge: true });
+          if (docSnap.exists() && docSnap.data().email) {
+            await updateDoc(userDocRef, { email: deleteField() }).catch(() => {});
+          }
+        } catch (privacyError) {
+          console.warn('Private account profile migration failed:', privacyError.message);
+        }
 
         if (!docSnap.exists() || !docSnap.data().username) {
           if (!isSignUpMode) {
