@@ -781,6 +781,17 @@
       </div>
     </div>
 
+    <div id="auraXDirectoryModal" class="modal hidden" onclick="if(event.target===this)closeAuraXDirectory()">
+      <div class="modal-card aura-x-directory-card">
+        <div class="aura-x-directory-head">
+          <div><h2 id="auraXDirectoryTitle">Kullanıcı Bul</h2><p class="sub" id="auraXDirectorySub">Topluluğu keşfet</p></div>
+          <button type="button" class="btn-icon" onclick="closeAuraXDirectory()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <input id="auraXDirectorySearch" type="search" placeholder="Kullanıcı adı veya isim ara..." autocomplete="off">
+        <div id="auraXDirectoryList" class="aura-x-directory-list"><div class="empty">Yükleniyor…</div></div>
+      </div>
+    </div>
+
     <!-- Gizli yan panel ID uyumu (eski JS) -->
     <div class="hidden" aria-hidden="true">
       <span id="sideUserAvatar"></span>
@@ -793,52 +804,44 @@
     </footer>
   </div>
 
-  <nav class="fx-dock" aria-label="Forever ana gezinme">
-    <button type="button" class="fx-dock-item active" onclick="fxNavigate('feed')" aria-label="Akış">
-      <i class="fa-solid fa-house"></i><span>Akış</span>
+  <nav class="fx-dock" aria-label="Aura X ana gezinme">
+    <button type="button" class="fx-dock-item active" data-nav="discover" onclick="fxNavigate('discover')" aria-label="Keşfet">
+      <i class="fa-solid fa-compass"></i><span>Keşfet</span>
     </button>
-    <button type="button" class="fx-dock-item" onclick="fxNavigate('rooms')" aria-label="Odalar">
+    <button type="button" class="fx-dock-item" data-nav="users" onclick="fxNavigate('users')" aria-label="Kullanıcı Bul">
+      <i class="fa-solid fa-user-magnifying-glass"></i><span>Kullanıcı Bul</span>
+    </button>
+    <button type="button" class="fx-dock-item" data-nav="rooms" onclick="fxNavigate('rooms')" aria-label="Odalar">
       <i class="fa-solid fa-comments"></i><span>Odalar</span>
     </button>
-    <button type="button" class="fx-dock-item fx-dock-primary" onclick="fxNavigate('create')" aria-label="Gönderi oluştur">
-      <i class="fa-solid fa-plus"></i><span>Paylaş</span>
+    <button type="button" class="fx-dock-item" data-nav="notifications" onclick="fxNavigate('notifications')" aria-label="Bildirimler">
+      <i class="fa-regular fa-bell"></i><span>Bildirimler</span>
     </button>
-    <button type="button" class="fx-dock-item" onclick="fxNavigate('notifications')" aria-label="Bildirimler">
-      <i class="fa-regular fa-bell"></i><span>Bildirim</span>
+    <button type="button" class="fx-dock-item" data-nav="leaderboard" onclick="fxNavigate('leaderboard')" aria-label="Liderlik">
+      <i class="fa-solid fa-trophy"></i><span>Liderlik</span>
     </button>
-    <button type="button" class="fx-dock-item" onclick="fxNavigate('profile')" aria-label="Profil">
-      <i class="fa-regular fa-user"></i><span>Profil</span>
+    <button type="button" class="fx-dock-item hidden" data-nav="admin" id="auraXAdminNav" onclick="fxNavigate('admin')" aria-label="Yönetim">
+      <i class="fa-solid fa-shield-halved"></i><span>Yönetim</span>
     </button>
   </nav>
 
   <script>
     window.fxNavigate = function(target) {
-      document.querySelectorAll('.fx-dock-item').forEach(item => item.classList.remove('active'));
-      const active = document.querySelector('.fx-dock-item[onclick*="' + target + '"]');
-      if (active) active.classList.add('active');
-
-      if (target === 'notifications') {
-        if (typeof window.openNotifPanel === 'function') window.openNotifPanel();
+      document.querySelectorAll('.fx-dock-item').forEach(item => item.classList.toggle('active', item.dataset.nav === target));
+      if (target === 'discover') {
+        const el = document.getElementById('postsFeed') || document.querySelector('.composer');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-      if (target === 'profile') {
-        if (typeof window.openProfile === 'function') window.openProfile();
+      if (target === 'rooms') {
+        const el = document.getElementById('roomsPanel');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-
-      const targets = {
-        feed: document.getElementById('postsFeed') || document.querySelector('.composer'),
-        rooms: document.getElementById('roomsPanel'),
-        create: document.querySelector('.composer')
-      };
-      const el = targets[target];
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (target === 'create') {
-          const input = el.querySelector('textarea');
-          if (input) window.setTimeout(() => input.focus(), 350);
-        }
-      }
+      if (target === 'notifications') { window.openNotifPanel?.(); return; }
+      if (target === 'users') { window.openAuraXUsers?.(); return; }
+      if (target === 'leaderboard') { window.openAuraXLeaderboard?.(); return; }
+      if (target === 'admin') { window.openAuraXAdmin?.(); return; }
     };
   </script>
 
@@ -2239,9 +2242,95 @@
       if (el) el.style.display = 'none';
     }
 
+    // Aura X eski gezinme: Kullanıcı Bul ve Liderlik ekranları
+    let auraXDirectoryUsers = [];
+    let auraXDirectoryMode = 'users';
+    window.closeAuraXDirectory = function() {
+      document.getElementById('auraXDirectoryModal')?.classList.add('hidden');
+    };
+    function renderAuraXDirectory() {
+      const list = document.getElementById('auraXDirectoryList');
+      const search = (document.getElementById('auraXDirectorySearch')?.value || '').trim().toLocaleLowerCase('tr-TR');
+      if (!list) return;
+      let rows = auraXDirectoryUsers.filter(row => {
+        const d = row.data || {};
+        const haystack = [d.username, d.displayName, d.bio].join(' ').toLocaleLowerCase('tr-TR');
+        return !search || haystack.includes(search);
+      });
+      if (auraXDirectoryMode === 'leaderboard') {
+        rows = [...rows].sort((a,b) => ((b.data?.followers || []).length - (a.data?.followers || []).length)).slice(0, 30);
+      }
+      if (!rows.length) {
+        list.innerHTML = '<div class="empty">Sonuç bulunamadı.</div>';
+        return;
+      }
+      list.innerHTML = rows.map((row,index) => {
+        const d = row.data || {};
+        const uid = String(row.id || '');
+        const name = d.username || d.displayName || 'Kullanıcı';
+        const initial = escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'));
+        const label = auraXDirectoryMode === 'leaderboard' ? '<span class="aura-x-rank">#' + (index + 1) + '</span>' : '';
+        const following = followingIds.has(uid);
+        const count = Array.isArray(d.followers) ? d.followers.length : 0;
+        const action = uid === currentUser?.uid ? '<span class="aura-x-self">Sen</span>' :
+          '<button type="button" class="btn-follow ' + (following ? 'on' : '') + '" data-follow-uid="' + escapeHTML(uid) + '">' + (following ? 'Takiptesin' : 'Takip et') + '</button>';
+        return '<article class="aura-x-user-row"><div class="aura-x-user-avatar">' + initial + '</div><div class="aura-x-user-meta"><strong>' + label + escapeHTML(name) + '</strong><small>' + escapeHTML(d.bio || '@' + (d.username || 'kullanici')) + '</small><small>' + count + ' takipçi</small></div>' + action + '</article>';
+      }).join('');
+      list.querySelectorAll('[data-follow-uid]').forEach(btn => btn.addEventListener('click', async () => {
+        await window.toggleFollow(btn.dataset.followUid, btn);
+        renderAuraXDirectory();
+      }));
+    }
+    async function openAuraXDirectory(mode) {
+      if (!currentUser) return;
+      auraXDirectoryMode = mode;
+      const title = document.getElementById('auraXDirectoryTitle');
+      const sub = document.getElementById('auraXDirectorySub');
+      const search = document.getElementById('auraXDirectorySearch');
+      const list = document.getElementById('auraXDirectoryList');
+      title.textContent = mode === 'leaderboard' ? 'Liderlik' : 'Kullanıcı Bul';
+      sub.textContent = mode === 'leaderboard' ? 'Takipçi sayısına göre topluluk sıralaması' : 'Forever topluluğundaki kişileri bul ve takip et';
+      search.placeholder = mode === 'leaderboard' ? 'Sıralamada kullanıcı ara...' : 'Kullanıcı adı veya isim ara...';
+      search.value = '';
+      list.innerHTML = '<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor…</div>';
+      document.getElementById('auraXDirectoryModal').classList.remove('hidden');
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        auraXDirectoryUsers = [];
+        snap.forEach(docSnap => {
+          const data = docSnap.data() || {};
+          if (docSnap.id !== currentUser.uid && data.suspended !== true && data.banned !== true) {
+            auraXDirectoryUsers.push({ id: docSnap.id, data });
+          }
+        });
+        renderAuraXDirectory();
+      } catch (error) {
+        list.innerHTML = '<div class="empty">Kullanıcılar yüklenemedi: ' + escapeHTML(error.message || error) + '</div>';
+      }
+    }
+    window.openAuraXUsers = () => openAuraXDirectory('users');
+    window.openAuraXLeaderboard = () => openAuraXDirectory('leaderboard');
+    window.openAuraXAdmin = () => {
+      const adminNav = document.getElementById('auraXAdminNav');
+      if (!adminNav || adminNav.classList.contains('hidden')) return;
+      location.href = './admin.html';
+    };
+    document.getElementById('auraXDirectorySearch')?.addEventListener('input', renderAuraXDirectory);
+    async function refreshAuraXAdminAccess(user) {
+      const nav = document.getElementById('auraXAdminNav');
+      if (!nav) return;
+      nav.classList.add('hidden');
+      if (!user) return;
+      try {
+        const result = await supabaseClient.rpc('is_forever_admin');
+        if (!result.error && result.data === true) nav.classList.remove('hidden');
+      } catch (_) { nav.classList.add('hidden'); }
+    }
+
     // Supabase oturum kontrolü
     onForeverSessionChanged(async (user) => {
       currentUser = user;
+      await refreshAuraXAdminAccess(user);
       const authModal = document.getElementById('authModal');
       const usernameModal = document.getElementById('usernameModal');
       const networkAuthStatus = document.getElementById('networkAuthStatus');
