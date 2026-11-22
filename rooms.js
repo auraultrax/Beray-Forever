@@ -121,9 +121,9 @@ async function loadRoomList() {
       const d = room.data || {};
       const isJoined = joined.has(room.id);
       const isPrivate = Boolean(d.isPrivate);
-      const unavailable = isPrivate && !isJoined;
+      const unavailable = isPrivate && !isJoined && d.ownerId !== userId;
       const info = isPrivate ? '🔒 Özel oda' : (isJoined ? 'Üyesisin' : 'Topluluk odası');
-      const action = unavailable ? 'Özel' : (isJoined ? 'Odaya Gir' : 'Odaya Katıl');
+      const action = unavailable ? 'Özel' : ((isJoined || d.ownerId === userId) ? 'Odaya Gir' : 'Odaya Katıl');
       return '<article class="room-list-item">' +
         '<div class="room-list-icon"><i class="fa-solid fa-hashtag"></i></div>' +
         '<div class="room-list-copy"><strong>' + escapeHtml(d.name || 'Adsız oda') + '</strong><small>' + escapeHtml(info) + '</small></div>' +
@@ -137,7 +137,7 @@ async function loadRoomList() {
       const room = rooms.find(item => item.id === id);
       const data = room?.data || {};
       if (!joined.has(id)) {
-        if (data.isPrivate) return toast('Bu oda özel. Oda sahibinden davet istemelisin.');
+        if (data.isPrivate && data.ownerId !== userId) return toast('Bu oda özel. Oda sahibinden davet istemelisin.');
         try {
           await insertDoc('room_members', userId + '_' + id, {
             roomId: id, userId, username, role: 'member',
@@ -445,6 +445,17 @@ async function deleteActiveRoom() {
     toast('Oda silindi.');
   } catch (error) { toast(error.message || 'Oda silinemedi.'); }
 }
+async function leaveActiveRoom() {
+  if (!activeRoom) return;
+  const roomId = activeRoom.id;
+  try {
+    const result = await supabaseClient.from('forever_documents').delete()
+      .eq('collection_name','room_members').eq('id', userId + '_' + roomId);
+    if (result.error) throw result.error;
+    await closeActiveRoom();
+    toast('Odadan ayrıldın.');
+  } catch (error) { toast(error.message || 'Odadan ayrılamadın.'); }
+}
 async function closeActiveRoom() {
   if (roomChannel) {
     await supabaseClient.removeChannel(roomChannel);
@@ -536,7 +547,7 @@ function bindRoomUi() {
       toast('Odan oluşturuldu! 🎉');
     } catch (e) { toast(e.message || 'Oda oluşturulamadı.'); }
   };
-  $('leaveRoomBtn').onclick = closeActiveRoom;
+  $('leaveRoomBtn').onclick = leaveActiveRoom;
   $('roomDeleteBtn').onclick = deleteActiveRoom;
   $('roomPrivateBtn').onclick = toggleRoomPrivacy;
   $('roomSendLockBtn').onclick = toggleRoomMessageLock;
