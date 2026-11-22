@@ -259,60 +259,29 @@ function openRoomMembers(mode) {
 window.closeRoomMembersModal = function() {
   $('roomMembersModal')?.classList.add('hidden');
 };
-async function loadRoomMembers() {
-  const box = $('roomMembersList');
-  if (!box || !activeRoom) return;
-  box.innerHTML = '<div class="empty">Üyeler yükleniyor…</div>';
-  try {
-    const [members, users] = await Promise.all([fetchDocs('room_members'), fetchDocs('users')]);
-    const memberRows = members.filter(row => row.data?.roomId === activeRoom.id);
-    const memberIds = new Set(memberRows.map(row => row.data.userId));
-    const memberNames = new Map(users.map(row => [row.id, row.data?.username || row.data?.displayName || 'Kullanıcı']));
-    const canInvite = roomOwner();
-    const source = currentMembersMode === 'invite'
-      ? users.filter(row => row.id !== userId)
-      : memberRows.map(row => ({ id: row.data.userId, data: { username: memberNames.get(row.data.userId) || row.data.username || 'Kullanıcı' }, memberData: row.data }));
-    if (currentMembersMode === 'invite' && !canInvite) {
-      box.innerHTML = '<div class="room-members-empty">Yalnızca oda sahibi yeni üye davet edebilir.</div>';
-      return;
-    }
-    box.innerHTML = source.length ? source.map(row => {
-      const name = row.data?.username || row.data?.displayName || row.memberData?.username || 'Kullanıcı';
-      const isMember = memberIds.has(row.id);
-      const role = row.memberData?.role === 'owner' || row.id === activeRoom.data.ownerId ? 'Oda sahibi' : (isMember ? 'Üye' : '');
-      const action = currentMembersMode === 'invite'
-        ? (isMember ? '<span class="room-member-state">Zaten üye</span>' : '<button type="button" class="room-invite-action" data-invite-user="' + escapeHtml(row.id) + '" data-invite-name="' + escapeHtml(name) + '">Davet et</button>')
-        : '<span class="room-member-state">' + escapeHtml(role) + '</span>';
-      return '<div class="room-member-list-row"><div class="room-member-avatar">' + escapeHtml(name.slice(0,1).toUpperCase()) + '</div><div class="room-member-list-copy"><strong>' + escapeHtml(name) + '</strong><small>' + escapeHtml(role || 'Forever üyesi') + '</small></div>' + action + '</div>';
-    }).join('') : '<div class="room-members-empty">Henüz üye görünmüyor.</div>';
-    box.querySelectorAll('[data-invite-user]').forEach(button => button.onclick = async () => {
-      const targetId = button.dataset.inviteUser;
-      const targetName = button.dataset.inviteName;
-      try {
-        await insertDoc('room_members', targetId + '_' + activeRoom.id, {
-          roomId: activeRoom.id, userId: targetId, username: targetName, role: 'member',
-          invitedBy: userId, joinedAt: { seconds: Math.floor(Date.now() / 1000) }
-        });
-        toast(targetName + ' odaya davet edildi.');
-        await loadRoomMembers();
-        await loadRoomMemberCount();
-      } catch (error) { toast(error.message || 'Davet gönderilemedi.'); }
+async function loadRoomMembers(){
+  const box=$('roomMembersList');if(!box||!activeRoom)return;
+  box.innerHTML='<div class="empty">Üyeler yükleniyor…</div>';
+  try{
+    const [members,users]=await Promise.all([fetchDocs('room_members'),fetchDocs('users')]);
+    const rows=members.filter(row=>row.data?.roomId===activeRoom.id);
+    const ids=new Set(rows.map(row=>row.data.userId));
+    const names=new Map(users.map(row=>[row.id,row.data?.username||row.data?.displayName||'Kullanıcı']));
+    const source=currentMembersMode==='invite'?users.filter(row=>row.id!==userId):rows.map(row=>({id:row.data.userId,data:{username:names.get(row.data.userId)||row.data.username||'Kullanıcı'},memberData:row.data}));
+    if(currentMembersMode==='invite'&&!roomModerator()){box.innerHTML='<div class="room-members-empty">Yalnızca oda yöneticisi davet gönderebilir.</div>';return;}
+    box.innerHTML=source.length?source.map(row=>{
+      const name=row.data?.username||row.data?.displayName||row.memberData?.username||'Kullanıcı';
+      const joined=ids.has(row.id),role=row.memberData?.role==='owner'||row.id===activeRoom.data.ownerId?'Oda sahibi':(joined?'Üye':'');
+      const button=currentMembersMode==='invite'?(joined?'<span class="room-member-state">Zaten üye</span>':'<button class="room-invite-action" type="button" data-invite-user="'+escapeHtml(row.id)+'" data-invite-name="'+escapeHtml(name)+'">Davet et</button>'):'<span class="room-member-state">'+escapeHtml(role)+'</span>';
+      return '<div class="room-member-list-row"><div class="room-member-avatar">'+escapeHtml(name.slice(0,1).toUpperCase())+'</div><div class="room-member-list-copy"><strong>'+escapeHtml(name)+'</strong><small>'+escapeHtml(role||'Forever üyesi')+'</small></div>'+button+'</div>';
+    }).join(''):'<div class="room-members-empty">Henüz üye görünmüyor.</div>';
+    box.querySelectorAll('[data-invite-user]').forEach(button=>button.onclick=async()=>{
+      try{const {error}=await supabaseClient.rpc('forever_invite_room_member',{p_room_id:activeRoom.id,p_target_user:button.dataset.inviteUser,p_username:button.dataset.inviteName});if(error)throw error;toast(button.dataset.inviteName+' odaya davet edildi.');await loadRoomMembers();await loadRoomMemberCount();}
+      catch(e){toast(e.message||'Davet gönderilemedi.');}
     });
-  } catch (error) {
-    box.innerHTML = '<div class="empty">Üyeler yüklenemedi: ' + escapeHtml(error.message) + '</div>';
-  }
+  }catch(e){box.innerHTML='<div class="empty">Üyeler yüklenemedi: '+escapeHtml(e.message)+'</div>';}
 }
-async function setRoomTheme() {
-  if (!activeRoom) return;
-  themeIndex = (themeIndex + 1) % roomThemes.length;
-  const theme = roomThemes[themeIndex];
-  applyRoomTheme(theme.name);
-  if (roomOwner()) {
-    try { await updateActiveRoomSettings({ theme: theme.name }); }
-    catch (error) { toast(error.message || 'Oda rengi kaydedilemedi.'); }
-  }
-  toast('Oda rengi: ' + theme.name);
-}
+function setRoomTheme(){openRoomTheme();}
 async function toggleRoomPrivacy() {
   if (!roomOwner()) return toast('Bu ayarı yalnızca oda sahibi değiştirebilir.');
   try {
@@ -353,6 +322,142 @@ async function closeActiveRoom() {
   await loadRoomList();
 }
 window.closeAuraRoomView = closeActiveRoom;
+
+
+const ROOM_SPACE_THEMES=[
+{id:'space-night',name:'Yıldızlı Gece',background:'radial-gradient(circle at 15% 20%,#29204c 0,transparent 36%),radial-gradient(circle at 80% 75%,#191d3f 0,transparent 34%),#070812'},
+{id:'space-nebula',name:'Nebula',background:'radial-gradient(circle at 70% 25%,#672d8c 0,transparent 38%),radial-gradient(circle at 25% 70%,#203b68 0,transparent 36%),#10091d'},
+{id:'space-galaxy',name:'Galaksi',background:'radial-gradient(circle at 35% 25%,#4a236b 0,transparent 34%),radial-gradient(circle at 80% 80%,#153a54 0,transparent 38%),#080b18'},
+{id:'space-mars',name:'Mars',background:'radial-gradient(circle at 20% 20%,#813d32 0,transparent 40%),#160c0d'},
+{id:'space-deep',name:'Derin Uzay',background:'radial-gradient(circle at 65% 30%,#173f63 0,transparent 40%),#050911'},
+{id:'space-aurora',name:'Kutup Işıkları',background:'radial-gradient(ellipse at 25% 20%,#0e695b 0,transparent 40%),radial-gradient(ellipse at 80% 72%,#26487b 0,transparent 38%),#071117'},
+{id:'space-ocean',name:'Okyanus',background:'radial-gradient(circle at 50% 0%,#155e75 0,transparent 45%),#06131d'},
+{id:'space-sunset',name:'Gün Batımı',background:'radial-gradient(circle at 70% 0%,#9a4b5d 0,transparent 42%),#1b0c1e'},
+{id:'space-sakura',name:'Sakura',background:'radial-gradient(circle at 20% 15%,#9d557d 0,transparent 42%),#1b0e1a'},
+{id:'space-emerald',name:'Zümrüt',background:'radial-gradient(circle at 25% 20%,#0b704b 0,transparent 42%),#04150f'},
+{id:'space-cyber',name:'Cyber Neon',background:'radial-gradient(circle at 80% 20%,#513b99 0,transparent 38%),radial-gradient(circle at 20% 70%,#075e65 0,transparent 38%),#070811'},
+{id:'space-candy',name:'Şeker Bulutu',background:'radial-gradient(circle at 22% 20%,#754f89 0,transparent 42%),#1c1020'},
+{id:'space-volcano',name:'Volkan',background:'radial-gradient(circle at 60% 100%,#803421 0,transparent 48%),#150a09'},
+{id:'space-cloud',name:'Bulutların Üstü',background:'radial-gradient(circle at 50% 0%,#526b98 0,transparent 44%),#111827'},
+{id:'space-midnight',name:'Gece Mavisi',background:'radial-gradient(circle at 50% 15%,#1c3d73 0,transparent 48%),#050913'},
+{id:'space-prism',name:'Prizma',background:'linear-gradient(135deg,#17102c,#0b3440 50%,#35142c)'}];
+const ROOM_BUBBLES=['#1f2937','#312e81','#4c1d95','#7c2d12','#134e4a','#1e3a5f','#4a044e','#172554','#3f1d2e','#3f3f46','#064e3b','#3b0764','#7f1d1d','#164e63','#713f12','#111827','#365314','#701a75','#1d4ed8','#9d174d','#0f766e','#6b21a8','#9a3412','#374151','#f8fafc','#fde68a','#bfdbfe','#fbcfe8','#bbf7d0','#e9d5ff','#fecdd3','#bae6fd','#ddd6fe','#fed7aa','#a7f3d0','#c7d2fe','#fef3c7','#f5d0fe','#cffafe','#dcfce7','#fce7f3','#e0f2fe','#fae8ff','#ffedd5','#d1fae5','#e0e7ff','#f3f4f6','#fef9c3'];
+function roomThemeKey(){return 'forever_room_theme_'+encodeURIComponent(String(userId||'guest'))+'_'+encodeURIComponent(String(activeRoom?.id||'room'));}
+function getRoomTheme(){try{const v=JSON.parse(localStorage.getItem(roomThemeKey())||'null');if(v&&typeof v==='object')return {space:v.space||'space-night',bubble:v.bubble||'#8b5cf6',transparent:v.transparent===true,shape:v.shape||'rounded'};}catch(_){}return {space:'space-night',bubble:'#8b5cf6',transparent:false,shape:'rounded'};}
+function applyRoomTheme(){
+  if(!$('roomChat'))return;const t=getRoomTheme(),space=ROOM_SPACE_THEMES.find(x=>x.id===t.space)||ROOM_SPACE_THEMES[0],c=$('roomChat');
+  c.style.setProperty('--room-background',space.background);c.style.setProperty('--room-bubble',t.transparent?'rgba(139,92,246,.20)':t.bubble);
+  c.style.setProperty('--room-bubble-border',t.transparent?'rgba(255,255,255,.24)':'transparent');c.style.setProperty('--room-bubble-radius',t.shape==='pill'?'28px':t.shape==='sharp'?'7px':'17px');
+  c.classList.toggle('room-bubbles-transparent',t.transparent);
+  document.querySelectorAll('[data-space-theme]').forEach(b=>b.classList.toggle('active',b.dataset.spaceTheme===t.space));
+  document.querySelectorAll('[data-bubble-shape]').forEach(b=>b.classList.toggle('active',b.dataset.bubbleShape===t.shape));
+  document.querySelectorAll('[data-bubble-color]').forEach(b=>b.classList.toggle('active',b.dataset.bubbleColor===t.bubble));
+  if($('roomThemeTransparent'))$('roomThemeTransparent').checked=t.transparent;
+}
+function renderRoomThemePanel(){
+  const grid=$('roomThemeSpaceGrid'),colors=$('roomThemeBubbleColors');
+  if(grid&&!grid.children.length)grid.innerHTML=ROOM_SPACE_THEMES.map(t=>'<button type="button" class="room-theme-choice" data-space-theme="'+t.id+'"><span style="background:'+t.background+'"></span><small>'+escapeHtml(t.name)+'</small></button>').join('');
+  if(colors&&!colors.children.length)colors.innerHTML=ROOM_BUBBLES.map(c=>'<button type="button" class="room-theme-swatch" data-bubble-color="'+c+'" style="background:'+c+'" title="'+c+'"></button>').join('');
+  applyRoomTheme();
+}
+function saveRoomTheme(t){try{localStorage.setItem(roomThemeKey(),JSON.stringify(t));}catch(_){}applyRoomTheme();}
+function openRoomTheme(){renderRoomThemePanel();$('roomThemeModal')?.classList.remove('hidden');}
+window.closeRoomTheme=()=> $('roomThemeModal')?.classList.add('hidden');
+function resetRoomTheme(){try{localStorage.removeItem(roomThemeKey());}catch(_){}renderRoomThemePanel();}
+function setRoomThemeSpace(id){const t=getRoomTheme();t.space=id;saveRoomTheme(t);}
+function setRoomBubbleColor(color){const t=getRoomTheme();t.bubble=color;t.transparent=false;saveRoomTheme(t);}
+function setRoomBubbleShape(shape){const t=getRoomTheme();t.shape=shape;saveRoomTheme(t);}
+function setRoomBubbleTransparent(on){const t=getRoomTheme();t.transparent=Boolean(on);saveRoomTheme(t);}
+
+function renderReplyPreview(){
+  let box=$('roomReplyPreview');
+  if(!box){const form=$('roomMessageForm');box=document.createElement('div');box.id='roomReplyPreview';box.className='room-reply-preview hidden';form?.parentElement?.insertBefore(box,form);}
+  if(!pendingReply){box.classList.add('hidden');box.innerHTML='';return;}
+  box.classList.remove('hidden');box.innerHTML='<div><small>Yanıtlanan mesaj</small><strong>'+escapeHtml(pendingReply.username)+'</strong><span>'+escapeHtml(pendingReply.text)+'</span></div><button type="button" id="cancelRoomReply">×</button>';
+  $('cancelRoomReply').onclick=()=>{pendingReply=null;renderReplyPreview();};
+}
+function openRoomMessageActions(messageId){
+  selectedMessage=lastRoomMessages.get(messageId)||null;if(!selectedMessage)return;
+  const d=selectedMessage.data||{};$('roomActionMessageOwner').textContent='@'+(d.username||'kullanıcı');
+  $('roomActionPinBtn').classList.toggle('hidden',!roomModerator());
+  $('roomActionPinBtn').textContent=activeRoom?.data?.pinnedMessageId===messageId?'Sabitlemeyi kaldır':'Mesajı sabitle';
+  $('roomActionModerateBtn').classList.toggle('hidden',!roomModerator()||d.userId===userId);
+  $('roomMessageActionModal').classList.remove('hidden');
+}
+window.closeRoomMessageActions=()=> $('roomMessageActionModal')?.classList.add('hidden');
+function openRoomModeration(messageId){
+  const row=lastRoomMessages.get(messageId);if(!row||!roomModerator()||row.data?.userId===userId)return;
+  selectedMessage=row;$('roomModerationTarget').textContent='@'+(row.data?.username||'kullanıcı');
+  const muted=(activeRoom.data?.mutedUserIds||[]).includes(row.data?.userId);
+  $('roomModerationMuteBtn').innerHTML='<i class="fa-solid fa-volume-xmark"></i> '+(muted?'Susturmayı kaldır':'Kullanıcıyı sustur');
+  $('roomModerationModal').classList.remove('hidden');
+}
+window.closeRoomModeration=()=> $('roomModerationModal')?.classList.add('hidden');
+async function toggleRoomReaction(messageId,emoji){
+  const old=lastRoomReactions.find(x=>x.data?.messageId===messageId&&x.data?.userId===userId&&x.data?.emoji===emoji);
+  try{if(old){const {error}=await supabaseClient.from('forever_documents').delete().eq('collection_name','room_reactions').eq('id',old.id);if(error)throw error;}
+  else await insertDoc('room_reactions',messageId+'_'+userId+'_'+encodeURIComponent(emoji),{roomId:activeRoom.id,messageId,userId,username,emoji,createdAt:{seconds:Math.floor(Date.now()/1000)}});
+  await loadRoomMessages();}catch(e){toast(e.message||'Emoji tepkisi kaydedilemedi.');}
+}
+function animateFlyingEmoji(glyph){
+  if(!glyph||!activeRoom)return;let layer=$('emojiChallengeLayer');
+  if(!layer){layer=document.createElement('div');layer.id='emojiChallengeLayer';layer.setAttribute('aria-hidden','true');document.body.appendChild(layer);}
+  const count=Math.min(42,Math.max(24,Math.floor((window.innerWidth||800)/18)));
+  for(let i=0;i<count;i++){const item=document.createElement('span');item.className='emoji-challenge-float';item.textContent=glyph;item.style.left=(Math.random()*96)+'%';item.style.fontSize=(26+Math.random()*42)+'px';item.style.setProperty('--fly-duration',(2+Math.random()*1.8)+'s');item.style.setProperty('--fly-x',Math.round((Math.random()-.5)*170)+'px');item.style.setProperty('--fly-rotate',Math.round((Math.random()-.5)*90)+'deg');item.addEventListener('animationend',()=>item.remove(),{once:true});layer.appendChild(item);}
+  while(layer.children.length>160)layer.firstElementChild?.remove();
+}
+async function emojiChallenge(glyph){
+  if(!activeRoom||!isSingleEmoji(glyph))return;animateFlyingEmoji(glyph);const id=crypto.randomUUID();
+  try{await insertDoc('room_messages',id,{roomId:activeRoom.id,userId,username,kind:'emoji_flight',emoji:glyph,createdAt:{seconds:Math.floor(Date.now()/1000)}});
+    window.setTimeout(()=>supabaseClient.from('forever_documents').delete().eq('collection_name','room_messages').eq('id',id).then(()=>{}).catch(()=>{}),3500);
+  }catch(e){toast(e.message||'Emoji animasyonu gönderilemedi.');}
+}
+function renderTextWithClickableEmojis(text){
+  const raw=String(text||''),re=/(?:\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E)?)*)|(?:\p{Regional_Indicator}{2})/gu;
+  let html='',last=0,m;while((m=re.exec(raw))!==null){html+=escapeHtml(raw.slice(last,m.index));html+='<button type="button" class="room-inline-emoji" data-fly-emoji="'+escapeHtml(m[0])+'">'+escapeHtml(m[0])+'</button>';last=m.index+m[0].length;}return html+escapeHtml(raw.slice(last));
+}
+function emojiCodepointVariants(v){const full=Array.from(v).map(c=>c.codePointAt(0).toString(16)).join('-');const norm=Array.from(v.replace(/[\uFE0E\uFE0F]/gu,'')).map(c=>c.codePointAt(0).toString(16)).join('-');return [...new Set([full,norm].filter(Boolean))];}
+function emojiKitchenCandidateUrls(one,two){const a=emojiCodepointVariants(one),b=emojiCodepointVariants(two),pairs=[];for(const x of a)for(const y of b)pairs.push(x+'_'+y,y+'_'+x);return [...new Set(pairs)].map(p=>'https://emojik.vercel.app/s/'+p+'?size=512');}
+let emojiKitchenState={key:'',url:'',pending:Promise.resolve(null),version:0};
+function findEmojiKitchenImage(urls){
+  if(!urls.length)return Promise.resolve(null);
+  return new Promise(resolve=>{let n=urls.length,done=false;const end=v=>{if(done)return;done=true;resolve(v);};urls.forEach(url=>{const img=new Image();img.onload=()=>end({url});img.onerror=()=>{n--;if(!n)end(null);};img.referrerPolicy='no-referrer';img.src=url;});});
+}
+function readOneEmoji(id){const v=($(id)?.value||'').trim();if(!v||!/\p{Extended_Pictographic}/u.test(v))return '';const n=typeof Intl.Segmenter==='function'?Array.from(new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)).length:Array.from(v).length;return n===1?v:'';}
+function drawEmojiMixPreview(){
+  const box=$('emojiMixerPreview');if(!box)return;const one=readOneEmoji('emojiMixerOne')||'❔',two=readOneEmoji('emojiMixerTwo')||'❔',key=one+'\u0000'+two;
+  const version=emojiKitchenState.version+1;emojiKitchenState={key,url:'',pending:Promise.resolve(null),version};box.innerHTML='';
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;canvas.className='emoji-mix-canvas';const ctx=canvas.getContext('2d');
+  const bg=ctx.createRadialGradient(256,220,30,256,256,300);bg.addColorStop(0,'#6337a8');bg.addColorStop(.6,'#331b51');bg.addColorStop(1,'#140f20');ctx.fillStyle=bg;ctx.beginPath();ctx.arc(256,256,238,0,Math.PI*2);ctx.fill();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='#f0abfc';ctx.shadowBlur=24;ctx.font='250px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';ctx.fillText(one,235,244);
+  ctx.beginPath();ctx.arc(356,348,88,0,Math.PI*2);ctx.fillStyle='rgba(25,12,38,.86)';ctx.fill();ctx.lineWidth=8;ctx.strokeStyle='#f0abfc';ctx.stroke();ctx.shadowBlur=18;ctx.font='128px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';ctx.fillText(two,356,348);box.appendChild(canvas);
+  if(one!=='❔'&&two!=='❔'){const pending=findEmojiKitchenImage(emojiKitchenCandidateUrls(one,two));emojiKitchenState.pending=pending;pending.then(result=>{if(!result||emojiKitchenState.version!==version||emojiKitchenState.key!==key)return;emojiKitchenState.url=result.url;box.innerHTML='';const img=document.createElement('img');img.src=result.url;img.alt='Birleştirilmiş emoji';img.className='emoji-mix-result';box.appendChild(img);}).catch(()=>{});}
+}
+window.closeEmojiMixer=()=> $('emojiMixerModal')?.classList.add('hidden');
+function openEmojiMixer(){if(!activeRoom)return toast('Önce bir odaya gir.');if(!isPlus)return toast('İki emojiyi birleştirme yalnızca Plus üyelerine açıktır. 🔒');$('emojiMixerModal')?.classList.remove('hidden');drawEmojiMixPreview();}
+async function sendEmojiMixToRoom(){
+  if(!isPlus)return toast('Emoji birleştirme Plus özelliğidir. 🔒');const one=readOneEmoji('emojiMixerOne'),two=readOneEmoji('emojiMixerTwo');if(!one||!two)return toast('İki kutuya da birer emoji girmelisin.');
+  try{const key=one+'\u0000'+two;let result=emojiKitchenState.key===key?await emojiKitchenState.pending:null;
+    if(result?.url&&emojiKitchenState.key===key)await sendRoomMessage({kind:'emoji_mix',stickerUrl:result.url,emojiOne:one,emojiTwo:two,text:one+' + '+two});
+    else{let canvas=$('emojiMixerPreview')?.querySelector('canvas');if(!canvas){drawEmojiMixPreview();canvas=$('emojiMixerPreview')?.querySelector('canvas');}if(!canvas)throw new Error('Emoji önizlemesi hazırlanamadı.');const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('Emoji görseli üretilemedi.');const file=new File([blob],'emoji-mix.png',{type:'image/png'});const url=await uploadRoomAsset(file,'emoji-mixes');await sendRoomMessage({kind:'emoji_mix',stickerUrl:url,emojiOne:one,emojiTwo:two,text:one+' + '+two});}
+    window.closeEmojiMixer();toast('Emoji birleşimi odada paylaşıldı ✨');
+  }catch(e){toast(e.message||'Emoji birleştirilemedi.');}
+}
+async function submitRoomReport(type){
+  if(!selectedMessage||!activeRoom)return;const d=selectedMessage.data||{};
+  try{await insertDoc('reports',crypto.randomUUID(),{reporterId:userId,targetUserId:d.userId,targetId:selectedMessage.id,type:'room_message',roomId:activeRoom.id,roomName:activeRoom.name,reason:(d.text||d.emoji||'Oda mesajı').slice(0,400),reportType:type,status:'open',createdAt:{seconds:Math.floor(Date.now()/1000)}});
+    $('roomReportTypeModal')?.classList.add('hidden');window.closeRoomModeration?.();window.closeRoomMessageActions?.();toast('Şikâyet yönetim ekibine iletildi.');
+  }catch(e){toast(e.message||'Şikâyet iletilemedi.');}
+}
+async function loadAuraAdminReports(){
+  const box=$('adminReportsList');if(!box)return;if(!isAppAdmin){box.innerHTML='<div class="empty">Bu alan yalnızca sistem yöneticilerine açıktır.</div>';return;}
+  box.innerHTML='<div class="empty">Şikâyetler yükleniyor…</div>';
+  try{const rows=(await fetchDocs('reports')).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    box.innerHTML=rows.length?rows.map(row=>{const d=row.data||{};return '<article class="admin-report-card"><div class="admin-report-head"><strong>'+escapeHtml(d.reportType==='minor_under_15'?'15 yaşından küçük bildirimi':'Üye şikâyeti')+'</strong><span>'+escapeHtml(d.status||'open')+'</span></div><p><b>Oda:</b> '+escapeHtml(d.roomName||d.roomId||'—')+'</p><p><b>Şikâyet edilen:</b> '+escapeHtml(d.targetUserId||'—')+'</p><p><b>Mesaj:</b> '+escapeHtml(d.reason||'—')+'</p><p><b>Bildiren:</b> '+escapeHtml(d.reporterId||'—')+'</p><button type="button" class="btn btn-ghost" data-report-reviewed="'+escapeHtml(row.id)+'">İncelendi olarak işaretle</button></article>';}).join(''):'<div class="empty">Bekleyen şikâyet yok.</div>';
+    box.querySelectorAll('[data-report-reviewed]').forEach(btn=>btn.onclick=async()=>{const row=rows.find(x=>x.id===btn.dataset.reportReviewed);if(!row)return;const data=Object.assign({},row.data,{status:'reviewed',reviewedAt:new Date().toISOString()});const {error}=await supabaseClient.from('forever_documents').update({data,updated_at:new Date().toISOString()}).eq('collection_name','reports').eq('id',row.id);if(error)toast(error.message);else{toast('Şikâyet incelendi.');loadAuraAdminReports();}});
+  }catch(e){box.innerHTML='<div class="empty">Şikâyetler yüklenemedi: '+escapeHtml(e.message)+'</div>';}
+}
+window.loadAuraAdminReports=loadAuraAdminReports;
 
 function setupCanvas() {
   const canvas = $('roomDrawingCanvas');
