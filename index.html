@@ -2182,6 +2182,24 @@
       return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
+    // Yönetim bir hesabı askıya alırsa/kısıtlarsa açık oturumda hemen uygula.
+    let unsubscribeModeration = null;
+    let restrictedNotified = false;
+    function watchModeration(uid) {
+      if (unsubscribeModeration) unsubscribeModeration();
+      restrictedNotified = false;
+      unsubscribeModeration = onSnapshot(doc(db, 'users', uid), (snap) => {
+        const d = snap.exists() ? snap.data() : {};
+        if (d.suspended === true) { showSuspension(d.suspendedMessage); return; }
+        hideSuspension();
+        if ((d.restrictedUntil || 0) > Date.now() && !restrictedNotified) {
+          restrictedNotified = true;
+          const until = new Date(d.restrictedUntil).toLocaleDateString('tr-TR');
+          alert('Hesabınız ' + until + ' tarihine kadar kısıtlandı: gönderi, yorum ve beğeni yapamazsınız.');
+        }
+      }, () => {});
+    }
+
     // ---- Hesap askıya alma uyarısı ----
     function showSuspension(message) {
       let el = document.getElementById('suspensionOverlay');
@@ -2222,6 +2240,7 @@
           return;
         }
         hideSuspension();
+        watchModeration(user.uid);
 
         if (!docSnap.exists()) {
           document.getElementById('usernameModal').classList.remove('hidden');

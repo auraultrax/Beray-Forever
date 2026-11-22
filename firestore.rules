@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    // Yönetici: admins/{uid} belgesi olan hesap (belge yalnızca Firebase Console'dan eklenir)
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Askıda / yasaklı / kısıtlı hesap hiçbir şey yazamaz
+    function isBlocked() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('banned', false) == true
+        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('restrictedUntil', 0) > request.time.toMillis()
+      );
+    }
+
+    // Moderasyon alanları: sahibi dokunamaz
+    function modFields() {
+      return ['suspended','suspendedReason','suspendedMessage','suspendedAt','suspendedBy',
+              'banned','restrictedUntil','restrictedReason','warnCount','lastWarning'];
+    }
+    function touchesMod() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(modFields());
+    }
+
+    function isValidUsername(name) {
+      return name is string && name.size() >= 3 && name.size() <= 24
+        && name.matches('^[a-z0-9_]+$');
+    }
+    function isValidPostContent(c) { return c is string && c.size() <= 2000; }
+
+    match /admins/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // Yönetici işlem kayıtları (değiştirilemez, silinemez)
+    match /modlogs/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.adminUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId)
+                    && !request.resource.data.keys().hasAny(modFields())
+                    && isValidUsername(request.resource.data.username)
+                    && request.resource.data.uid == userId;
+      allow update: if isAdmin()
+                    || (isOwner(userId) && !touchesMod()
+                        && (!('username' in request.resource.data)
+                            || isValidUsername(request.resource.data.username)))
+                    // başkası yalnızca takipçi listesini değiştirebilir
+                    || (isSignedIn() && !isBlocked()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']));
+      allow delete: if isOwner(userId) && !isBlocked();
+    }
+
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if isSignedIn() && !isBlocked() && isValidUsername(username)
+                    && request.resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() && !isBlocked()
+                    && request.resource.data.userId == request.auth.uid
+                    && isValidPostContent(request.resource.data.content)
+                    && request.resource.data.keys().hasAll(['userId', 'authorName', 'content', 'createdAt']);
+      allow update: if isSignedIn() && !isBlocked() && (
+                      resource.data.userId == request.auth.uid
+                      || request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['likes', 'comments', 'likeCount', 'sparks', 'poll'])
+                    );
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create: if isSignedIn() && !isBlocked()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) && !isBlocked();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /blocks/{blockId} {
+      allow read: if isSignedIn() && resource.data.blockerId == request.auth.uid;
+      allow create: if isSignedIn()
+                    && request.resource.data.blockerId == request.auth.uid
+                    && request.resource.data.blockedId != request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.blockerId == request.auth.uid;
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && !isBlocked()
+                    && request.resource.data.reporterId == request.auth.uid
+                    && request.resource.data.reason is string
+                    && request.resource.data.reason.size() <= 500;
+      allow read, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow create: if isSignedIn() && (isAdmin() || !isBlocked());
+      allow read, update: if isSignedIn() && resource.data.toUid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.toUid == request.auth.uid;
+    }
+
+    // Kullanılmayan koleksiyonlar kapalı
+    match /{document=**} { allow read, write: if false; }
+  }
+}

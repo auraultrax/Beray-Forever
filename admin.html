@@ -16,7 +16,7 @@
   input,textarea,select{width:100%;background:#0c0e12;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
   textarea{min-height:80px;resize:vertical}
   button{background:var(--acc);color:#000;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
-  button.sec{background:#222735;color:var(--fg)} button.bad{background:var(--bad)} button.ok{background:var(--ok)}
+  button.sec{background:#222735;color:var(--fg)} button.bad{background:var(--bad)} button.ok{background:var(--ok)} button.warn{background:var(--warn)}
   button:disabled{opacity:.5;cursor:default}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .row>*{flex:1 1 auto}
   .tabs{display:flex;gap:8px;margin-bottom:12px} .tabs button{flex:1}
@@ -49,6 +49,7 @@
     <div class="tabs">
       <button id="tabUsers" class="on">Kullanıcılar</button>
       <button id="tabReports" class="sec">Şikayetler</button>
+      <button id="tabLogs" class="sec">Kayıtlar</button>
     </div>
 
     <div id="usersPane">
@@ -62,16 +63,11 @@
     </div>
 
     <div id="reportsPane" class="hidden">
-      <div id="reportList"></div>
-    </div>
-  </section>
-</main>
-
-<script type="module">
+      <div<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, updateDoc, addDoc, collection, query, limit, serverTimestamp, deleteField }
+import { getFirestore, doc, getDoc, getDocs, updateDoc, deleteDoc, addDoc, collection, query, where, limit, serverTimestamp, deleteField, increment }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Forever ile aynı Firebase projesi (herkese açık istemci yapılandırması; güvenlik Firestore kurallarındadır).
@@ -88,7 +84,9 @@ const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const DEFAULT_MSG = 'Hesabınız askıya alındı';
+const SUSP_MSG = 'Hesabınız askıya alındı';
+const BAN_MSG = 'Hesabınız kalıcı olarak yasaklandı';
+const DAY = 86400000;
 let me = null, users = [];
 
 function say(text, kind) {
@@ -111,22 +109,44 @@ onAuthStateChanged(auth, async user => {
   if (!user) return;
   try {
     const a = await getDoc(doc(db, 'admins', user.uid));
-    if (!a.exists()) { say('Bu hesap yönetici değil. Çıkış yapılıyor.', 'bad'); await signOut(auth); return; }
+    if (!a.exists()) {
+      say('Bu hesap yönetici değil. Giriş yaptığın UID: ' + user.uid + ' — "admins" belge adı bununla birebir aynı olmalı.', 'bad');
+      await signOut(auth); return;
+    }
   } catch (e) { say('Yönetici denetimi yapılamadı: ' + e.message, 'bad'); await signOut(auth); return; }
   me = user; $('app').classList.remove('hidden'); clearMsg();
   loadUsers();
 });
 
 function showTab(t) {
-  $('usersPane').classList.toggle('hidden', t !== 'users');
-  $('reportsPane').classList.toggle('hidden', t !== 'reports');
-  $('tabUsers').className = t === 'users' ? 'on' : 'sec';
-  $('tabReports').className = t === 'reports' ? 'on' : 'sec';
+  for (const k of ['users','reports','logs']) {
+    $(k + 'Pane').classList.toggle('hidden', k !== t);
+    $('tab' + k[0].toUpperCase() + k.slice(1)).className = k === t ? 'on' : 'sec';
+  }
   if (t === 'reports') loadReports();
+  if (t === 'logs') loadLogs();
 }
 $('tabUsers').onclick = () => showTab('users');
 $('tabReports').onclick = () => showTab('reports');
+$('tabLogs').onclick = () => showTab('logs');
 
+// ---------- kayıt (denetim izi) ----------
+async function logAction(action, targetUid, detail) {
+  try {
+    await addDoc(collection(db, 'modlogs'), {
+      adminUid: me.uid, adminEmail: me.email || '', action, targetUid: targetUid || '',
+      detail: String(detail || '').slice(0, 500), createdAt: serverTimestamp()
+    });
+  } catch (e) { console.warn('log yazılamadı', e); }
+}
+async function notify(uid, text) {
+  await addDoc(collection(db, 'notifications'), {
+    toUid: uid, fromUid: me.uid, fromName: 'Forever Yönetimi', type: 'moderation',
+    text, read: false, createdAt: serverTimestamp()
+  }).catch(() => {});
+}
+
+// ---------- kullanıcılar ----------
 async function loadUsers() {
   $('userList').innerHTML = '<p class="muted">Yükleniyor…</p>';
   try {
@@ -138,22 +158,31 @@ async function loadUsers() {
 $('searchBtn').onclick = renderUsers;
 $('q').addEventListener('keydown', e => { if (e.key === 'Enter') renderUsers(); });
 
+function stateTag(u) {
+  if (u.banned) return '<span class="tag bad">Yasaklı</span>';
+  if (u.suspended) return '<span class="tag bad">Askıda</span>';
+  if ((u.restrictedUntil || 0) > Date.now()) return '<span class="tag warn">Kısıtlı · ' + new Date(u.restrictedUntil).toLocaleDateString('tr-TR') + '\'e kadar</span>';
+  return '<span class="tag ok">Aktif</span>';
+}
+function isLimited(u) { return u.banned || u.suspended || (u.restrictedUntil || 0) > Date.now(); }
+
 function renderUsers() {
   const q = $('q').value.trim().toLowerCase();
   const list = users.filter(u => !q ||
-    [u.username, u.displayName, u.name, u.email, u.id].some(v => String(v || '').toLowerCase().includes(q)))
-    .slice(0, 60);
+    [u.username, u.displayName, u.name, u.email, u.id].some(v => String(v || '').toLowerCase().includes(q))).slice(0, 60);
   if (!list.length) { $('userList').innerHTML = '<p class="muted">Sonuç yok.</p>'; return; }
   $('userList').innerHTML = list.map(u => `
     <div class="card" data-uid="${esc(u.id)}">
       <div class="row">
         <div style="flex:1 1 200px">
-          <strong>@${esc(u.username || '—')}</strong> ${u.suspended ? '<span class="tag bad">Askıda</span>' : '<span class="tag ok">Aktif</span>'}
+          <strong>@${esc(u.username || '—')}</strong> ${stateTag(u)}
+          ${u.warnCount ? `<span class="tag warn">${esc(u.warnCount)} uyarı</span>` : ''}
           <div class="muted">${esc(u.displayName || u.name || '')} ${u.email ? '· ' + esc(u.email) : ''}</div>
           <div class="muted">uid: ${esc(u.id)}</div>
-          ${u.suspended ? `<div class="muted">Sebep: ${esc(u.suspendedReason || '—')}</div>` : ''}
+          ${u.suspendedReason ? `<div class="muted">Sebep: ${esc(u.suspendedReason)}</div>` : ''}
+          ${u.restrictedReason ? `<div class="muted">Kısıtlama sebebi: ${esc(u.restrictedReason)}</div>` : ''}
         </div>
-        <button data-act="open" class="${u.suspended ? 'sec' : 'bad'}" style="flex:0 0 auto">${u.suspended ? 'Yönet' : 'Askıya al'}</button>
+        <button data-act="open" class="sec" style="flex:0 0 auto">Yönet</button>
       </div>
       <div class="panel hidden"></div>
     </div>`).join('');
@@ -161,55 +190,100 @@ function renderUsers() {
 }
 
 function openPanel(card) {
-  const uid = card.dataset.uid, u = users.find(x => x.id === uid), p = card.querySelector('.panel');
+  const u = users.find(x => x.id === card.dataset.uid), p = card.querySelector('.panel');
   if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
   p.classList.remove('hidden');
-  if (u.suspended) {
-    p.innerHTML = `<label>Kullanıcıya gösterilen mesaj</label><pre>${esc(u.suspendedMessage || DEFAULT_MSG)}</pre>
-      <div class="row"><button class="ok" data-do="lift">Askıyı kaldır</button></div>`;
-    p.querySelector('[data-do=lift]').onclick = () => lift(u);
-  } else {
-    p.innerHTML = `
-      <label>Sebep (yalnızca yönetim görür, ör. hakaret / tehdit)</label>
-      <input data-f="reason" placeholder="Sebep">
-      <label>Kullanıcıya gösterilecek uyarı mesajı</label>
-      <textarea data-f="message">${esc(DEFAULT_MSG)}</textarea>
-      <div style="margin-top:10px"><button class="bad" data-do="suspend">Hesabı askıya al</button></div>`;
-    p.querySelector('[data-do=suspend]').onclick = () => suspend(u, p);
-  }
+  p.innerHTML = `
+    <label>Sebep (yalnızca yönetim görür)</label>
+    <input data-f="reason" placeholder="ör. hakaret / tehdit">
+    <label>Kullanıcıya gösterilecek mesaj (boşsa varsayılan)</label>
+    <textarea data-f="message" placeholder="Boş bırakırsan hazır mesaj kullanılır"></textarea>
+    <label>Kısıtlama süresi (gün)</label>
+    <input data-f="days" type="number" min="1" max="365" value="7">
+    <div class="row" style="margin-top:10px">
+      <button class="sec" data-do="warn">Uyar</button>
+      <button class="warn" data-do="restrict">Kısıtla</button>
+      <button class="bad" data-do="suspend">Askıya al</button>
+      <button class="bad" data-do="ban">Kalıcı yasakla</button>
+      ${isLimited(u) ? '<button class="ok" data-do="lift">Tüm kısıtları kaldır</button>' : ''}
+    </div>
+    <div style="margin-top:10px"><button class="sec" data-do="posts">Gönderilerini göster / sil</button></div>
+    <div data-posts class="hidden" style="margin-top:10px"></div>`;
+  const val = f => p.querySelector(`[data-f=${f}]`).value.trim();
+  const need = () => { const r = val('reason'); if (!r) { say('Önce bir sebep yaz (kayıt için gerekli).', 'bad'); return null; } return r; };
+  const act = n => p.querySelector(`[data-do=${n}]`);
+  act('warn').onclick = () => { const r = need(); if (r) warn(u, r, val('message')); };
+  act('restrict').onclick = () => { const r = need(); if (r) restrict(u, r, val('message'), parseInt(val('days'), 10)); };
+  act('suspend').onclick = () => { const r = need(); if (r) suspend(u, r, val('message'), false); };
+  act('ban').onclick = () => { const r = need(); if (r) suspend(u, r, val('message'), true); };
+  const l = act('lift'); if (l) l.onclick = () => lift(u);
+  act('posts').onclick = () => showPosts(u, p.querySelector('[data-posts]'));
 }
 
-async function suspend(u, p) {
-  const reason = p.querySelector('[data-f=reason]').value.trim();
-  const message = p.querySelector('[data-f=message]').value.trim() || DEFAULT_MSG;
-  if (!reason) { say('Lütfen bir sebep yaz (kayıt için gerekli).', 'bad'); return; }
-  if (!confirm(`@${u.username || u.id} askıya alınsın mı?`)) return;
-  try {
+async function run(fn, okMsg) {
+  try { await fn(); say(okMsg, 'ok'); await loadUsers(); }
+  catch (e) { say('İşlem başarısız: ' + e.message, 'bad'); }
+}
+const label = u => '@' + (u.username || u.id);
+
+async function warn(u, reason, message) {
+  if (!confirm(label(u) + ' uyarılsın mı?')) return;
+  const text = message || 'Topluluk kurallarını ihlal ettiniz. Tekrarı hâlinde hesabınız kısıtlanabilir.';
+  await run(async () => {
+    await updateDoc(doc(db, 'users', u.id), { warnCount: increment(1), lastWarning: text });
+    await notify(u.id, text); await logAction('warn', u.id, reason);
+  }, 'Kullanıcı uyarıldı.');
+}
+async function restrict(u, reason, message, days) {
+  if (!(days >= 1 && days <= 365)) { say('Gün sayısı 1-365 arasında olmalı.', 'bad'); return; }
+  if (!confirm(`${label(u)} ${days} gün kısıtlansın mı? (okuyabilir, yazamaz)`)) return;
+  const text = message || `Hesabınız ${days} gün boyunca kısıtlandı: gönderi, yorum ve beğeni yapamazsınız.`;
+  await run(async () => {
+    await updateDoc(doc(db, 'users', u.id), { restrictedUntil: Date.now() + days * DAY, restrictedReason: reason });
+    await notify(u.id, text); await logAction('restrict', u.id, `${days} gün · ${reason}`);
+  }, 'Kullanıcı kısıtlandı.');
+}
+async function suspend(u, reason, message, permanent) {
+  if (!confirm(`${label(u)} ${permanent ? 'KALICI OLARAK YASAKLANSIN' : 'askıya alınsın'} mı?`)) return;
+  const text = message || (permanent ? BAN_MSG : SUSP_MSG);
+  await run(async () => {
     await updateDoc(doc(db, 'users', u.id), {
-      suspended: true, suspendedReason: reason, suspendedMessage: message,
+      suspended: true, banned: !!permanent, suspendedReason: reason, suspendedMessage: text,
       suspendedAt: serverTimestamp(), suspendedBy: me.uid
     });
-    // Bildirim kutusuna da uyarıyı bırak (kurallar izin vermezse sessizce geçilir).
-    await addDoc(collection(db, 'notifications'), {
-      toUid: u.id, fromUid: me.uid, fromName: 'Forever Yönetimi', type: 'suspension',
-      text: message, read: false, createdAt: serverTimestamp()
-    }).catch(() => {});
-    say('Hesap askıya alındı. Kullanıcı bir sonraki girişte uyarıyı görecek.', 'ok');
-    await loadUsers();
-  } catch (e) { say('İşlem başarısız: ' + e.message, 'bad'); }
+    await notify(u.id, text); await logAction(permanent ? 'ban' : 'suspend', u.id, reason);
+  }, permanent ? 'Kullanıcı kalıcı olarak yasaklandı.' : 'Hesap askıya alındı.');
 }
-
 async function lift(u) {
-  if (!confirm('Askı kaldırılsın mı?')) return;
-  try {
+  if (!confirm(label(u) + ' için tüm kısıtlar kaldırılsın mı?')) return;
+  await run(async () => {
     await updateDoc(doc(db, 'users', u.id), {
-      suspended: false, suspendedReason: deleteField(), suspendedMessage: deleteField(),
-      suspendedAt: deleteField(), suspendedBy: deleteField()
+      suspended: false, banned: false, suspendedReason: deleteField(), suspendedMessage: deleteField(),
+      suspendedAt: deleteField(), suspendedBy: deleteField(),
+      restrictedUntil: deleteField(), restrictedReason: deleteField()
     });
-    say('Askı kaldırıldı.', 'ok'); await loadUsers();
-  } catch (e) { say('İşlem başarısız: ' + e.message, 'bad'); }
+    await logAction('lift', u.id, '');
+  }, 'Kısıtlar kaldırıldı.');
 }
 
+async function showPosts(u, box) {
+  box.classList.remove('hidden'); box.innerHTML = '<p class="muted">Yükleniyor…</p>';
+  try {
+    const s = await getDocs(query(collection(db, 'posts'), where('userId', '==', u.id), limit(50)));
+    const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    if (!rows.length) { box.innerHTML = '<p class="muted">Gönderi yok.</p>'; return; }
+    box.innerHTML = rows.map(r => `
+      <div class="card"><pre>${esc(String(r.content || '').slice(0, 400))}</pre>
+        <button class="bad" data-del="${esc(r.id)}">Gönderiyi sil</button></div>`).join('');
+    box.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+      if (!confirm('Bu gönderi silinsin mi?')) return;
+      try { await deleteDoc(doc(db, 'posts', b.dataset.del)); await logAction('delete_post', u.id, b.dataset.del); b.closest('.card').remove(); }
+      catch (e) { say('Silinemedi: ' + e.message, 'bad'); }
+    });
+  } catch (e) { box.innerHTML = ''; say('Gönderiler okunamadı: ' + e.message, 'bad'); }
+}
+
+// ---------- şikayetler ----------
 async function loadReports() {
   $('reportList').innerHTML = '<p class="muted">Yükleniyor…</p>';
   try {
@@ -223,13 +297,41 @@ async function loadReports() {
         <strong> ${esc(r.type || '')}</strong> <span class="muted">hedef: ${esc(r.targetId || '')}</span>
         <pre>${esc(r.reason || '')}</pre>
         <div class="muted">bildiren: ${esc(r.reporterId || '')} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div>
-        ${r.status === 'open' ? `<div style="margin-top:8px"><button class="sec" data-rid="${esc(r.id)}">Çözüldü say</button></div>` : ''}
+        <div class="row" style="margin-top:8px">
+          ${r.type === 'post' ? `<button class="bad" data-delpost="${esc(r.targetId)}" data-rid="${esc(r.id)}">Gönderiyi sil</button>` : ''}
+          ${r.status === 'open' ? `<button class="sec" data-rid="${esc(r.id)}" data-resolve="1">Çözüldü say</button>` : ''}
+        </div>
       </div>`).join('');
-    document.querySelectorAll('#reportList [data-rid]').forEach(b => b.onclick = async () => {
-      try { await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' }); loadReports(); }
+    document.querySelectorAll('#reportList [data-resolve]').forEach(b => b.onclick = async () => {
+      try { await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' }); await logAction('resolve_report', '', b.dataset.rid); loadReports(); }
       catch (e) { say('Güncellenemedi: ' + e.message, 'bad'); }
     });
-  } catch (e) { $('reportList').innerHTML = ''; say('Şikayetler okunamadı (kurallar izin vermiyor olabilir): ' + e.message, 'bad'); }
+    document.querySelectorAll('#reportList [data-delpost]').forEach(b => b.onclick = async () => {
+      if (!confirm('Şikayet edilen gönderi silinsin mi?')) return;
+      try {
+        await deleteDoc(doc(db, 'posts', b.dataset.delpost));
+        await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' });
+        await logAction('delete_post', '', b.dataset.delpost); loadReports();
+      } catch (e) { say('Silinemedi: ' + e.message, 'bad'); }
+    });
+  } catch (e) { $('reportList').innerHTML = ''; say('Şikayetler okunamadı: ' + e.message, 'bad'); }
+}
+
+// ---------- kayıtlar ----------
+async function loadLogs() {
+  $('logList').innerHTML = '<p class="muted">Yükleniyor…</p>';
+  try {
+    const s = await getDocs(query(collection(db, 'modlogs'), limit(300)));
+    const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    if (!rows.length) { $('logList').innerHTML = '<p class="muted">Henüz kayıt yok.</p>'; return; }
+    $('logList').innerHTML = rows.map(r => `
+      <div class="card"><strong>${esc(r.action)}</strong> <span class="muted">${esc(r.targetUid)}</span>
+        <pre>${esc(r.detail)}</pre>
+        <div class="muted">${esc(r.adminEmail)} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div></div>`).join('');
+  } catch (e) { $('logList').innerHTML = ''; say('Kayıtlar okunamadı: ' + e.message, 'bad'); }
+}
+</script>ch (e) { $('reportList').innerHTML = ''; say('Şikayetler okunamadı (kurallar izin vermiyor olabilir): ' + e.message, 'bad'); }
 }
 </script>
 </body>

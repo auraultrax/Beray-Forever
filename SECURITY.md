@@ -213,3 +213,14 @@ Bu kurallar uygulanmadan uygulamayı canlıya alma.
 5. Askı kaldırmak için aynı panelden **Askıyı kaldır**.
 
 Not: Askı, hesabı silmez ve oturumu anında düşürmez; uygulama açılışında/girişte uygulanır, yazma engeli ise kurallarla sunucuda zorlanır.
+
+---
+
+## 6. GÜNCEL kurallar: `firestore.rules`
+
+Bu dosya yukarıdaki örnek kuralların **yerine geçer** (güncel olan budur). Firebase Console → Firestore → Rules'a tamamını yapıştırıp Publish et.
+
+- Askıdaki, yasaklı ya da kısıtlı hesap gönderi/yorum/beğeni/hikâye yazamaz (sunucuda zorlanır).
+- Kullanıcı kendi moderasyon alanlarına (`suspended`, `banned`, `restrictedUntil`, `warnCount`…) dokunamaz.
+- Yönetici işlemleri `modlogs` koleksiyonuna silinemez/değiştirilemez şekilde kaydedilir.
+- Kullanılmayan tüm koleksiyonlar kapalıdır.
