@@ -21,7 +21,7 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 9. Database → Replication / Realtime alanında forever_documents tablosunun supabase_realtime yayınına eklendiğini doğrula.
 10. Siteyi HTTPS üzerinden yayımla. Google OAuth ve PWA özellikleri için canlı dağıtım adresini kullan.
 
-> Bu depo için canlı durum: FOREVER adlı Supabase projesinde ilk şema, güvenlik sertleştirmesi ve RLS performans düzeltmesi olmak üzere üç migration uygulanmış durumda. Google OAuth sağlayıcısı ise proje panelinde henüz etkin değil; Google Client ID/Secret girilip kaydedilmeden Google girişinin çalışması beklenmez.
+> Bu depo için canlı durum: FOREVER adlı Supabase projesinde ilk şema, güvenlik sertleştirmesi, RLS performans iyileştirmesi, yorum sahipliği, anket oy bütünlüğü ve Storage klasör kısıtlamaları olmak üzere altı migration uygulanmış durumda. Google OAuth sağlayıcısı ise proje panelinde henüz etkin değil; Google Client ID/Secret girilip kaydedilmeden Google girişinin çalışması beklenmez.
 
 ## Yapı
 
@@ -44,8 +44,9 @@ IP adresi yalnızca Supabase/API katmanının ilgili istek başlıklarını sağ
 - Standart üyeler fotoğraf veya video içeren gönderi paylaşır; açıklama isteğe bağlıdır.
 - Yalnızca metin gönderisi Plus üyelere açıktır.
 - Günlük toplam fotoğraf/video yükleme sınırı standart üyelerde 5, Plus üyelerde 10'dur. Gönderiler ve hikâyeler aynı kotayı paylaşır.
-- Gönderi medyası forever-media bucket'ında saklanır ve herkese açık görüntülenebilir.
-- Hikâye medyası forever-stories adlı özel bucket'ta saklanır. Hikâyeler yalnızca sahibine ve onu takip eden oturum açmış kullanıcılara imzalı bağlantıyla gösterilir.
+- Gönderi medyası forever-media bucket'ında saklanır ve herkese açık görüntülenebilir. Bu bucket'taki dosya URL'lerini bilen kişiler dosyayı doğrudan açabilir.
+- forever-media yüklemeleri yalnızca posts, drawings ve stickers klasörlerine kabul edilir; çizim ve çıkartma yüklemeleri Plus yetkisi gerektirir.
+- Hikâye medyası forever-stories adlı özel bucket'ta saklanır. Hikâyeler yalnızca sahibine ve onu takip eden oturum açmış kullanıcılara imzalı bağlantıyla gösterilir. Üretilen imzalı bağlantı 24 saat geçerlidir.
 - Varsayılan dosya boyutu üst sınırı 25 MB'dır.
 
 ## Forever Plus
@@ -71,7 +72,7 @@ Panelden kullanıcıyı askıya alabilir/yasaklayabilir, şikâyetleri çözebil
 
 ## Güvenlik
 
-Yetki kontrolü ve kayıt fonksiyonlarının ayrıcalıklı uygulamaları API'ye açık olmayan private şemasında tutulur. public şemasındaki uygulama RPC'leri SECURITY INVOKER olarak çalışır. Supabase RLS ve Storage politikaları erişimi sınırlar.
+Yetki kontrolü ve kayıt fonksiyonlarının ayrıcalıklı uygulamaları API'ye açık olmayan private şemasında tutulur. public şemasındaki uygulama RPC'leri SECURITY INVOKER olarak çalışır. Supabase RLS ve Storage politikaları erişimi sınırlar. Yorum sahibi doğrulaması ve anket oy sayımlarının veritabanında hesaplanması istemci verisine güvenilmesini önler.
 
 ## Mevcut Firebase verileri
 
