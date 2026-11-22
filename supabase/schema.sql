@@ -456,6 +456,27 @@ values (
 on conflict(id) do update set public=true,file_size_limit=26214400,
   allowed_mime_types=excluded.allowed_mime_types;
 
+create or replace function public.can_upload_forever_media()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, storage
+as $
+  select auth.uid() is not null and (
+    public.is_forever_admin()
+    or (
+      select count(*) < case when public.is_forever_plus() then 10 else 5 end
+      from storage.objects o
+      where o.bucket_id = 'forever-media'
+        and (storage.foldername(o.name))[1] = auth.uid()::text
+        and (storage.foldername(o.name))[2] in ('posts','stories')
+        and o.created_at >= date_trunc('day', now())
+    )
+  );
+$;
+grant execute on function public.can_upload_forever_media() to authenticated;
+
 drop policy if exists forever_media_public_read on storage.objects;
 create policy forever_media_public_read on storage.objects
 for select using (bucket_id='forever-media');
@@ -466,6 +487,10 @@ for insert to authenticated
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
+  and (
+    (storage.foldername(name))[2] not in ('posts','stories')
+    or public.can_upload_forever_media()
+  )
 );
 
 drop policy if exists forever_media_owner_update on storage.objects;
