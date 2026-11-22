@@ -198,6 +198,7 @@ body.fx-leaderboard-view #roomsPanel { display:none !important; }
 .podium-avatar { width:42px; height:42px; display:grid; place-items:center; margin-bottom:8px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; font-weight:800; }
 .podium-name { display:flex; align-items:center; justify-content:center; gap:4px; padding:0 8px; margin-bottom:4px; text-align:center; word-break:break-word; font-size:.9rem; font-weight:800; }
 .podium-votes { color:var(--text-muted); font-size:.75rem; font-weight:600; }
+.podium-placeholder { width:30%; opacity:0; }
 .leaderboard-list { display:grid; gap:8px; }
 .leaderboard-list .aura-x-user-row { border-radius:12px; }
 .aura-x-directory-card { width:min(520px,100%); max-height:min(78vh,760px); overflow:hidden; display:flex; flex-direction:column; gap:12px; }
@@ -245,7 +246,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),textarea,sel
 .empty { color:var(--text-muted); }
 .status-ok { color:var(--success); }
 .status-warn { color:var(--gold); }
-.foot { padding:16px; color:var(--text-muted); text-align:center; }
+.foot { display:none !important; padding:16px; color:var(--text-muted); text-align:center; }
 .foot strong { color:var(--primary); }
 
 /* Original Aura X mobile bottom bar: icon-only, edge-to-edge and safe-area aware. */
