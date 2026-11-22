@@ -1,226 +1,40 @@
-# Forever — Güvenlik Politikası ve Zorunlu Kurallar
+# Forever · Güvenlik notları
 
-**Öncelik: Kullanıcı güvenliği forever.**
+Bu dalda uygulama backend'i Supabase Auth, Postgres RLS, Realtime, Storage ve Edge Functions üzerine kuruludur.
 
-Bu belge, uygulamayı gerçek kullanıcılarla açmadan önce **mutlaka** uygulanması gereken güvenlik önlemlerini listeler. İstemci tarafı (tarayıcı) asla tek başına güvenlik sağlamaz.
+## Anahtar yönetimi
 
----
+- supabase-config.js içindeki URL ve publishable key tarayıcıda kullanılmak üzere tasarlanmıştır. Güvenlik sınırı RLS politikalarıdır.
+- Secret API key, legacy service_role, veritabanı parolası ve IP şifreleme anahtarları HTML, JavaScript, GitHub deposu veya kullanıcıya açık loglara konmaz.
+- Edge Functions Supabase'in sağladığı secret key ortam değişkenini kullanır. IP_LOG_ENCRYPTION_KEY ve IP_HASH_SECRET yalnızca Edge Function Secrets içinde saklanır.
 
-## 1. Firebase Firestore Security Rules (ZORUNLU)
+## Veri erişimi
 
-Firebase Console → Firestore → Rules kısmına aşağıdaki kuralları (veya daha sıkı versiyonunu) koy:
+- Kullanıcı e-postası Supabase Auth içinde kalır; herkese açık profiles tablosuna yazılmaz.
+- Doğum tarihi private_profiles tablosunda yalnızca hesap sahibine açıktır.
+- Plus rolü veritabanı RPC'si ile verilir. Tarayıcı kendi plus_member alanını değiştiremez.
+- Oda oluşturma ve katılım sınırları veritabanı fonksiyonlarında doğrulanır.
+- Hikâye tabloları ve private Storage bucket RLS ile takipçi görünürlüğü sağlar.
+- Video süresi Edge Function içinde MP4 dosyasından okunur; Plus üyeliği ve günlük 180 saniye kota sunucuda denetlenir.
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
+## IP kayıtları
 
-    // Yardımcı fonksiyonlar
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
-    }
-    // Yönetici: Firestore'da admins/{uid} belgesi olan hesap (belgeyi yalnızca Firebase Console'dan ekle)
-    function isAdmin() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-    // Askıya alınmış hesap yazamaz
-    function isSuspended() {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true;
-    }
-    function touchesSuspension() {
-      return request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['suspended','suspendedReason','suspendedMessage','suspendedAt','suspendedBy']);
-    }
-    function isValidUsername(name) {
-      return name is string
-        && name.size() >= 3
-        && name.size() <= 24
-        && name.matches('^[a-z0-9_]+$');
-    }
-    function isValidPostContent(c) {
-      return c is string && c.size() <= 2000;
-    }
-    function isValidComment(c) {
-      return c is string && c.size() >= 1 && c.size() <= 500;
-    }
+- IP adresi istemciden JSON alanı olarak kabul edilmez; Edge Function'ın aldığı ağ başlıklarından belirlenir.
+- IP AES-256-GCM ile şifrelenir. Ayrı HMAC özeti olayları ilişkilendirmek için saklanır.
+- Şifrelenmiş IP alanı doğrudan istemcilere açılmaz. Yönetici rolü doğrulanmadan IP çözülemez.
+- security_events kayıtları 30 gün sonra temizlenmelidir. Supabase Cron ile public.cleanup_security_events() fonksiyonunu günlük çalıştır.
+- IP kaydı ve saklama süresi gizlilik metninde gerçek uygulamayla uyumlu şekilde açıklanmalıdır.
 
-    // Kullanıcı profilleri
-    match /admins/{uid} {
-      allow read: if isOwner(uid);               // yalnızca kendi yönetici kaydını görür
-      allow write: if false;                     // sadece Firebase Console
-    }
+## Yayın öncesi güvenlik kontrolü
 
-    match /users/{userId} {
-      allow read: if true;                       // herkese açık profil
-      allow create: if isOwner(userId)
-                    && !('suspended' in request.resource.data)
-                    && isValidUsername(request.resource.data.username)
-                    && request.resource.data.uid == userId;
-      // Sahibi kendi askı alanlarına DOKUNAMAZ; yönetici dokunabilir.
-      allow update: if (isOwner(userId) && !touchesSuspension()
-                    && (!('username' in request.resource.data)
-                        || isValidUsername(request.resource.data.username)))
-                    || isAdmin();
-      allow delete: if isOwner(userId);
-    }
+1. SQL dosyasını temiz bir test Supabase projesinde çalıştır ve migration hatalarını gider.
+2. RLS etkin her tablo için anonim, normal kullanıcı ve admin erişimini ayrı test et.
+3. Normal kullanıcının Plus yetkisi, admin rolü, başka kullanıcının özel profili veya IP kayıtlarını değiştiremediğini doğrula.
+4. Hikâyelerin takipçi olmayan hesaplardan ve private bucket içeriğinin herkese açık URL ile açılamadığını test et.
+5. Video için sahte süre metadata'sı, 50 MB üstü dosya, Normal kullanıcı ve günlük kota aşımı senaryolarını dene.
+6. Edge Function Secrets içine rastgele anahtarlar gir; bu değerleri repoya commit etme.
+7. privacy.html içindeki işletme ve iletişim bilgilerini doldur ve gerçek veri işleme uygulamasıyla karşılaştır.
 
-    // Kullanıcı adı benzersizliği için ayrı koleksiyon (önerilir)
-    match /usernames/{username} {
-      allow read: if true;
-      allow create: if isSignedIn()
-                    && isValidUsername(username)
-                    && request.resource.data.uid == request.auth.uid;
-      allow delete: if isSignedIn()
-                    && resource.data.uid == request.auth.uid;
-    }
+## Önemli geçiş uyarısı
 
-    // Gönderiler
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if isSignedIn() && !isSuspended()
-                    && request.resource.data.userId == request.auth.uid
-                    && isValidPostContent(request.resource.data.content)
-                    && request.resource.data.keys().hasAll(['userId', 'authorName', 'content', 'createdAt']);
-      allow update: if isSignedIn() && (
-                      // Sadece sahibi içerik/medya güncelleyebilir
-                      (resource.data.userId == request.auth.uid)
-                      ||
-                      // Beğeni / yorum ekleme-çıkarma (arrayUnion / arrayRemove)
-                      (request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['likes', 'comments', 'likeCount']))
-                    );
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Hikâyeler (24 saatlik)
-    match /stories/{storyId} {
-      allow read: if true;
-      allow create: if isSignedIn()
-                    && request.resource.data.userId == request.auth.uid;
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Engellenen kullanıcılar
-    match /blocks/{blockId} {
-      allow read: if isSignedIn() && resource.data.blockerId == request.auth.uid;
-      allow create: if isSignedIn()
-                    && request.resource.data.blockerId == request.auth.uid
-                    && request.resource.data.blockedId != request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.blockerId == request.auth.uid;
-    }
-
-    // Şikayetler (sadece yazma, okuma sadece moderatör — şimdilik kapalı)
-    match /reports/{reportId} {
-      allow create: if isSignedIn()
-                    && request.resource.data.reporterId == request.auth.uid
-                    && request.resource.data.reason is string
-                    && request.resource.data.reason.size() <= 500;
-      allow read, update: if isAdmin();     // yönetim paneli (admin.html)
-      allow delete: if false;
-    }
-
-    // Kaydedilen gönderiler
-    match /saves/{saveId} {
-      allow read, write: if isSignedIn()
-                         && resource == null
-                            ? request.resource.data.userId == request.auth.uid
-                            : resource.data.userId == request.auth.uid;
-    }
-  }
-}
-```
-
-**Önemli:** Yukarıdaki kurallar olmadan istemci tarafındaki tüm kontroller kolayca atlanır.
-
----
-
-## 2. Firebase Authentication
-
-- E-posta/şifre + Google sağlayıcılarını açık tut.
-- Şifre sıfırlama e-postası zaten destekleniyor.
-- **App Check** (reCAPTCHA / Play Integrity) mümkünse etkinleştir.
-- Yetkisiz domain’leri Authentication → Settings → Authorized domains listesinden kaldır.
-
----
-
-## 3. Yükleme Sunucusu (upload-server)
-
-- `UPLOAD_TOKEN` ortam değişkeni ile koru (üretimde zorunlu).
-- `MAX_UPLOAD_BYTES` ile boyut sınırı koy.
-- `CORS_ORIGIN` ile sadece kendi domain’ini izin ver.
-- Sunucuyu asla açık internete (0.0.0.0 + token’sız) bırakma.
-- Mümkünse Cloudflare R2 / Backblaze / Firebase Storage’a geç (ücretsiz kotayı aşınca).
-
-Örnek güvenli başlatma:
-
-```bash
-UPLOAD_TOKEN="çok-güçlü-rastgele-anahtar" \
-MAX_UPLOAD_BYTES=5242880 \
-CORS_ORIGIN="https://senin-domain.com" \
-node server.mjs
-```
-
-Forever arayüzünde yükleme URL’sinin yanına token girme alanı eklenebilir (localStorage’da saklanır, asla koda gömülmez).
-
----
-
-## 4. İstemci Tarafı (index.html) Güvenlik Katmanları
-
-Zaten mevcut olanlar:
-- `escapeHTML` ile XSS koruması
-- Medya sıkıştırma + boyut sınırı
-- Auth state kontrolü
-
-Eklenen / güçlendirilenler:
-- Kullanıcı adı format + benzersizlik kontrolü
-- Gönderi / yorum karakter limiti
-- İstemci tarafı rate-limit (spam engeli)
-- Şikayet (report) ve engelleme (block) akışı
-- Kaydedilen gönderiler (sadece kendi kullanıcısına)
-- Tüm kullanıcı girdilerinde uzunluk + tip doğrulama
-
----
-
-## 5. Genel Tavsiyeler
-
-1. Gerçek kullanıcı verisiyle test etmeden önce **ayrı bir Firebase test projesi** kullan.
-2. Production’da `apiKey` gizli değildir; güvenlik **Rules + App Check + Auth** ile sağlanır.
-3. Kullanım şartları + gizlilik politikası + hesap silme akışı ekle.
-4. Moderasyon paneli olmadan topluluk büyütme.
-5. Log’larda hassas veri (şifre, token) tutma.
-
----
-
-**Güvenlik bizim için forever.**
-Bu kurallar uygulanmadan uygulamayı canlıya alma.
-
----
-
-## 5. Yönetim paneli (admin.html) ve hesap askıya alma
-
-1. Firebase Console → Authentication'da yönetici hesabını oluştur (e-posta/şifre), UID'sini kopyala.
-2. Firestore → `admins` koleksiyonu → belge kimliği = o UID (içine herhangi bir alan, ör. `role: "admin"`).
-3. Yukarıdaki **güncel kuralları** Rules sekmesinde yayınla. Kurallar yayınlanmadan panel "izin yok" hatası verir ve
-   askıya alınan biri kendi askısını kaldırabilir.
-4. `admin.html` adresinden giriş yap → Kullanıcılar → ara → **Askıya al** → sebep + uyarı mesajı → onayla.
-   Kullanıcı bir sonraki girişte "Hesabınız askıya alındı" ekranını görür; askıdayken gönderi oluşturamaz (kural).
-5. Askı kaldırmak için aynı panelden **Askıyı kaldır**.
-
-Not: Askı, hesabı silmez ve oturumu anında düşürmez; uygulama açılışında/girişte uygulanır, yazma engeli ise kurallarla sunucuda zorlanır.
-
----
-
-## 6. GÜNCEL kurallar: `firestore.rules`
-
-Bu dosya yukarıdaki örnek kuralların **yerine geçer** (güncel olan budur). Firebase Console → Firestore → Rules'a tamamını yapıştırıp Publish et.
-
-- Askıdaki, yasaklı ya da kısıtlı hesap gönderi/yorum/beğeni/hikâye yazamaz (sunucuda zorlanır).
-- Kullanıcı kendi moderasyon alanlarına (`suspended`, `banned`, `restrictedUntil`, `warnCount`…) dokunamaz.
-- Yönetici işlemleri `modlogs` koleksiyonuna silinemez/değiştirilemez şekilde kaydedilir.
-- Kullanılmayan tüm koleksiyonlar kapalıdır.
+Firebase Auth kullanıcıları/parolaları ve Firestore verileri otomatik taşınmaz. Firebase verilerini veya projeyi, Supabase Auth kullanıcı eşlemesi, veri aktarımı ve geri dönüş planı doğrulanmadan silme.

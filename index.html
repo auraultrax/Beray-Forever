@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#8b5cf6">
-  <meta name="description" content="Forever by Beray — yakın hisset, ışık yak, kendi topluluğunu kur. Telif kopyası değil, özgün sosyal alan.">
+  <meta name="theme-color" content="#047857">
+  <meta name="description" content="Forever Plus — zümrüt temalı topluluk ve paylaşım platformu.">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Forever">
-  <title>Forever · Beray</title>
+  <meta name="apple-mobile-web-app-title" content="Forever Plus">
+  <title>Forever Plus · Beray</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
@@ -16,22 +16,22 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg: #06060f;
-      --surface: rgba(22, 18, 40, 0.55);
-      --surface2: rgba(30, 24, 55, 0.65);
+      --bg: #04110c;
+      --surface: rgba(8, 31, 22, 0.72);
+      --surface2: rgba(10, 42, 29, 0.82);
       --glass: rgba(255, 255, 255, 0.06);
-      --glass-border: rgba(167, 139, 250, 0.22);
-      --line: rgba(167, 139, 250, 0.12);
-      --text: #f4f0ff;
-      --muted: #a39bb8;
-      --primary: #8b5cf6;
-      --primary2: #c4b5fd;
-      --neon: #d946ef;
-      --neon2: #22d3ee;
+      --glass-border: rgba(52, 211, 153, 0.22);
+      --line: rgba(52, 211, 153, 0.14);
+      --text: #ecfdf5;
+      --muted: #9bb8aa;
+      --primary: #059669;
+      --primary2: #a7f3d0;
+      --neon: #34d399;
+      --neon2: #6ee7b7;
       --danger: #fb7185;
       --ok: #34d399;
       --radius: 18px;
-      --shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(167,139,250,.08);
+      --shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(52,211,153,.08);
       --glow: 0 0 20px rgba(139, 92, 246, 0.35), 0 0 40px rgba(217, 70, 239, 0.15);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,9 +48,9 @@
       content: "";
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background:
-        radial-gradient(ellipse 90% 60% at 50% -15%, rgba(139,92,246,.28), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 100% 20%, rgba(217,70,239,.12), transparent 45%),
-        radial-gradient(ellipse 40% 35% at 0% 80%, rgba(34,211,238,.08), transparent 40%);
+        radial-gradient(ellipse 90% 60% at 50% -15%, rgba(16,185,129,.28), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 100% 20%, rgba(52,211,153,.12), transparent 45%),
+        radial-gradient(ellipse 40% 35% at 0% 80%, rgba(110,231,183,.08), transparent 40%);
       animation: aurora 18s ease-in-out infinite alternate;
     }
     @keyframes aurora {
@@ -62,16 +62,16 @@
       50% { transform: translateY(-6px); }
     }
     @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 12px rgba(139,92,246,.4), 0 0 24px rgba(217,70,239,.15); }
-      50% { box-shadow: 0 0 20px rgba(139,92,246,.65), 0 0 40px rgba(217,70,239,.3); }
+      0%, 100% { box-shadow: 0 0 12px rgba(16,185,129,.4), 0 0 24px rgba(52,211,153,.15); }
+      50% { box-shadow: 0 0 20px rgba(16,185,129,.65), 0 0 40px rgba(52,211,153,.3); }
     }
     @keyframes fadeSlideUp {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
     @keyframes neonBorder {
-      0%, 100% { border-color: rgba(139,92,246,.35); }
-      50% { border-color: rgba(217,70,239,.55); }
+      0%, 100% { border-color: rgba(16,185,129,.35); }
+      50% { border-color: rgba(52,211,153,.55); }
     }
     @keyframes shimmer {
       0% { background-position: -200% 0; }
@@ -93,10 +93,10 @@
       position: sticky; top: 0; z-index: 40;
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       padding: 12px 0; margin-bottom: 10px;
-      background: rgba(6,6,15,.72);
+      background: rgba(4,17,12,.84);
       backdrop-filter: blur(20px) saturate(1.5);
       -webkit-backdrop-filter: blur(20px) saturate(1.5);
-      border-bottom: 1px solid rgba(167,139,250,.18);
+      border-bottom: 1px solid rgba(52,211,153,.18);
       box-shadow: 0 4px 24px rgba(0,0,0,.25);
     }
     .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -109,7 +109,7 @@
     .brand-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .brand-text strong {
       display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em;
-      background: linear-gradient(90deg, #c4b5fd, #f0abfc, #22d3ee);
+      background: linear-gradient(90deg, #a7f3d0, #6ee7b7, #6ee7b7);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .brand-text span { font-size: .7rem; color: var(--muted); font-weight: 600; }
@@ -119,12 +119,12 @@
       display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px;
       border-radius: 999px; transition: .2s ease;
     }
-    .user-chip:hover { border-color: rgba(217,70,239,.4); box-shadow: 0 0 16px rgba(139,92,246,.2); }
+    .user-chip:hover { border-color: rgba(52,211,153,.4); box-shadow: 0 0 16px rgba(16,185,129,.2); }
     .avatar {
       width: 34px; height: 34px; border-radius: 50%;
       background: linear-gradient(135deg, var(--primary), var(--neon));
       display: grid; place-items: center; font-weight: 800; font-size: .85rem; flex-shrink: 0;
-      box-shadow: 0 0 12px rgba(139,92,246,.45);
+      box-shadow: 0 0 12px rgba(16,185,129,.45);
     }
     .user-chip .meta { display: none; }
     @media (min-width: 520px) {
@@ -136,13 +136,13 @@
       border: 0; cursor: pointer; font-family: inherit; font-weight: 700; font-size: .82rem;
       border-radius: 14px; padding: 10px 16px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       transition: .22s cubic-bezier(.2,.8,.2,1);
-      background: linear-gradient(135deg, #7c3aed, #c026d3);
+      background: linear-gradient(135deg, #047857, #059669);
       color: #fff;
-      box-shadow: 0 4px 18px rgba(124,58,237,.4), 0 0 0 1px rgba(255,255,255,.08) inset;
+      box-shadow: 0 4px 18px rgba(16,185,129,.4), 0 0 0 1px rgba(255,255,255,.08) inset;
     }
     .btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(192,38,211,.5), 0 0 20px rgba(139,92,246,.35);
+      box-shadow: 0 8px 28px rgba(16,185,129,.5), 0 0 20px rgba(16,185,129,.35);
       filter: brightness(1.08);
     }
     .btn:active { transform: translateY(0); }
@@ -153,14 +153,14 @@
     }
     .btn-ghost:hover {
       color: var(--text);
-      border-color: rgba(167,139,250,.45);
-      box-shadow: 0 0 14px rgba(139,92,246,.2);
+      border-color: rgba(52,211,153,.45);
+      box-shadow: 0 0 14px rgba(16,185,129,.2);
     }
     .btn-icon {
       width: 40px; height: 40px; padding: 0; border-radius: 14px; color: var(--text);
       transition: .2s ease;
     }
-    .btn-icon:hover { box-shadow: 0 0 16px rgba(139,92,246,.3); color: var(--primary2); }
+    .btn-icon:hover { box-shadow: 0 0 16px rgba(16,185,129,.3); color: var(--primary2); }
 
     /* Cards — glass */
     .card {
@@ -171,8 +171,8 @@
       transition: border-color .25s, box-shadow .25s, transform .25s;
     }
     .card:hover {
-      border-color: rgba(167,139,250,.35);
-      box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 24px rgba(139,92,246,.12);
+      border-color: rgba(52,211,153,.35);
+      box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 24px rgba(16,185,129,.12);
     }
     .card.post:hover { transform: translateY(-2px); }
     .card h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
@@ -184,10 +184,10 @@
     .story-item:hover { transform: scale(1.06); }
     .story-ring {
       width: 66px; height: 66px; margin: 0 auto 6px; border-radius: 50%; padding: 2.5px;
-      background: linear-gradient(135deg, #8b5cf6, #d946ef, #22d3ee, #8b5cf6);
+      background: linear-gradient(135deg, #059669, #34d399, #6ee7b7, #059669);
       background-size: 200% 200%;
       animation: shimmer 4s linear infinite;
-      box-shadow: 0 0 16px rgba(217,70,239,.35);
+      box-shadow: 0 0 16px rgba(52,211,153,.35);
     }
     .story-ring > div, .story-ring img {
       width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
@@ -205,18 +205,18 @@
       transition: border-color .2s, box-shadow .2s;
     }
     .composer textarea:focus {
-      border-color: rgba(192,38,211,.5);
-      box-shadow: 0 0 0 3px rgba(139,92,246,.15), 0 0 20px rgba(139,92,246,.1);
+      border-color: rgba(16,185,129,.5);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.15), 0 0 20px rgba(16,185,129,.1);
     }
     .composer-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
     .composer-tools { display: flex; align-items: center; gap: 8px; }
     .file-btn {
       cursor: pointer; color: var(--primary2); font-size: .8rem; font-weight: 700;
       display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px;
-      border: 1px solid var(--glass-border); background: rgba(139,92,246,.08);
+      border: 1px solid var(--glass-border); background: rgba(16,185,129,.08);
       transition: .2s ease;
     }
-    .file-btn:hover { background: rgba(139,92,246,.18); box-shadow: 0 0 14px rgba(139,92,246,.25); }
+    .file-btn:hover { background: rgba(16,185,129,.18); box-shadow: 0 0 14px rgba(16,185,129,.25); }
     .file-btn input { display: none; }
     #postImagePreview, #storyImagePreview {
       display: none; margin-top: 10px; width: 100%; max-height: 220px; object-fit: cover;
@@ -243,16 +243,16 @@
       transition: .2s ease;
     }
     .post-actions button:hover {
-      color: var(--text); border-color: rgba(167,139,250,.5);
-      box-shadow: 0 0 14px rgba(139,92,246,.25);
+      color: var(--text); border-color: rgba(52,211,153,.5);
+      box-shadow: 0 0 14px rgba(16,185,129,.25);
     }
     .post-actions button.spark-btn {
-      color: #f0abfc;
-      border-color: rgba(217,70,239,.4);
+      color: #6ee7b7;
+      border-color: rgba(52,211,153,.4);
     }
     .post-actions button.spark-btn:hover {
-      box-shadow: 0 0 18px rgba(217,70,239,.4);
-      background: rgba(217,70,239,.12);
+      box-shadow: 0 0 18px rgba(52,211,153,.4);
+      background: rgba(52,211,153,.12);
     }
     .comments { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
     .comment { font-size: .8rem; margin-bottom: 6px; color: var(--muted); }
@@ -262,14 +262,14 @@
       flex: 1; border: 1px solid var(--glass-border); background: rgba(0,0,0,.25); color: var(--text);
       border-radius: 12px; padding: 9px 12px; font: inherit; font-size: .8rem; outline: none;
     }
-    .comment-row input:focus { border-color: rgba(192,38,211,.45); box-shadow: 0 0 0 2px rgba(139,92,246,.12); }
+    .comment-row input:focus { border-color: rgba(16,185,129,.45); box-shadow: 0 0 0 2px rgba(16,185,129,.12); }
 
     /* Footer */
     .foot {
       text-align: center; padding: 32px 8px; color: var(--muted); font-size: .75rem;
     }
     .foot strong {
-      background: linear-gradient(90deg, #c4b5fd, #f0abfc);
+      background: linear-gradient(90deg, #a7f3d0, #6ee7b7);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
 
@@ -281,7 +281,7 @@
     .modal-card {
       width: min(420px, 100%);
       border-radius: 22px; padding: 26px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 40px rgba(139,92,246,.12);
+      box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 40px rgba(16,185,129,.12);
       animation: fadeSlideUp .35s ease both;
     }
     .modal-card h2 {
@@ -298,8 +298,8 @@
       transition: .2s ease;
     }
     .field input:focus {
-      border-color: rgba(192,38,211,.55);
-      box-shadow: 0 0 0 3px rgba(139,92,246,.15);
+      border-color: rgba(16,185,129,.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.15);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -339,7 +339,7 @@
     .bg-slate-900 { background: var(--surface); }
     .bg-slate-950 { background: var(--surface2); }
     .bg-brand-600 { background: var(--primary); }
-    .bg-brand-500, .hover\:bg-brand-500:hover { background: #8b5cf6; }
+    .bg-brand-500, .hover\:bg-brand-500:hover { background: #059669; }
     .border { border-width: 1px; border-style: solid; }
     .border-slate-800, .border-slate-800\/50, .border-slate-800\/60 { border-color: var(--line); }
     .rounded-2xl { border-radius: 16px; }
@@ -415,14 +415,14 @@
       flex: 1; border: 1px solid var(--line); background: var(--surface);
       color: var(--text); border-radius: 12px; padding: 11px 14px; font: inherit; font-size: .85rem; outline: none;
     }
-    .search-bar input:focus { border-color: rgba(124,58,237,.5); }
+    .search-bar input:focus { border-color: rgba(16,185,129,.5); }
     .tag-chip {
       display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 999px;
-      background: rgba(124,58,237,.18); color: var(--primary2); font-size: .7rem; font-weight: 700; cursor: pointer;
+      background: rgba(16,185,129,.18); color: var(--primary2); font-size: .7rem; font-weight: 700; cursor: pointer;
     }
-    .tag-chip:hover { background: rgba(124,58,237,.3); }
+    .tag-chip:hover { background: rgba(16,185,129,.3); }
     .btn-follow {
-      border: 1px solid rgba(124,58,237,.45); background: transparent; color: var(--primary2);
+      border: 1px solid rgba(16,185,129,.45); background: transparent; color: var(--primary2);
       border-radius: 999px; padding: 4px 10px; font: inherit; font-size: .7rem; font-weight: 700; cursor: pointer;
     }
     .btn-follow.on { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -443,57 +443,48 @@
       border: 0; background: #ef4444; color: #fff; font-size: 10px; cursor: pointer; z-index: 2;
       display: grid; place-items: center;
     }
+    .plus-membership{margin-top:10px;padding:11px 13px;border:1px solid rgba(52,211,153,.3);border-radius:14px;background:linear-gradient(120deg,rgba(7,127,85,.18),rgba(255,255,255,.035));font-weight:800;font-size:.8rem;color:#a7f3d0}
+    .plus-apply-btn{background:linear-gradient(120deg,#064e3b,#10b981,#a7f3d0);color:#052417;box-shadow:0 9px 26px rgba(16,185,129,.22)}
+    .plus-hint{font-size:.68rem;color:var(--muted);text-align:center;margin-top:7px}
+    .room-create{display:grid;gap:8px;padding:12px;border:1px solid var(--glass-border);border-radius:16px;background:rgba(16,185,129,.06);margin-bottom:14px}
+    .room-create input,.room-send input{width:100%;min-width:0;border:1px solid var(--glass-border);background:rgba(0,0,0,.22);color:var(--text);border-radius:11px;padding:10px 12px;font:inherit;outline:none}
+    .room-create input:focus,.room-send input:focus{border-color:var(--primary2);box-shadow:0 0 0 3px rgba(16,185,129,.14)}
+    .room-card{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+    .room-card:last-child{border-bottom:0}
+    .room-mark{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(135deg,#047857,#34d399);color:#ecfdf5}
+    .room-messages{height:min(42vh,360px);overflow:auto;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);display:flex;flex-direction:column;gap:8px}
+    .room-message{max-width:88%;padding:9px 11px;border-radius:13px;background:var(--surface2);border:1px solid var(--line);font-size:.82rem;overflow-wrap:anywhere}
+    .room-message.mine{align-self:flex-end;background:rgba(16,185,129,.15);border-color:rgba(52,211,153,.28)}
+    .room-message small{display:block;color:var(--muted);font-size:.62rem;margin-bottom:3px}
+    .room-send{display:flex;gap:8px;margin-top:10px}.room-send input{flex:1}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
 <body>
 
-  <!-- Auth -->
+  <!-- Forever Plus kimlik doğrulama -->
   <div id="authModal" class="modal">
     <div class="modal-card">
       <div class="auth-logo">
-        <img src="./icons/icon-192.png" alt="Forever">
-        <div>
-          <strong style="font-size:1.2rem;">Forever</strong>
-          <div style="font-size:.72rem;color:var(--muted);">from <b style="color:var(--primary2);">Beray</b></div>
-        </div>
+        <img src="./icons/icon-192.png" alt="Forever Plus">
+        <div><strong style="font-size:1.2rem;">Forever <span style="color:var(--primary2);">Plus</span></strong><div style="font-size:.72rem;color:var(--muted);">from <b style="color:var(--primary2);">Beray</b></div></div>
       </div>
-      <p class="sub" style="text-align:center;">Anılarını paylaş, topluluğa bağlan.</p>
+      <p class="sub" style="text-align:center;">Zümrüt tonlarında, sana ait bir topluluk alanı.</p>
       <div id="authAlert" class="alert hidden"></div>
-      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google ile devam et</button>
-      <button type="button" class="btn" id="auraxLoginBtn" style="background:linear-gradient(135deg,#7c3aed,#c026d3);margin-top:8px;"><i class="fa-solid fa-link"></i> Aura X ile Giriş Yap</button>
-      <form id="auraxForm" class="hidden" style="margin-top:12px;">
-        <div class="field">
-          <label>Aura X kullanıcı adı</label>
-          <input type="text" id="auraxUser" autocomplete="username" placeholder="kullaniciadi" required>
-        </div>
-        <div class="field">
-          <label>Aura X şifresi</label>
-          <input type="password" id="auraxPass" autocomplete="current-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn btn-block">Aura X hesabımı doğrula →</button>
-      </form>
-      <div class="divider">veya e-posta</div>
+      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google hesabını seç</button>
+      <div class="divider">veya e-posta ve şifre</div>
       <form onsubmit="handleAuthSubmit(event)">
-        <div id="nameField" class="field hidden">
-          <label>Ad Soyad</label>
-          <input type="text" id="authName" autocomplete="name" placeholder="Adın">
-        </div>
-        <div class="field">
-          <label>E-posta</label>
-          <input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com">
-        </div>
-        <div class="field">
-          <label>Şifre</label>
-          <input type="password" id="authPassword" required autocomplete="current-password" placeholder="••••••••" minlength="6">
-        </div>
+        <div id="nameField" class="field hidden"><label>Ad Soyad</label><input type="text" id="authName" autocomplete="name" placeholder="Adın ve soyadın" maxlength="40"></div>
+        <div id="birthDateField" class="field hidden"><label>Doğum tarihi</label><input type="date" id="authBirthDate" autocomplete="bday"></div>
+        <div id="regionField" class="field hidden"><label>Bölge</label><select id="authRegion"><option value="">Bölgeni seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
+        <div id="usernameField" class="field hidden"><label>Kullanıcı adı</label><input type="text" id="authUsername" autocomplete="username" placeholder="kullaniciadi" maxlength="24"></div>
+        <div class="field" id="authEmailField"><label>E-posta</label><input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com"></div>
+        <div class="field"><label>Şifre</label><input type="password" id="authPassword" required autocomplete="current-password" placeholder="En az 8 karakter" minlength="6"></div>
         <button type="submit" id="authSubmitBtn" class="btn btn-block">Giriş Yap</button>
       </form>
-      <p class="toggle-line">
-        <button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button>
-      </p>
-      <p class="toggle-line" id="authToggleText">
-        Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button>
-      </p>
+      <p class="toggle-line" id="forgotPasswordLine"><button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button></p>
+      <p class="toggle-line" id="authToggleText">Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button></p>
+      <p class="sub" style="text-align:center;font-size:.68rem;margin-top:8px;">Doğum tarihi yalnızca hesap sahibinin özel profil kaydında saklanır.</p>
     </div>
   </div>
 
@@ -512,11 +503,15 @@
 
   <div id="usernameModal" class="modal hidden">
     <div class="modal-card">
-      <h2>Kullanıcı adı</h2>
-      <p class="sub">Forever’da görünecek adın.</p>
+      <h2>Forever Plus hesabını tamamla</h2>
+      <p class="sub">Google hesabın seçildi. Profil bilgilerini tamamlayarak devam et.</p>
       <form onsubmit="handleUsernameSubmit(event)">
-        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24"></div>
-        <button type="submit" class="btn btn-block">Kaydet</button>
+        <div class="field"><label>Ad Soyad</label><input type="text" id="newDisplayName" required maxlength="40" autocomplete="name"></div>
+        <div class="field"><label>Doğum tarihi</label><input type="date" id="newBirthDate" required autocomplete="bday"></div>
+        <div class="field"><label>Bölge</label><select id="newRegion" required><option value="">Bölgeni seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
+        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24" autocomplete="username"></div>
+        <div class="field"><label>Şifre oluştur</label><input type="password" id="newPassword" required minlength="8" autocomplete="new-password" placeholder="En az 8 karakter"></div>
+        <button type="submit" class="btn btn-block">Forever Plus'a katıl</button>
       </form>
     </div>
   </div>
@@ -570,6 +565,8 @@
         </div>
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
+      <p id="profileRegion" style="margin-top:4px;font-size:.72rem;color:var(--muted);"></p>
+      <div id="profileMembership" class="plus-membership" aria-live="polite"></div>
       <div class="profile-stats">
         <button type="button" onclick="openFollowList('followers')"><strong id="statFollowers">0</strong><span>Takipçi</span></button>
         <button type="button" onclick="openFollowList('following')"><strong id="statFollowing">0</strong><span>Takip</span></button>
@@ -577,10 +574,14 @@
       </div>
       <div id="profileEditBox" class="hidden" style="margin-top:8px;">
         <div class="field"><label>Görünen ad</label><input type="text" id="editDisplayName" maxlength="40"></div>
-        <div class="field"><label>Bio</label><input type="text" id="editBio" maxlength="120" placeholder="Kendinden bahset..."></div>
+        <div class="field"><label>Bio</label><input type="text" id="editBio" maxlength="160" placeholder="Kendinden bahset..."></div>
+        <div class="field"><label>Bölge</label><select id="editRegion"><option value="">Bölge seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
         <button type="button" class="btn btn-block" onclick="saveProfile()">Kaydet</button>
       </div>
       <button type="button" id="profileEditBtn" class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="toggleProfileEdit()">Profili düzenle</button>
+      <button type="button" id="plusApplyBtn" class="btn plus-apply-btn btn-block" style="margin-top:8px;" onclick="goToPlusApplication()">✦ Plus'a başvur</button>
+      <button type="button" id="adminDashboardBtn" class="btn btn-ghost btn-block hidden" style="margin-top:8px;" onclick="location.href='./admin.html'">⚙ Yönetim Paneli</button>
+      <div id="plusBenefitsHint" class="plus-hint">Daha fazla oda, çıkartma, çizim, özel mesaj ve medya hakkı açılır.</div>
       <div id="followListBox" class="hidden" style="margin-top:14px;max-height:240px;overflow:auto;">
         <h3 id="followListTitle" style="font-size:.8rem;color:var(--muted);margin-bottom:8px;"></h3>
         <div id="followListItems"></div>
@@ -631,7 +632,7 @@
 <div class="wrap">
     <header class="top">
       <div class="brand">
-        <div class="brand-logo"><img src="./icons/icon-192.png" alt="Forever"></div>
+        <div class="brand-logo"><img src="./icons/icon-192.png" alt="Forever Plus"></div>
         <div class="brand-text">
           <strong>Forever</strong>
           <span>from <b>Beray</b></span>
@@ -639,6 +640,7 @@
       </div>
       <div class="top-actions">
         <span id="networkAuthStatus" class="status-warn" style="display:none;"></span>
+        <button type="button" class="btn-icon" title="Odalar" aria-label="Odalar" onclick="openRoomsPanel()"><i class="fa-solid fa-comments"></i></button>
         <button type="button" class="btn-icon" title="Bildirimler" onclick="openNotifPanel()" style="position:relative;">
           <i class="fa-regular fa-bell"></i>
           <span id="notifBadge" class="hidden" style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);"></span>
@@ -734,6 +736,31 @@
       <div class="card empty"><i class="fa-solid fa-circle-notch fa-spin"></i><br><br>Akış yükleniyor…</div>
     </div>
 
+    <!-- Forever Plus Odalar -->
+    <div id="roomsModal" class="modal hidden" onclick="if(event.target===this)closeRoomsPanel()">
+      <div class="modal-card" style="max-height:86vh;overflow:auto;width:min(560px,100%);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
+          <div><h2 style="margin:0;">Forever Odaları</h2><p class="sub" style="margin:4px 0 0;">Bir topluluğa katıl veya kendi odanı kur.</p></div>
+          <button type="button" class="btn-icon" aria-label="Kapat" onclick="closeRoomsPanel()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="roomCreateForm" onsubmit="createForeverRoom(event)" class="room-create">
+          <strong style="font-size:.86rem;">Yeni oda oluştur</strong>
+          <input id="roomNameInput" type="text" maxlength="40" required placeholder="Oda adı">
+          <input id="roomDescriptionInput" type="text" maxlength="160" placeholder="Kısa açıklama (isteğe bağlı)">
+          <button type="submit" class="btn">+ Oda oluştur</button>
+        </form>
+        <div id="roomsList" aria-live="polite"><p class="sub">Odalar yükleniyor…</p></div>
+        <section id="roomChatView" class="hidden">
+          <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+            <button type="button" class="btn-ghost" onclick="backToRoomsList()">← Odalara dön</button>
+            <div style="min-width:0;flex:1;"><strong id="roomChatTitle"></strong><div id="roomChatDescription" class="sub"></div></div>
+          </div>
+          <div id="roomMessages" class="room-messages" aria-live="polite"></div>
+          <form onsubmit="sendRoomMessage(event)" class="room-send"><input id="roomMessageInput" type="text" maxlength="1000" required placeholder="Odaya mesaj yaz…"><button type="submit" class="btn">Gönder</button></form>
+        </section>
+      </div>
+    </div>
+
     <!-- Bildirim paneli -->
     <div id="notifPanel" class="modal hidden" onclick="if(event.target===this)closeNotifPanel()">
       <div class="modal-card" style="max-height:70vh;overflow:auto;">
@@ -753,11 +780,12 @@
     </div>
 
     <footer class="foot">
-      <strong>Forever</strong> · from <strong>Beray</strong>
+      <strong>Forever Plus</strong> · from <strong>Beray</strong>
     </footer>
   </div>
 
   <script>
+    window.FOREVER_FEATURE_FLAGS = Object.freeze({ bottleGame: false });
     // PWA minimal
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
@@ -769,6 +797,7 @@
       const vid = document.getElementById(vidId);
       if (!input) return;
       input.addEventListener('change', () => {
+        if (input.dataset.previewUrl) { URL.revokeObjectURL(input.dataset.previewUrl); delete input.dataset.previewUrl; }
         const f = input.files && input.files[0];
         const hide = (el) => {
           if (!el) return;
@@ -785,6 +814,7 @@
         hide(img); hide(vid);
         if (!f) return;
         const url = URL.createObjectURL(f);
+        input.dataset.previewUrl = url;
         if (f.type.startsWith('video/')) show(vid, url);
         else show(img, url);
       });
@@ -797,64 +827,30 @@
     });
   </script>
 
+  <script src="./plus-config.js"></script>
+  <script src="./supabase-config.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, 
-      signOut, 
-      onAuthStateChanged,
-      updateProfile,
-      GoogleAuthProvider,
-      signInWithPopup,
-      sendPasswordResetEmail
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      doc, 
-      setDoc, 
-      getDoc,
-      addDoc, 
-      deleteDoc,
-      onSnapshot, 
-      updateDoc, 
-      arrayUnion, 
-      arrayRemove, 
-      serverTimestamp 
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      db, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+      updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail,
+      collection, doc, setDoc, getDoc, addDoc, deleteDoc, onSnapshot, updateDoc,
+      arrayUnion, arrayRemove, serverTimestamp, getDocs, getCountFromServer,
+      writeBatch, deleteField, query, where, orderBy, limit
+    } from './supabase-data.js';
+    import { supabase } from './supabase-client.js';
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
-      authDomain: "project-c443f992-d19d-4d35-a16.firebaseapp.com",
-      projectId: "project-c443f992-d19d-4d35-a16",
-      storageBucket: "project-c443f992-d19d-4d35-a16.firebasestorage.app",
-      messagingSenderId: "509248282221",
-      appId: "1:509248282221:web:84b49536d26d7d755ba964"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
-
-    // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
-    // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
-    // 2) Yoksa → görseli sıkıştırıp Firestore belgesine data URL olarak yaz (Storage gerekmez)
-    const FOREVER_UPLOAD_KEY = 'FOREVER_UPLOAD_URL';
-
-    function getUploadServerUrl() {
-      try { return (localStorage.getItem(FOREVER_UPLOAD_KEY) || '').trim(); } catch { return ''; }
-    }
-
-    window.fxSaveUploadServer = function () {
-      const v = (document.getElementById('fxUploadServerInput')?.value || '').trim();
-      try { localStorage.setItem(FOREVER_UPLOAD_KEY, v); } catch {}
-      if (typeof fxToast === 'function') {
-        fxToast(v ? 'Sunucu kaydedildi. Fotoğraflar oraya gidecek.' : 'Sunucu temizlendi. Fotoğraflar uygulama veritabanına (sıkıştırılmış) kaydolur.');
+    // ---- SUPABASE STORAGE MEDYA YÜKLEME ----
+    async function sendSecurityEvent(user, event = 'session') {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase.functions.invoke('security-event', { body: { event } });
+        if (error) throw error;
+        if (data?.ok === false) throw new Error(data.message || 'Güvenlik kaydı alınamadı.');
+      } catch (error) {
+        console.warn('Güvenlik olayı Supabase Edge Function üzerinden kaydedilemedi:', error.message);
       }
-    };
+    }
 
     async function compressImageFile(file, maxSide = 1280, quality = 0.72) {
       if (!file || !file.type.startsWith('image/')) throw new Error('Geçerli bir görsel seçin');
@@ -889,63 +885,90 @@
     }
 
     async function uploadToLocalServer(file, folder) {
-      const endpoint = getUploadServerUrl();
-      if (!endpoint) return null;
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', folder || 'forever');
-      if (currentUser) fd.append('userId', currentUser.uid);
-      const headers = {};
-      try {
-        const token = (localStorage.getItem('FOREVER_UPLOAD_TOKEN') || '').trim();
-        if (token) headers['X-Upload-Token'] = token;
-      } catch {}
-      const res = await fetch(endpoint, { method: 'POST', body: fd, mode: 'cors', headers });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || ('Sunucu yükleme hatası: HTTP ' + res.status));
+      if (!currentUser) throw new Error('Medya yüklemek için giriş yapmalısın.');
+      const day = new Date().toISOString().slice(0, 10);
+      const ext = file.type === 'image/jpeg' ? 'jpg'
+        : file.type === 'image/png' ? 'png'
+        : file.type === 'image/webp' ? 'webp'
+        : file.type === 'image/gif' ? 'gif'
+        : file.type === 'video/mp4' ? 'mp4' : '';
+      if (!ext) throw new Error('Bu dosya türü desteklenmiyor.');
+
+      const bucket = folder === 'stories' ? 'forever-private' : 'forever-public';
+      const objectPath = currentUser.uid + '/' + day + '/' + (folder || 'posts') + '/' +
+        (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '_' + Math.random().toString(36).slice(2))) + '.' + ext;
+
+      if (file.type === 'video/mp4') {
+        const form = new FormData();
+        form.append('file', file, 'upload.mp4');
+        form.append('folder', folder || 'posts');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
+        if (!session?.access_token) throw new Error('Oturum doğrulanamadı. Yeniden giriş yap.');
+        const cfg = window.FOREVER_SUPABASE_CONFIG;
+        const response = await fetch(cfg.url.replace(/\\/+$/, '') + '/functions/v1/upload-video', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + session.access_token,
+            'apikey': cfg.publishableKey
+          },
+          body: form
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.url) throw new Error(result.error || 'Video yüklenemedi.');
+        return result.url;
       }
-      const data = await res.json().catch(() => ({}));
-      const url = data.url || data.path || data.publicUrl;
-      if (!url) throw new Error('Sunucu yanıtında url yok');
-      if (String(url).startsWith('http')) return url;
-      try {
-        const base = new URL(endpoint).origin;
-        return base + (String(url).startsWith('/') ? url : '/' + url);
-      } catch {
-        return url;
+
+      const { data, error } = await supabase.storage.from(bucket).upload(objectPath, file, {
+        cacheControl: '31536000',
+        contentType: file.type,
+        upsert: false
+      });
+      if (error) throw new Error(error.message || 'Supabase Storage yüklemesi başarısız.');
+
+      if (bucket === 'forever-private') {
+        const signed = await supabase.storage.from(bucket).createSignedUrl(data.path, 86400);
+        if (signed.error) throw signed.error;
+        return signed.data.signedUrl;
       }
+      return supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
     }
 
-    /** Kendi sunucun varsa oraya; yoksa sıkıştırılmış data URL (Storage yok) */
     function isVideoFile(file) {
       return !!(file && (file.type || '').startsWith('video/'));
     }
 
-    async function prepareVideoForStore(file) {
-      // Firestore ~1MB limit — kısa/küçük klipler; büyükse hata
-      const maxBytes = 850 * 1024;
-      if (file.size <= maxBytes) return file;
-      throw new Error('Video çok büyük (max ~850KB). Daha kısa klip seç veya bilgisayarında upload-server kullan.');
+    async function getVideoDuration(file) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          const duration = Number(video.duration);
+          URL.revokeObjectURL(url);
+          if (!Number.isFinite(duration) || duration <= 0) reject(new Error('Video süresi okunamadı.'));
+          else resolve(duration);
+        };
+        video.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Video dosyası okunamadı. MP4 kullan.')); };
+        video.src = url;
+      });
     }
 
-    /** Foto veya video. Sunucu varsa oraya; yoksa data URL (küçük dosya). */
     async function uploadForeverImage(file, folder = 'posts') {
-      const endpoint = getUploadServerUrl();
+      if (!file) throw new Error('Dosya seçilmedi.');
       if (isVideoFile(file)) {
-        if (endpoint) {
-          // yerel sunucuda boyut daha esnek (max 25MB)
-          if (file.size > 25 * 1024 * 1024) throw new Error('Video 25MB üstü olamaz');
-          return await uploadToLocalServer(file, folder);
-        }
-        const prepared = await prepareVideoForStore(file);
-        return await fileToDataURL(prepared);
+        if (file.type !== 'video/mp4') throw new Error('Plus videoları şimdilik MP4 biçiminde yüklenebilir.');
+        if (file.size > 50 * 1024 * 1024) throw new Error('Video 50 MB üstü olamaz.');
+        const duration = await getVideoDuration(file);
+        if (duration > 180) throw new Error('Plus video sınırı 3 dakikadır.');
+        return await uploadToLocalServer(file, folder);
+      }
+      if (folder === 'stickers' && file.type === 'image/gif') {
+        if (file.size > 5 * 1024 * 1024) throw new Error('GIF çıkartma en fazla 5 MB olabilir.');
+        return await uploadToLocalServer(file, folder);
       }
       const compressed = await compressImageFile(file);
-      if (endpoint) {
-        return await uploadToLocalServer(compressed, folder);
-      }
-      return await fileToDataURL(compressed);
+      return await uploadToLocalServer(compressed, folder);
     }
 
     function mediaHtml(url, mediaType) {
@@ -955,7 +978,7 @@
       if (isVid) {
         return '<video class="post-img" src="' + safe + '" controls playsinline preload="metadata"></video>';
       }
-      return '<img class="post-img" src="' + safe + '" alt="" onerror="this.style.display=\'none\'">';
+      return '<img class="post-img" src="' + safe + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">';
     }
 
     // ========== GÜVENLİK & DOĞRULAMA KATMANI (Forever Priority) ==========
@@ -1101,18 +1124,6 @@
         const p = allPostsCache.find(x => x.id === postId);
         const cur = p?.sparks || 0;
         await updateDoc(postRef, { sparks: cur + 1 });
-        if (authorUid) {
-          await addDoc(collection(db, 'notifications'), {
-            toUid: authorUid,
-            fromUid: currentUser.uid,
-            fromName: currentUser.displayName || 'Biri',
-            type: 'spark',
-            postId,
-            text: 'gönderine ışık yaktı ✦',
-            read: false,
-            createdAt: serverTimestamp()
-          }).catch(() => {});
-        }
         if (p) p.sparks = cur + 1;
         renderPostsFromCache();
         if (typeof fxToast === 'function') fxToast('Işık yaktın ✦');
@@ -1124,7 +1135,7 @@
     window.sharePost = async function(postId) {
       const url = location.origin + location.pathname.replace(/\/$/, '') + '/#post=' + postId;
       try {
-        if (navigator.share) await navigator.share({ title: 'Forever', url });
+        if (navigator.share) await navigator.share({ title: 'Forever Plus', url });
         else {
           await navigator.clipboard.writeText(url);
           if (typeof fxToast === 'function') fxToast('Bağlantı kopyalandı');
@@ -1238,16 +1249,13 @@
       try {
         const q = collection(db, 'notifications');
         // Basit: son 30 kaydı çek, client-side filtrele (production'da query ile toUid)
-        const snap = await getDoc(doc(db, 'users', currentUser.uid)).catch(() => null);
-        // onSnapshot daha iyi ama şimdilik tek seferlik
-        const { getDocs, query, where, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
         let docs = [];
         try {
           const qq = query(collection(db, 'notifications'), where('toUid', '==', currentUser.uid), limit(25));
           const s = await getDocs(qq);
           s.forEach(d => docs.push({ id: d.id, ...d.data() }));
         } catch {
-          list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:12px;">Bildirimler için Firestore indeksi gerekebilir. Şimdilik boş.</p>';
+          list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:12px;">Bildirimler şu anda yüklenemedi. Bağlantını kontrol edip tekrar dene.</p>';
           return;
         }
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -1297,21 +1305,21 @@
     setTimeout(() => {
       bindImagePreview('postImageFile', 'postImagePreview');
       bindImagePreview('storyImageFile', 'storyImagePreview');
-      const inp = document.getElementById('fxUploadServerInput');
-      if (inp) inp.value = getUploadServerUrl();
     }, 0);
 
     let currentUser = null;
     let followingIds = new Set();
     let allPostsCache = [];
     let feedQuery = '';
+    let feedFilterTimer = null;
+    let trendingTagCache = [];
 
     function fxToast(msg) {
       let el = document.getElementById('fxToastEl');
       if (!el) {
         el = document.createElement('div');
         el.id = 'fxToastEl';
-        el.style.cssText = 'position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(22,18,40,.92);backdrop-filter:blur(12px);border:1px solid rgba(167,139,250,.35);color:#f4f0ff;padding:12px 18px;border-radius:14px;font-size:.85rem;font-weight:600;z-index:300;opacity:0;transition:.3s ease;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 20px rgba(139,92,246,.2);max-width:90vw;text-align:center;';
+        el.style.cssText = 'position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(22,18,40,.92);backdrop-filter:blur(12px);border:1px solid rgba(52,211,153,.35);color:#ecfdf5;padding:12px 18px;border-radius:14px;font-size:.85rem;font-weight:600;z-index:300;opacity:0;transition:.3s ease;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 20px rgba(16,185,129,.2);max-width:90vw;text-align:center;';
         document.body.appendChild(el);
       }
       el.textContent = msg;
@@ -1329,58 +1337,141 @@
     let unsubscribePosts = null;
     let unsubscribeStories = null;
 
-    // Google ile Giriş
+    function signupProfileFromAuthForm() {
+      return {
+        displayName: document.getElementById('authName')?.value || '',
+        dateOfBirth: document.getElementById('authBirthDate')?.value || '',
+        region: document.getElementById('authRegion')?.value || '',
+        username: document.getElementById('authUsername')?.value || '',
+        password: document.getElementById('authPassword')?.value || ''
+      };
+    }
+
+    function validateSignupProfile(raw) {
+      const displayName = sanitizeText(raw.displayName, LIMITS.displayName);
+      const dateOfBirth = String(raw.dateOfBirth || '').trim();
+      const region = sanitizeText(raw.region, 40);
+      const username = normalizeUsername(raw.username);
+      const password = String(raw.password || '');
+      const date = new Date(dateOfBirth + 'T00:00:00');
+      const today = new Date(); today.setHours(23, 59, 59, 999);
+      if (!displayName || displayName.split(/\s+/).length < 2) throw new Error('Ad ve soyadını birlikte yaz.');
+      if (!dateOfBirth || Number.isNaN(date.getTime()) || date > today || date.getFullYear() < 1900) throw new Error('Geçerli bir doğum tarihi seç.');
+      if (!region) throw new Error('Bölgeni seç.');
+      if (!isValidUsername(username)) throw new Error('Kullanıcı adı 3-24 karakter olmalı; küçük harf, rakam ve alt çizgi kullan.');
+      if (password.length < 8) throw new Error('Şifre en az 8 karakter olmalı.');
+      return { displayName, dateOfBirth, region, username, password };
+    }
+
+    async function completeGoogleRegistration(user, rawProfile) {
+      const profile = validateSignupProfile(rawProfile);
+      if (!user || !user.email) throw new Error('Seçilen Google hesabından e-posta alınamadı.');
+      const userRef = doc(db, 'users', user.uid);
+      const usernameRef = doc(db, 'usernames', profile.username);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists() && userSnap.data().username) throw new Error('Bu Google hesabı zaten Forever Plus hesabına bağlı. Giriş yapabilirsin.');
+      const usernameSnap = await getDoc(usernameRef);
+      if (usernameSnap.exists() && usernameSnap.data().uid !== user.uid) throw new Error('Bu kullanıcı adı alınmış. Başka bir tane seç.');
+
+      const { error: passwordError } = await supabase.auth.updateUser({ password: profile.password });
+      if (passwordError) throw new Error('Şifre Supabase hesabına kaydedilemedi: ' + passwordError.message);
+
+      await updateProfile(user, { displayName: profile.displayName });
+      const usernameWasCreated = !usernameSnap.exists();
+      try {
+        if (usernameWasCreated) await setDoc(usernameRef, { uid: user.uid, createdAt: serverTimestamp() });
+        await setDoc(userRef, {
+          uid: user.uid,
+          displayName: profile.displayName,
+          username: profile.username,
+          region: profile.region,
+          following: [],
+          followers: [],
+          bio: '',
+          createdAt: serverTimestamp()
+        }, { merge: true });
+        // Doğum tarihi herkese açık users belgesinde değil, yalnızca sahibinin okuyabildiği özel belgede tutulur.
+        await setDoc(doc(db, 'privateProfiles', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          dateOfBirth: profile.dateOfBirth,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        if (usernameWasCreated) await deleteDoc(usernameRef).catch(() => {});
+        throw error;
+      }
+
+      currentUser = user;
+      document.getElementById('authModal')?.classList.add('hidden');
+      document.getElementById('usernameModal')?.classList.add('hidden');
+      if (typeof fxToast === 'function') fxToast('Forever Plus hesabın oluşturuldu. Hoş geldin!');
+    }
+
+    async function runGoogleRegistration(rawProfile, submitButton) {
+      const profile = validateSignupProfile(rawProfile);
+      const previousText = submitButton?.textContent || '';
+      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Google hesabı seçiliyor…'; }
+      try {
+        sessionStorage.setItem('FOREVER_PENDING_GOOGLE_SIGNUP', JSON.stringify(profile));
+
+        const result = await signInWithPopup(auth, googleProvider);
+        currentUser = result.user;
+        const existing = await getDoc(doc(db, 'users', result.user.uid));
+        if (existing.exists() && existing.data().username) {
+          document.getElementById('authModal')?.classList.add('hidden');
+          if (typeof fxToast === 'function') fxToast('Bu Forever Plus hesabı zaten kayıtlı. Giriş yaptın.');
+          return;
+        }
+        await completeGoogleRegistration(result.user, profile);
+      } finally {
+        if (submitButton) { submitButton.disabled = false; submitButton.textContent = previousText || (isSignUpMode ? 'Google hesabını seçip kayıt ol' : 'Giriş Yap'); }
+      }
+    }
+
+    // Google ile giriş. Yeni hesaplarda Google hesabı seçildikten sonra profil tamamlanır.
     window.handleGoogleSignIn = async function() {
+      if (isSignUpMode) {
+        try { await runGoogleRegistration(signupProfileFromAuthForm(), document.getElementById('authSubmitBtn')); }
+        catch (error) { showAlert(error.message || 'Google ile kayıt tamamlanamadı.', 'error'); }
+        return;
+      }
       try {
         const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
-
-        if (!docSnap.exists()) {
-          // İlk kez giriş yapıyor, Kullanıcı adı oluştur modalı aç
+        currentUser = result.user;
+        const docSnap = await getDoc(doc(db, 'users', result.user.uid));
+        if (!docSnap.exists() || !docSnap.data().username) {
+          document.getElementById('authModal').classList.add('hidden');
           document.getElementById('usernameModal').classList.remove('hidden');
+          const display = document.getElementById('newDisplayName');
+          if (display && !display.value) display.value = result.user.displayName || '';
         } else {
           document.getElementById('authModal').classList.add('hidden');
         }
       } catch (error) {
-        showAlert(error.message, 'error');
+        showAlert(error.message || 'Google ile giriş yapılamadı.', 'error');
       }
     };
 
     window.handleUsernameSubmit = async function(e) {
       e.preventDefault();
-      if (!currentUser) return;
-      const raw = document.getElementById('newUsername').value;
-      const newUsername = normalizeUsername(raw);
-      if (!isValidUsername(newUsername)) {
-        alert('Kullanıcı adı 3-24 karakter, sadece küçük harf, rakam ve alt çizgi (_) olabilir.');
-        return;
-      }
+      const user = currentUser || auth.currentUser;
+      if (!user) return;
+      const profile = {
+        displayName: document.getElementById('newDisplayName')?.value || user.displayName || '',
+        dateOfBirth: document.getElementById('newBirthDate')?.value || '',
+        region: document.getElementById('newRegion')?.value || '',
+        username: document.getElementById('newUsername')?.value || '',
+        password: document.getElementById('newPassword')?.value || ''
+      };
+      const button = e.submitter || document.querySelector('#usernameModal button[type="submit"]');
+      if (button) { button.disabled = true; button.textContent = 'Kaydediliyor…'; }
       try {
-        // Benzersizlik kontrolü
-        const unameRef = doc(db, 'usernames', newUsername);
-        const unameSnap = await getDoc(unameRef);
-        if (unameSnap.exists() && unameSnap.data().uid !== currentUser.uid) {
-          alert('Bu kullanıcı adı alınmış. Başka bir tane dene.');
-          return;
-        }
-        await setDoc(unameRef, { uid: currentUser.uid, createdAt: serverTimestamp() });
-        await setDoc(doc(db, 'users', currentUser.uid), {
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || newUsername,
-          username: newUsername,
-          email: currentUser.email,
-          createdAt: serverTimestamp()
-        }, { merge: true });
-        try {
-          await updateProfile(currentUser, { displayName: newUsername });
-        } catch (_) {}
-        document.getElementById('usernameModal').classList.add('hidden');
-        document.getElementById('authModal').classList.add('hidden');
-      } catch (err) {
-        console.error('Kullanıcı adı kaydedilemedi:', err);
-        alert(err.message || 'Kullanıcı adı kaydedilemedi');
+        await completeGoogleRegistration(user, profile);
+      } catch (error) {
+        alert(error.message || 'Profil tamamlanamadı.');
+      } finally {
+        if (button) { button.disabled = false; button.textContent = "Forever Plus'a katıl"; }
       }
     };
 
@@ -1416,24 +1507,31 @@
       }
     };
 
-    // Form Modları
+    // Form modları: kayıt Google hesabı seçimiyle tamamlanır.
     window.toggleAuthMode = function() {
       isSignUpMode = !isSignUpMode;
-      const nameField = document.getElementById('nameField');
+      ['nameField','birthDateField','regionField','usernameField'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('hidden', !isSignUpMode);
+      });
+      const emailField = document.getElementById('authEmailField');
+      const emailInput = document.getElementById('authEmail');
+      if (emailField) emailField.classList.toggle('hidden', isSignUpMode);
+      if (emailInput) { emailInput.required = !isSignUpMode; emailInput.value = ''; }
+      const password = document.getElementById('authPassword');
+      if (password) {
+        password.value = '';
+        password.autocomplete = isSignUpMode ? 'new-password' : 'current-password';
+        password.minLength = isSignUpMode ? 8 : 6;
+        password.placeholder = isSignUpMode ? 'En az 8 karakter' : 'Şifren';
+      }
+      document.getElementById('forgotPasswordLine')?.classList.toggle('hidden', isSignUpMode);
       const submitBtn = document.getElementById('authSubmitBtn');
       const toggleText = document.getElementById('authToggleText');
-      const alertBox = document.getElementById('authAlert');
-
-      alertBox.classList.add('hidden');
-      if (isSignUpMode) {
-        nameField.classList.remove('hidden');
-        submitBtn.textContent = 'Kayıt Ol';
-        toggleText.innerHTML = `Zaten hesabınız var mı? <button type="button" onclick="toggleAuthMode()" class="text-brand-400 font-semibold hover:underline">Giriş Yap</button>`;
-      } else {
-        nameField.classList.add('hidden');
-        submitBtn.textContent = 'Giriş Yap';
-        toggleText.innerHTML = `Hesabınız yok mu? <button type="button" onclick="toggleAuthMode()" class="text-brand-400 font-semibold hover:underline">Kayıt Ol</button>`;
-      }
+      document.getElementById('authAlert')?.classList.add('hidden');
+      if (submitBtn) submitBtn.textContent = isSignUpMode ? 'Google hesabını seçip kayıt ol' : 'Giriş Yap';
+      if (toggleText) toggleText.innerHTML = isSignUpMode
+        ? 'Zaten hesabın var mı? <button type="button" onclick="toggleAuthMode()">Giriş Yap</button>'
+        : 'Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button>';
     };
 
     function showAlert(message, type = 'error') {
@@ -1447,50 +1545,39 @@
       alertBox.textContent = message;
     }
 
-    // Normal E-Posta ile Giriş / Kayıt
+    // E-posta/şifre ile giriş veya Google hesabını seçerek kayıt.
     window.handleAuthSubmit = async function(e) {
       e.preventDefault();
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value.trim();
-      const name = document.getElementById('authName').value.trim();
       const submitBtn = document.getElementById('authSubmitBtn');
-
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> İşleniyor...`;
-
-      try {
-        if (isSignUpMode) {
-          if (!name) throw new Error("Lütfen ad ve soyadınızı girin.");
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-
-          await updateProfile(user, { displayName: name });
-          await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            displayName: name,
-            email: email,
-            following: [],
-            followers: [],
-            bio: '',
-            createdAt: serverTimestamp()
-          });
-
-          showAlert("Hesabınız başarıyla oluşturuldu!", "success");
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-          showAlert("Başarıyla giriş yapıldı!", "success");
+      if (isSignUpMode) {
+        try {
+          await runGoogleRegistration(signupProfileFromAuthForm(), submitBtn);
+        } catch (error) {
+          showAlert(error.message || 'Kayıt tamamlanamadı.', 'error');
         }
+        return;
+      }
+
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      if (!email || !password) { showAlert('E-posta ve şifreni gir.', 'error'); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Giriş yapılıyor…';
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
         document.getElementById('authModal').classList.add('hidden');
       } catch (err) {
-        let errText = err.message;
-        if (errText.includes("user-not-found")) errText = "Kullanıcı bulunamadı.";
-        else if (errText.includes("wrong-password")) errText = "Hatalı şifre girdiniz.";
-        else if (errText.includes("email-already-in-use")) errText = "Bu e-posta adresi zaten kullanımda.";
-        else if (errText.includes("weak-password")) errText = "Şifre en az 6 karakter olmalıdır.";
-        showAlert(errText.replace("Firebase: ", ""), 'error');
+        const messages = {
+          'auth/user-not-found':'Bu e-posta ile hesap bulunamadı.',
+          'auth/invalid-credential':'E-posta veya şifre hatalı.',
+          'auth/wrong-password':'Şifre hatalı.',
+          'auth/invalid-email':'E-posta biçimi geçersiz.',
+          'auth/too-many-requests':'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.'
+        };
+        showAlert(messages[err.code] || err.message || 'Giriş yapılamadı.', 'error');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = isSignUpMode ? 'Kayıt Ol' : 'Giriş Yap';
+        submitBtn.textContent = 'Giriş Yap';
       }
     };
 
@@ -1544,7 +1631,7 @@
 
     function listenToStories() {
       if (unsubscribeStories) unsubscribeStories();
-      unsubscribeStories = onSnapshot(collection(db, "stories"), (snapshot) => {
+      unsubscribeStories = onSnapshot(query(collection(db, "stories"), orderBy("createdAt", "desc"), limit(30)), (snapshot) => {
         const storiesContainer = document.getElementById('storiesContainer');
         const existingAddBtn = storiesContainer.firstElementChild;
         storiesContainer.innerHTML = '';
@@ -1559,10 +1646,10 @@
           const isVid = story.mediaType === 'video' || String(story.imageUrl || '').startsWith('data:video');
           const thumb = isVid
             ? `<div class="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-white"><i class="fa-solid fa-play"></i></div>`
-            : `<img src="${story.imageUrl}" class="w-full h-full rounded-full object-cover">`;
+            : `<img src="${story.imageUrl}" loading="lazy" decoding="async" class="w-full h-full rounded-full object-cover">`;
           const canDel = currentUser && story.userId === currentUser.uid;
           const delBtn = canDel ? `<button type="button" class="story-del" title="Sil" onclick="deleteStory('${story.id}', event)" style="right:18px;"><i class="fa-solid fa-xmark"></i></button>
-            <button type="button" class="story-del" title="Düzenle" onclick="openEditStory('${story.id}', event)" style="background:#7c3aed;right:-4px;"><i class="fa-solid fa-pen" style="font-size:8px;"></i></button>` : '';
+            <button type="button" class="story-del" title="Düzenle" onclick="openEditStory('${story.id}', event)" style="background:#047857;right:-4px;"><i class="fa-solid fa-pen" style="font-size:8px;"></i></button>` : '';
           storyElem.innerHTML = `
             <div class="w-14 h-14 rounded-full p-0.5 story-ring group-hover:scale-105 transition-transform" style="position:relative;">
               ${delBtn}
@@ -1628,6 +1715,7 @@
           following: data.following || [],
           followers: data.followers || [],
           bio: data.bio || '',
+          region: data.region || '',
           displayName: data.displayName || currentUser.displayName || ''
         };
       } catch (e) { console.warn(e); }
@@ -1644,7 +1732,6 @@
           await setDoc(meRef, {
             uid: currentUser.uid,
             displayName: currentUser.displayName || '',
-            email: currentUser.email || '',
             following: [],
             followers: [],
             bio: '',
@@ -1688,13 +1775,23 @@
           following: Array.isArray(d.following) ? d.following : [],
           followers: Array.isArray(d.followers) ? d.followers : [],
           bio: d.bio || '',
+          region: d.region || '',
+          plusMember: d.plusMember === true,
+          roomCount: Number(d.roomCount || 0),
           displayName: d.displayName || currentUser.displayName || currentUser.email.split('@')[0]
         };
         followingIds = new Set(profileCache.following);
+        let postsCount = allPostsCache.filter(p => p.userId === currentUser.uid).length;
+        try {
+          const countSnapshot = await getCountFromServer(query(collection(db, 'posts'), where('userId', '==', currentUser.uid)));
+          postsCount = countSnapshot.data().count;
+        } catch (countError) {
+          console.warn('Post count fallback to loaded feed:', countError);
+        }
         const counts = {
           followers: profileCache.followers.length,
           following: profileCache.following.length,
-          posts: allPostsCache.filter(p => p.userId === currentUser.uid).length
+          posts: postsCount
         };
         ['statFollowers','stripFollowers'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = String(counts.followers); });
         ['statFollowing','stripFollowing'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = String(counts.following); });
@@ -1704,6 +1801,14 @@
         if (bio) bio.textContent = profileCache.bio || 'Bio eklenmemiş — Profili düzenle ile ekle';
         const stripBio = document.getElementById('stripBio');
         if (stripBio) stripBio.textContent = profileCache.bio || 'Profilini düzenle';
+        const regionEl = document.getElementById('profileRegion');
+        if (regionEl) regionEl.textContent = profileCache.region ? '📍 ' + profileCache.region : '';
+        const membership = document.getElementById('profileMembership');
+        const applyBtn = document.getElementById('plusApplyBtn');
+        const plusHint = document.getElementById('plusBenefitsHint');
+        if (membership) membership.textContent = profileCache.plusMember ? '✦ FOREVER PLUS ÜYESİ · Zümrüt ayrıcalıkları açık' : 'FOREVER · Normal üyelik';
+        if (applyBtn) applyBtn.classList.toggle('hidden', profileCache.plusMember);
+        if (plusHint) plusHint.classList.toggle('hidden', profileCache.plusMember);
         const stripName = document.getElementById('stripName');
         if (stripName) stripName.textContent = profileCache.displayName;
         const stripAv = document.getElementById('stripAvatar');
@@ -1711,12 +1816,28 @@
       } catch (e) { console.warn(e); }
     }
 
+    window.goToPlusApplication = function() {
+      const configured = String(window.FOREVER_PLUS_CONFIG?.applicationUrl || './plus-apply.html').trim();
+      try {
+        const target = new URL(configured, location.href);
+        if (target.protocol !== 'https:' && target.hostname !== 'localhost' && target.hostname !== '127.0.0.1') {
+          fxToast('Başvuru sayfası güvenli HTTPS adresi olmalı.');
+          return;
+        }
+        location.href = target.href;
+      } catch {
+        fxToast('Plus başvuru adresi geçersiz. plus-config.js dosyasını kontrol et.');
+      }
+    };
+
     window.openProfile = async function() {
       if (!currentUser) return;
       await refreshProfileStats();
       const name = profileCache.displayName || currentUser.displayName || currentUser.email.split('@')[0];
       document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('profileName').textContent = name;
+      const regionEl = document.getElementById('profileRegion');
+      if (regionEl) regionEl.textContent = profileCache.region ? '📍 ' + profileCache.region : '';
       document.getElementById('profileHandle').textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
@@ -1731,25 +1852,33 @@
       if (!box.classList.contains('hidden')) {
         document.getElementById('editDisplayName').value = profileCache.displayName || currentUser.displayName || '';
         document.getElementById('editBio').value = profileCache.bio || '';
+        const regionInput = document.getElementById('editRegion');
+        if (regionInput) regionInput.value = profileCache.region || '';
       }
     };
     window.saveProfile = async function() {
       if (!currentUser) return;
       const name = (document.getElementById('editDisplayName').value || '').trim();
       const bio = (document.getElementById('editBio').value || '').trim();
+      const region = (document.getElementById('editRegion')?.value || '').trim();
       if (!name) return alert('Ad gerekli');
       try {
         await updateProfile(currentUser, { displayName: name });
         await setDoc(doc(db, "users", currentUser.uid), {
           uid: currentUser.uid,
           displayName: name,
-          email: currentUser.email || '',
           bio: bio,
+          region: region,
           following: profileCache.following || [],
           followers: profileCache.followers || []
         }, { merge: true });
         profileCache.displayName = name;
         profileCache.bio = bio;
+        profileCache.region = region;
+        await setDoc(doc(db, 'privateProfiles', currentUser.uid), {
+          uid: currentUser.uid,
+          email: currentUser.email || ''
+        }, { merge: true });
         document.getElementById('userHeaderName').textContent = name;
         document.getElementById('userHeaderAvatar').textContent = name.charAt(0).toUpperCase();
         const postAv = document.getElementById('postCreatorAvatar');
@@ -1891,7 +2020,8 @@
 
     window.filterFeed = function(q) {
       feedQuery = (q || '').trim().toLowerCase();
-      renderPostsFromCache();
+      clearTimeout(feedFilterTimer);
+      feedFilterTimer = setTimeout(renderPostsFromCache, 140);
     };
 
     function renderPostsFromCache() {
@@ -1931,10 +2061,8 @@
 
       postsFeed.innerHTML = '';
 
-      // Trend etiketler (basit frekans)
-      const tagCount = {};
-      allPostsCache.forEach(p => (p.tags || []).forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; }));
-      const trending = Object.entries(tagCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
+      // Trend etiketleri snapshot geldiğinde bir kez hesaplanır.
+      const trending = trendingTagCache;
       const trendBox = document.getElementById('trendingTags');
       if (trendBox) {
         trendBox.innerHTML = trending.length
@@ -1957,15 +2085,15 @@
         if (post.poll && post.poll.options) {
           const total = (post.poll.counts || []).reduce((a,b) => a+b, 0) || 0;
           const myVote = currentUser && post.poll.voters ? post.poll.voters[currentUser.uid] : undefined;
-          pollHtml = '<div class="poll-box" style="margin:10px 0;padding:12px;border-radius:14px;border:1px solid var(--glass-border);background:rgba(139,92,246,.06);">' +
+          pollHtml = '<div class="poll-box" style="margin:10px 0;padding:12px;border-radius:14px;border:1px solid var(--glass-border);background:rgba(16,185,129,.06);">' +
             '<div style="font-weight:700;margin-bottom:8px;font-size:.9rem;">' + escapeHTML(post.poll.question || '') + '</div>' +
             post.poll.options.map((opt, i) => {
               const cnt = (post.poll.counts && post.poll.counts[i]) || 0;
               const pct = total ? Math.round((cnt / total) * 100) : 0;
               const voted = myVote === i;
-              return '<button type="button" onclick="votePoll(\'' + post.id + '\',' + i + ')" style="display:block;width:100%;text-align:left;margin:4px 0;padding:10px 12px;border-radius:12px;border:1px solid ' + (voted ? 'var(--primary2)' : 'var(--line)') + ';background:' + (voted ? 'rgba(139,92,246,.2)' : 'rgba(0,0,0,.2)') + ';color:var(--text);font:inherit;cursor:pointer;position:relative;overflow:hidden;">' +
+              return '<button type="button" onclick="votePoll(\'' + post.id + '\',' + i + ')" style="display:block;width:100%;text-align:left;margin:4px 0;padding:10px 12px;border-radius:12px;border:1px solid ' + (voted ? 'var(--primary2)' : 'var(--line)') + ';background:' + (voted ? 'rgba(16,185,129,.2)' : 'rgba(0,0,0,.2)') + ';color:var(--text);font:inherit;cursor:pointer;position:relative;overflow:hidden;">' +
                 '<span style="position:relative;z-index:1;">' + escapeHTML(opt) + (total ? ' · ' + pct + '%' : '') + '</span>' +
-                '<span style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;background:rgba(139,92,246,.25);z-index:0;"></span></button>';
+                '<span style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;background:rgba(16,185,129,.25);z-index:0;"></span></button>';
             }).join('') +
             '<div style="font-size:.7rem;color:var(--muted);margin-top:6px;">' + total + ' oy</div></div>';
         }
@@ -2116,18 +2244,22 @@
       }
     };
 
-    // Firestore Akış Dinleyici
+    // Supabase Realtime akış dinleyici
     function listenToPosts() {
       const postsFeed = document.getElementById('postsFeed');
       if (unsubscribePosts) unsubscribePosts();
 
-      unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
+      const latestPostsQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(60));
+      unsubscribePosts = onSnapshot(latestPostsQuery, (snapshot) => {
         const posts = [];
         snapshot.forEach(docSnap => {
           posts.push({ id: docSnap.id, ...docSnap.data() });
         });
         posts.sort((a, b) => (b.createdAt?.toMillis?.() || b.createdAt?.seconds || 0) - (a.createdAt?.toMillis?.() || a.createdAt?.seconds || 0));
         allPostsCache = posts;
+        const tagCount = {};
+        posts.forEach(p => (p.tags || []).forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+        trendingTagCache = Object.entries(tagCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
         const postCountElem = document.getElementById('userPostCount');
         if (postCountElem && currentUser) {
           postCountElem.textContent = posts.filter(p => p.userId === currentUser.uid).length;
@@ -2200,6 +2332,180 @@
       }, () => {});
     }
 
+    // Forever Plus Odalar — keşfedilebilir topluluklar ve üyelik kontrollü canlı sohbet.
+    let roomsCache = [];
+    let activeRoomId = null;
+    let unsubscribeRoomMessages = null;
+
+    window.openRoomsPanel = async function() {
+      if (!currentUser) return fxToast('Önce giriş yapmalısın.');
+      document.getElementById('roomsModal')?.classList.remove('hidden');
+      document.getElementById('roomChatView')?.classList.add('hidden');
+      document.getElementById('roomsList')?.classList.remove('hidden');
+      document.getElementById('roomCreateForm')?.classList.remove('hidden');
+      await loadForeverRooms();
+    };
+
+    window.closeRoomsPanel = function() {
+      if (unsubscribeRoomMessages) { unsubscribeRoomMessages(); unsubscribeRoomMessages = null; }
+      activeRoomId = null;
+      document.getElementById('roomsModal')?.classList.add('hidden');
+    };
+
+    async function loadForeverRooms() {
+      const list = document.getElementById('roomsList');
+      if (!list || !currentUser) return;
+      list.innerHTML = '<p class="sub">Odalar yükleniyor…</p>';
+      try {
+        const results = await Promise.all([
+          getDocs(query(collection(db, 'rooms'), where('visibility', '==', 'public'), limit(30))),
+          getDocs(query(collection(db, 'rooms'), where('memberUids', 'array-contains', currentUser.uid), limit(30)))
+        ]);
+        const map = new Map();
+        results[0].forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+        results[1].forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+        roomsCache = [...map.values()].sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        renderForeverRooms();
+      } catch (error) {
+        list.innerHTML = '<p class="sub">Odalar yüklenemedi. Supabase tablo izinlerini ve bağlantıyı kontrol et.</p>';
+        console.warn('Forever rooms load', error);
+      }
+    }
+
+    function renderForeverRooms() {
+      const list = document.getElementById('roomsList');
+      if (!list) return;
+      if (!roomsCache.length) {
+        list.innerHTML = '<div class="card empty">Henüz oda yok. İlk odayı sen oluştur 💚</div>';
+        return;
+      }
+      list.innerHTML = roomsCache.map(room => {
+        const members = Array.isArray(room.memberUids) ? room.memberUids : [];
+        const isMember = members.includes(currentUser.uid);
+        const isOwner = room.ownerUid === currentUser.uid;
+        const roomId = String(room.id).replace(/[^A-Za-z0-9_-]/g, '');
+        const action = isMember
+          ? '<button type="button" class="btn" onclick="openForeverRoom(\'' + roomId + '\')">Aç</button>'
+          : '<button type="button" class="btn" onclick="joinForeverRoom(\'' + roomId + '\')">Katıl</button>';
+        return '<div class="room-card"><div class="room-mark"><i class="fa-solid fa-comments"></i></div><div style="flex:1;min-width:0;"><strong>' +
+          escapeHTML(room.name || 'İsimsiz oda') + '</strong><div class="sub">' +
+          escapeHTML(room.description || 'Forever topluluğu') + ' · ' + members.length + ' üye' +
+          (isOwner ? ' · Oda sahibi sensin' : '') + '</div></div>' + action + '</div>';
+      }).join('');
+    }
+
+    window.createForeverRoom = async function(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+      const name = sanitizeText(document.getElementById('roomNameInput')?.value || '', 40);
+      const description = sanitizeText(document.getElementById('roomDescriptionInput')?.value || '', 160);
+      if (name.length < 3) return fxToast('Oda adı en az 3 karakter olmalı.');
+      const button = document.querySelector('#roomCreateForm button[type="submit"]');
+      if (button) { button.disabled = true; button.textContent = 'Oluşturuluyor…'; }
+      try {
+        const result = await addDoc(collection(db, 'rooms'), {
+          ownerUid: currentUser.uid,
+          ownerName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Forever üyesi',
+          name,
+          description,
+          visibility: 'public',
+          memberUids: [currentUser.uid],
+          createdAt: serverTimestamp()
+        });
+        document.getElementById('roomCreateForm').reset();
+        await loadForeverRooms();
+        await openForeverRoom(result.id);
+      } catch (error) {
+        fxToast('Oda oluşturulamadı: ' + (error.message || 'bağlantı hatası'));
+      } finally {
+        if (button) { button.disabled = false; button.textContent = '+ Oda oluştur'; }
+      }
+    };
+
+    window.joinForeverRoom = async function(roomId) {
+      if (!currentUser || !roomId) return;
+      try {
+        const roomRef = doc(db, 'rooms', roomId);
+        const snap = await getDoc(roomRef);
+        if (!snap.exists()) throw new Error('Oda bulunamadı.');
+        const members = snap.data().memberUids || [];
+        if (members.length >= 100) throw new Error('Bu oda dolu (100 üye).');
+        await updateDoc(roomRef, { memberUids: arrayUnion(currentUser.uid) });
+        await loadForeverRooms();
+        await openForeverRoom(roomId);
+      } catch (error) {
+        fxToast(error.message || 'Odaya katılınamadı.');
+      }
+    };
+
+    window.openForeverRoom = async function(roomId) {
+      if (!currentUser || !roomId) return;
+      try {
+        const snap = await getDoc(doc(db, 'rooms', roomId));
+        if (!snap.exists()) throw new Error('Oda bulunamadı.');
+        const room = snap.data();
+        if (!(room.memberUids || []).includes(currentUser.uid)) throw new Error('Önce bu odaya katılmalısın.');
+        activeRoomId = roomId;
+        document.getElementById('roomsList')?.classList.add('hidden');
+        document.getElementById('roomCreateForm')?.classList.add('hidden');
+        document.getElementById('roomChatView')?.classList.remove('hidden');
+        document.getElementById('roomChatTitle').textContent = room.name || 'Forever Odası';
+        document.getElementById('roomChatDescription').textContent = room.description || '';
+        if (unsubscribeRoomMessages) unsubscribeRoomMessages();
+        const messageQuery = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt', 'desc'), limit(60));
+        unsubscribeRoomMessages = onSnapshot(messageQuery, snapshot => {
+          const messages = [];
+          snapshot.forEach(d => messages.push({ id: d.id, ...d.data() }));
+          messages.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+          const box = document.getElementById('roomMessages');
+          if (!box) return;
+          box.innerHTML = messages.length ? messages.map(message => {
+            const mine = message.senderUid === currentUser.uid;
+            const time = message.createdAt?.seconds
+              ? new Date(message.createdAt.seconds * 1000).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})
+              : 'Az önce';
+            return '<div class="room-message' + (mine ? ' mine' : '') + '"><small>' +
+              escapeHTML(message.senderName || 'Üye') + ' · ' + time + '</small>' +
+              escapeHTML(message.text || '') + '</div>';
+          }).join('') : '<p class="sub">Bu odada henüz mesaj yok. İlk mesajı sen yaz.</p>';
+          box.scrollTop = box.scrollHeight;
+        }, error => {
+          console.warn('Forever room messages', error);
+          fxToast('Oda mesajları yüklenemedi.');
+        });
+      } catch (error) {
+        fxToast(error.message || 'Oda açılamadı.');
+      }
+    };
+
+    window.backToRoomsList = function() {
+      if (unsubscribeRoomMessages) { unsubscribeRoomMessages(); unsubscribeRoomMessages = null; }
+      activeRoomId = null;
+      document.getElementById('roomChatView')?.classList.add('hidden');
+      document.getElementById('roomCreateForm')?.classList.remove('hidden');
+      document.getElementById('roomsList')?.classList.remove('hidden');
+    };
+
+    window.sendRoomMessage = async function(e) {
+      e.preventDefault();
+      if (!currentUser || !activeRoomId) return;
+      const input = document.getElementById('roomMessageInput');
+      const message = sanitizeText(input?.value || '', 1000);
+      if (!message) return;
+      try {
+        rateLimit('room-message:' + currentUser.uid, 20, 60000);
+        await addDoc(collection(db, 'rooms', activeRoomId, 'messages'), {
+          senderUid: currentUser.uid,
+          senderName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Üye',
+          text: message,
+          createdAt: serverTimestamp()
+        });
+        input.value = '';
+      } catch (error) {
+        fxToast(error.message || 'Mesaj gönderilemedi.');
+      }
+    };
+
     // ---- Hesap askıya alma uyarısı ----
     function showSuspension(message) {
       let el = document.getElementById('suspensionOverlay');
@@ -2224,86 +2530,83 @@
       if (el) el.style.display = 'none';
     }
 
-    // Oturum Kontrolü
+    // Supabase Auth tek oturum kaynağıdır. Admin paneli de aynı oturumu kullanır.
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       const authModal = document.getElementById('authModal');
       const networkAuthStatus = document.getElementById('networkAuthStatus');
 
       if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
+        const userDocRef = doc(db, 'users', user.uid);
+        let docSnap;
+        try {
+          docSnap = await getDoc(userDocRef);
+        } catch (error) {
+          console.error('Supabase profil yükleme hatası:', error);
+          fxToast('Profil bilgileri yüklenemedi. Supabase RLS ve SQL kurulumunu kontrol et.');
+          return;
+        }
 
-        // Askıya alınmış hesap: uyarıyı göster, akışı yükleme, oturumu kapat.
-        if (docSnap.exists() && docSnap.data().suspended === true) {
-          showSuspension(docSnap.data().suspendedMessage);
+        let profileData = docSnap.exists() ? (docSnap.data() || {}) : {};
+        if (profileData.suspended === true || profileData.banned === true) {
+          showSuspension(profileData.suspendedMessage || 'Hesabın yönetim tarafından kısıtlandı.');
           return;
         }
         hideSuspension();
         watchModeration(user.uid);
-
-        if (!docSnap.exists()) {
-          document.getElementById('usernameModal').classList.remove('hidden');
-        } else {
-          authModal.classList.add('hidden');
+        sendSecurityEvent(user, 'session').catch(() => {});
+        try {
+          const { data: roleRows, error: roleError } = await supabase.from('user_roles').select('role').eq('user_id', user.uid);
+          if (roleError) throw roleError;
+          const isAdmin = (roleRows || []).some(row => row.role === 'admin');
+          document.getElementById('adminDashboardBtn')?.classList.toggle('hidden', !isAdmin);
+        } catch (roleError) {
+          document.getElementById('adminDashboardBtn')?.classList.add('hidden');
+          console.warn('Yönetici rolü doğrulanamadı:', roleError.message);
         }
 
-        const name = user.displayName || user.email.split('@')[0];
-        const initial = name.charAt(0).toUpperCase();
+        if (!profileData.username) {
+          let pendingSignup = null;
+          try {
+            pendingSignup = JSON.parse(sessionStorage.getItem('FOREVER_PENDING_GOOGLE_SIGNUP') || 'null');
+          } catch {}
+          if (pendingSignup) {
+            sessionStorage.removeItem('FOREVER_PENDING_GOOGLE_SIGNUP');
+            await completeGoogleRegistration(user, pendingSignup);
+            docSnap = await getDoc(userDocRef);
+            profileData = docSnap.exists() ? (docSnap.data() || {}) : {};
+          } else {
+            authModal.classList.add('hidden');
+            document.getElementById('usernameModal').classList.remove('hidden');
+          }
+        }
 
+        if (profileData.username) {
+          authModal.classList.add('hidden');
+          document.getElementById('usernameModal')?.classList.add('hidden');
+        }
+
+        const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Forever üyesi');
+        const initial = name.charAt(0).toUpperCase();
         document.getElementById('userHeaderAvatar').textContent = initial;
         document.getElementById('userHeaderName').textContent = name;
-        document.getElementById('userHeaderEmail').textContent = user.email;
+        document.getElementById('userHeaderEmail').textContent = user.email || '';
 
         const sideAv = document.getElementById('sideUserAvatar'); if (sideAv) sideAv.textContent = initial;
         const sideNm = document.getElementById('sideUserName'); if (sideNm) sideNm.textContent = name;
-        const sideHd = document.getElementById('sideUserHandle'); if (sideHd) sideHd.textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
+        const sideHd = document.getElementById('sideUserHandle'); if (sideHd) sideHd.textContent = '@' + name.toLowerCase().replace(/\\s+/g, '');
         const postAv = document.getElementById('postCreatorAvatar'); if (postAv) postAv.textContent = initial;
         if (networkAuthStatus) {
           networkAuthStatus.textContent = 'Çevrimiçi';
           networkAuthStatus.className = 'status-ok';
         }
 
-        await loadFollowing();
-        await loadBlocked();
-        await loadSaves();
-        await refreshProfileStats();
+        await Promise.all([loadFollowing(), loadBlocked(), loadSaves(), refreshProfileStats()]);
         listenToPosts();
         listenToStories();
       } else {
-        // Aura X yerel oturumu varsa modalı kapat VE akışı yükle
-        try {
-          const aurax = JSON.parse(localStorage.getItem('forever_aurax_user') || 'null');
-          if (aurax && aurax.username) {
-            authModal.classList.add('hidden');
-            const name = aurax.username;
-            const initial = name.charAt(0).toUpperCase();
-            // Sentetik kullanıcı — okuma için yeterli; yazma işlemleri Firebase oturumu ister
-            currentUser = {
-              uid: 'aurax_' + (aurax.auraxUid || aurax.username),
-              displayName: name,
-              email: name + '@aurax.local',
-              photoURL: null,
-              isAuraX: true
-            };
-            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-            set('userHeaderAvatar', initial);
-            set('userHeaderName', name);
-            set('userHeaderEmail', name + ' (Aura X)');
-            set('sideUserAvatar', initial);
-            set('sideUserName', name);
-            set('sideUserHandle', '@' + name.toLowerCase());
-            set('postCreatorAvatar', initial);
-            if (networkAuthStatus) {
-              networkAuthStatus.textContent = 'Aura X ile bağlı';
-              networkAuthStatus.className = 'status-ok';
-            }
-            // Akışı başlat (Firestore okuma herkese açık)
-            try { listenToPosts(); } catch (e) { console.warn('listenToPosts', e); }
-            try { listenToStories(); } catch (e) { console.warn('listenToStories', e); }
-            return;
-          }
-        } catch (_) {}
+        document.getElementById('usernameModal')?.classList.add('hidden');
+        document.getElementById('adminDashboardBtn')?.classList.add('hidden');
         authModal.classList.remove('hidden');
         if (networkAuthStatus) {
           networkAuthStatus.textContent = 'Giriş gerekli';
@@ -2313,7 +2616,6 @@
     });
   </script>
 
-  <script type="module" src="./aurax-baglanti.js"></script>
 </body>
 </html>
 

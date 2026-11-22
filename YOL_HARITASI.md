@@ -1,47 +1,36 @@
-# Forever için ürün fikirleri ve önerilen sıra
+# Forever · Supabase geçiş yol haritası
 
-Forever'ın vaadi bence şu olabilir: **yakın hissettiren, kolay kullanılan ve insanların kendi topluluğunu kurduğu bir sosyal alan**. İlk sürümde her sosyal ağdaki her şeyi eklemek yerine birkaç özelliği gerçekten iyi yapmak daha doğru olur.
+Hedef: Forever'ın görsel kimliğini ve çalışan sosyal akışını koruyarak tek backend olarak Supabase kullanmak.
 
-## 1. İlk öncelik: güvenilir temel
+## Kod geçişi
+- [x] Supabase proje yapılandırması ve ortak istemci.
+- [x] Postgres tabloları ve RLS şeması.
+- [x] Ana sayfa oturum ve veri adaptörünü Supabase'e taşıma.
+- [x] Plus başvuru sayfası ve tek oturum kullanan admin paneli.
+- [x] Plus onay RPC'si, 3/6 oda limiti ve 20/30 kişi kapasite kuralı.
+- [x] IP kayıtları için şifreli Edge Function taslağı.
+- [x] Admin IP kayıtlarını sunucu üzerinden çözme fonksiyonu.
+- [x] MP4 süresini doğrulayan Plus video yükleme fonksiyonu.
+- [ ] Temiz Supabase projesinde SQL'i çalıştırıp gerçek veritabanı hatalarını gidermek.
+- [ ] Edge Functions deploy etmek ve Secrets tanımlamak.
+- [ ] OAuth provider ve gerçek redirect domain ayarlarını tamamlamak.
 
-1. **Profil ve kullanıcı adı:** benzersiz `@kullaniciadi`, profil fotoğrafı, biyografi, profili düzenleme ve gönderi sayfası.
-2. **Takip sistemi:** takip et/takibi bırak, takipçi ve takip edilen sayıları; ana akışta takip edilenlerin gönderilerine öncelik.
-3. **Gerçek fotoğraf yükleme:** sadece URL yapıştırmak yerine cihazdan fotoğraf seçme, yükleme ilerlemesi, boyut sınırı ve görsel sıkıştırma. Bunun için Firebase Storage etkinleştirilmeli ve erişim kuralları yazılmalı.
-4. **Gerçek arama ve Keşfet:** kullanıcı, gönderi ve `#etiket` araması; popülerlik ile yeniliği dengeli sıralama.
-5. **Kaydedilen gönderiler:** kullanıcıya özel kaydetme listesi.
+## Aura X birleşimi
+- [x] Takip, hikâye, özel mesaj, oda, çizim, çıkartma ve bildirimler için ortak veri modeli.
+- [ ] Eski Aura X kaynak kodunu edinip arayüz modüllerini Forever'a taşımak.
+- [ ] Özel mesaj, çizim ve çıkartma ekranlarını uçtan uca bağlamak.
 
-## 2. İkinci aşama: insanları geri getiren özellikler
+## Yayın öncesi kontroller
+- [ ] Firebase kullanıcıları ve veri için aktarım / parola sıfırlama planı.
+- [ ] Normal ve yönetici hesaplarıyla RLS testleri.
+- [ ] 5 görsel/gün, sınırsız Plus görseli ve 180 saniye Plus video testleri.
+- [ ] Hikâye private bucket ve takipçi görünürlüğü testleri.
+- [ ] İki ayrı hesapla takip, oda, Plus ve admin senaryoları.
+- [ ] Gizlilik metnindeki veri sorumlusu ve iletişim bilgileri tamamlanmalı.
+- [ ] Gerçek cihazlarda hız, bellek, ağ ve Realtime yükü ölçülmeli.
 
-- **Canlı özel mesajlaşma:** konuşma listesi, mesaj durumu, okunmamış sayacı ve basit görsel paylaşımı.
-- **Bildirim merkezi:** takip, beğeni, yorum ve yeni mesaj bildirimleri; kullanıcı tarafından kapatılabilen bildirim tercihleri.
-- **Hikâyeler:** 24 saat sonunda otomatik gizleme, izleyenler listesi ve içerik şikâyet etme.
-- **Anketler ve soru gönderileri:** yalnızca görsel paylaşmak yerine topluluk etkileşimi.
-- **Kişiselleştirilebilir akış:** “Takip ettiklerim” ve “Keşfet” arasında kolay geçiş.
-
-## 3. Güvenlik ve topluluk araçları (gerçek kullanımdan önce)
-
-- Firestore Rules ile kullanıcıların sadece kendi profillerini düzenlemesi ve yalnızca kendi gönderilerini silmesi garanti edilmeli; arayüzde düğmeyi gizlemek tek başına güvenlik değildir.
-- Şikâyet et, engelle, spam sınırı ve moderatör araçları eklenmeli.
-- Profil adları, görsel URL'leri ve kullanıcı tarafından girilen tüm alanlar doğrulanmalı ve güvenli biçimde görüntülenmeli.
-- Firebase App Check ve kullanım sınırları değerlendirilmeli; gerçek kullanıcı verileriyle test için ayrı test projesi kullanılmalı.
-- Kullanım şartları, gizlilik açıklaması ve hesap silme akışı eklenmeli.
-
-## 4. Görsel kimlik önerisi
-
-- Ana renk: elektrik moru; ikincil vurgu: pembe-mor. Her alanı parlak renge boyamak yerine yalnızca ana eylem ve aktif menüde kullan.
-- Akışta tek tip kartlar, okunaklı gönderi yazısı, daha geniş satır aralığı ve güçlü boşluk kullanımı.
-- Mobilde alt gezinme, masaüstünde sol menü + ortada akış + sağda keşfet paneli.
-- Yükleme, hata, boş akış ve çevrimdışı durumları için özel ekranlar tasarla.
-- Hareket efektlerini kısa tut; cihazın “hareketi azalt” ayarına saygı göster.
-
-## 5. Uygulanabilir yol haritası
-
-**Önce:** PWA kurulumu, ikon, responsive tasarım, hata mesajları, Firebase kuralları ve hesap akışını test et.
-
-**Sonra:** profil düzenleme + takip sistemi + cihazdan görsel yükleme.
-
-**Daha sonra:** Keşfet/arama + kaydetme + bildirimler.
-
-**Son aşama:** özel mesajlaşma, moderasyon paneli ve küçük bir test grubuyla performans/güvenlik kontrolü.
-
-Önerim: kullanıcıların her gün kullanacağı 3 özelliği sağlamlaştır; sonra yeni özellik ekle. Bu yaklaşım, çok fazla yarım özellikten daha güçlü bir ürün çıkarır.
+## Sabit kararlar
+- Tek backend: Supabase.
+- Tek oturum: Supabase Auth; admin rolü aynı kullanıcıya user_roles üzerinden verilir.
+- Forever'ın var olan görsel dili korunur; Aura X'ten istenen sosyal özellikler aynı hesap altyapısına eklenir.
+- Geliştirme forever-plus-development dalında kalır; canlı sürüm için test gerekir.
