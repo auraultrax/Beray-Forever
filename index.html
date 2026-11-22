@@ -580,6 +580,7 @@
       </div>
       <button type="button" id="profileEditBtn" class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="toggleProfileEdit()">Profili düzenle</button>
       <button type="button" id="plusApplyBtn" class="btn plus-apply-btn btn-block" style="margin-top:8px;" onclick="goToPlusApplication()">✦ Plus'a başvur</button>
+      <button type="button" id="adminDashboardBtn" class="btn btn-ghost btn-block hidden" style="margin-top:8px;" onclick="location.href='./admin.html'">⚙ Yönetim Paneli</button>
       <div id="plusBenefitsHint" class="plus-hint">Daha fazla oda, çıkartma, çizim, özel mesaj ve medya hakkı açılır.</div>
       <div id="followListBox" class="hidden" style="margin-top:14px;max-height:240px;overflow:auto;">
         <h3 id="followListTitle" style="font-size:.8rem;color:var(--muted);margin-bottom:8px;"></h3>
@@ -1146,18 +1147,6 @@
         const p = allPostsCache.find(x => x.id === postId);
         const cur = p?.sparks || 0;
         await updateDoc(postRef, { sparks: cur + 1 });
-        if (authorUid) {
-          await addDoc(collection(db, 'notifications'), {
-            toUid: authorUid,
-            fromUid: currentUser.uid,
-            fromName: currentUser.displayName || 'Biri',
-            type: 'spark',
-            postId,
-            text: 'gönderine ışık yaktı ✦',
-            read: false,
-            createdAt: serverTimestamp()
-          }).catch(() => {});
-        }
         if (p) p.sparks = cur + 1;
         renderPostsFromCache();
         if (typeof fxToast === 'function') fxToast('Işık yaktın ✦');
@@ -1289,7 +1278,7 @@
           const s = await getDocs(qq);
           s.forEach(d => docs.push({ id: d.id, ...d.data() }));
         } catch {
-          list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:12px;">Bildirimler için Firestore indeksi gerekebilir. Şimdilik boş.</p>';
+          list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:12px;">Bildirimler şu anda yüklenemedi. Bağlantını kontrol edip tekrar dene.</p>';
           return;
         }
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -2280,7 +2269,7 @@
       }
     };
 
-    // Firestore Akış Dinleyici
+    // Supabase Realtime akış dinleyici
     function listenToPosts() {
       const postsFeed = document.getElementById('postsFeed');
       if (unsubscribePosts) unsubscribePosts();
@@ -2403,7 +2392,7 @@
         roomsCache = [...map.values()].sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         renderForeverRooms();
       } catch (error) {
-        list.innerHTML = '<p class="sub">Odalar yüklenemedi. Firestore kurallarını ve bağlantıyı kontrol et.</p>';
+        list.innerHTML = '<p class="sub">Odalar yüklenemedi. Supabase tablo izinlerini ve bağlantıyı kontrol et.</p>';
         console.warn('Forever rooms load', error);
       }
     }
@@ -2591,6 +2580,15 @@
         hideSuspension();
         watchModeration(user.uid);
         sendSecurityEvent(user, 'session').catch(() => {});
+        try {
+          const { data: roleRows, error: roleError } = await supabase.from('user_roles').select('role').eq('user_id', user.uid);
+          if (roleError) throw roleError;
+          const isAdmin = (roleRows || []).some(row => row.role === 'admin');
+          document.getElementById('adminDashboardBtn')?.classList.toggle('hidden', !isAdmin);
+        } catch (roleError) {
+          document.getElementById('adminDashboardBtn')?.classList.add('hidden');
+          console.warn('Yönetici rolü doğrulanamadı:', roleError.message);
+        }
 
         if (!profileData.username) {
           let pendingSignup = null;
@@ -2633,6 +2631,7 @@
         listenToStories();
       } else {
         document.getElementById('usernameModal')?.classList.add('hidden');
+        document.getElementById('adminDashboardBtn')?.classList.add('hidden');
         authModal.classList.remove('hidden');
         if (networkAuthStatus) {
           networkAuthStatus.textContent = 'Giriş gerekli';
