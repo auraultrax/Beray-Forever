@@ -209,7 +209,7 @@ begin
     nullif(split_part(coalesce(v_headers ->> 'x-forwarded-for', ''), ',', 1), ''),
     nullif(v_headers ->> 'x-real-ip', '')
   );
-  v_name := v_first_name;
+  v_name := v_username;
 
   insert into public.forever_documents(collection_name,id,owner_id,data)
   values ('usernames', v_username, v_uid,
