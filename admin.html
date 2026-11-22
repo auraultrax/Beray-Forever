@@ -80,7 +80,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendEmailVerification }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, updateDoc, deleteDoc, addDoc, collection, query, where, limit, serverTimestamp, deleteField, increment }
+import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, limit, serverTimestamp, deleteField, increment }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Forever ile aynı Firebase projesi (herkese açık istemci yapılandırması; güvenlik Firestore kurallarındadır).
@@ -184,6 +184,16 @@ async function loadUsers() {
 $('searchBtn').onclick = renderUsers;
 $('q').addEventListener('keydown', e => { if (e.key === 'Enter') renderUsers(); });
 
+async function searchByPostAuthor(name) {
+  try {
+    const s = await getDocs(query(collection(db, 'posts'), where('authorName', '==', name), limit(20)));
+    const seen = new Map(); s.forEach(d => { const x = d.data(); if (x.userId) seen.set(x.userId, x.authorName); });
+    if (!seen.size) { $('userList').innerHTML = '<p class="muted">Sonuç yok. (Tam adı, büyük/küçük harfe dikkat ederek yaz, ya da Şikayetler sekmesinden "Yazarı yönet"e bas.)</p>'; return; }
+    $('userList').innerHTML = [...seen].map(([uid, n]) => `<div class="card"><strong>${esc(n)}</strong> <span class="muted">${esc(uid)}</span>
+      <div style="margin-top:8px"><button data-m="${esc(uid)}" data-n="${esc(n)}">Yönet</button></div></div>`).join('');
+    document.querySelectorAll('#userList [data-m]').forEach(b => b.onclick = () => manageUid(b.dataset.m, b.dataset.n));
+  } catch (e) { say('Arama başarısız: ' + e.message, 'bad'); }
+}
 function stateTag(u) {
   if (u.banned) return '<span class="tag bad">Yasaklı</span>';
   if (u.suspended) return '<span class="tag bad">Askıda</span>';
@@ -196,7 +206,11 @@ function renderUsers() {
   const q = $('q').value.trim().toLowerCase();
   const list = users.filter(u => !q ||
     [u.username, u.displayName, u.name, u.email, u.id].some(v => String(v || '').toLowerCase().includes(q))).slice(0, 60);
-  if (!list.length) { $('userList').innerHTML = '<p class="muted">Sonuç yok.</p>'; return; }
+  if (!list.length) {
+    $('userList').innerHTML = '<p class="muted">Kullanıcı listesinde yok. Gönderilerdeki yazar adından aranıyor…</p>';
+    if (q) searchByPostAuthor($('q').value.trim());
+    return;
+  }
   $('userList').innerHTML = list.map(u => `
     <div class="card" data-uid="${esc(u.id)}">
       <div class="row">
@@ -256,7 +270,7 @@ async function warn(u, reason, message) {
   if (!confirm(label(u) + ' uyarılsın mı?')) return;
   const text = message || 'Topluluk kurallarını ihlal ettiniz. Tekrarı hâlinde hesabınız kısıtlanabilir.';
   await run(async () => {
-    await updateDoc(doc(db, 'users', u.id), { warnCount: increment(1), lastWarning: text });
+    await setDoc(doc(db, 'users', u.id), { warnCount: increment(1), lastWarning: text }, { merge: true });
     await notify(u.id, text); await logAction('warn', u.id, reason);
   }, 'Kullanıcı uyarıldı.');
 }
@@ -265,7 +279,7 @@ async function restrict(u, reason, message, days) {
   if (!confirm(`${label(u)} ${days} gün kısıtlansın mı? (okuyabilir, yazamaz)`)) return;
   const text = message || `Hesabınız ${days} gün boyunca kısıtlandı: gönderi, yorum ve beğeni yapamazsınız.`;
   await run(async () => {
-    await updateDoc(doc(db, 'users', u.id), { restrictedUntil: Date.now() + days * DAY, restrictedReason: reason });
+    await setDoc(doc(db, 'users', u.id), { restrictedUntil: Date.now() + days * DAY, restrictedReason: reason }, { merge: true });
     await notify(u.id, text); await logAction('restrict', u.id, `${days} gün · ${reason}`);
   }, 'Kullanıcı kısıtlandı.');
 }
@@ -273,21 +287,21 @@ async function suspend(u, reason, message, permanent) {
   if (!confirm(`${label(u)} ${permanent ? 'KALICI OLARAK YASAKLANSIN' : 'askıya alınsın'} mı?`)) return;
   const text = message || (permanent ? BAN_MSG : SUSP_MSG);
   await run(async () => {
-    await updateDoc(doc(db, 'users', u.id), {
+    await setDoc(doc(db, 'users', u.id), {
       suspended: true, banned: !!permanent, suspendedReason: reason, suspendedMessage: text,
       suspendedAt: serverTimestamp(), suspendedBy: me.uid
-    });
+    }, { merge: true });
     await notify(u.id, text); await logAction(permanent ? 'ban' : 'suspend', u.id, reason);
   }, permanent ? 'Kullanıcı kalıcı olarak yasaklandı.' : 'Hesap askıya alındı.');
 }
 async function lift(u) {
   if (!confirm(label(u) + ' için tüm kısıtlar kaldırılsın mı?')) return;
   await run(async () => {
-    await updateDoc(doc(db, 'users', u.id), {
+    await setDoc(doc(db, 'users', u.id), {
       suspended: false, banned: false, suspendedReason: deleteField(), suspendedMessage: deleteField(),
       suspendedAt: deleteField(), suspendedBy: deleteField(),
       restrictedUntil: deleteField(), restrictedReason: deleteField()
-    });
+    }, { merge: true });
     await logAction('lift', u.id, '');
   }, 'Kısıtlar kaldırıldı.');
 }
@@ -309,6 +323,20 @@ async function showPosts(u, box) {
   } catch (e) { box.innerHTML = ''; say('Gönderiler okunamadı: ' + e.message, 'bad'); }
 }
 
+// Kullanıcı belgesi olmasa bile (yalnızca gönderisi varsa) yönetilebilsin.
+async function manageUid(uid, nameHint) {
+  let u = users.find(x => x.id === uid);
+  if (!u) {
+    let data = null;
+    try { const d = await getDoc(doc(db, 'users', uid)); if (d.exists()) data = d.data(); } catch (e) {}
+    u = { id: uid, ...(data || { username: nameHint || '', _stub: true }) };
+    users.unshift(u);
+  }
+  showTab('users'); $('q').value = uid; renderUsers();
+  const card = document.querySelector(`#userList [data-uid="${CSS.escape(uid)}"]`);
+  if (card) openPanel(card);
+}
+
 // ---------- şikayetler ----------
 async function loadReports() {
   $('reportList').innerHTML = '<p class="muted">Yükleniyor…</p>';
@@ -317,17 +345,30 @@ async function loadReports() {
     const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
     rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     if (!rows.length) { $('reportList').innerHTML = '<p class="muted">Şikayet yok.</p>'; return; }
+    // Gönderi şikayetlerinde yazarı bul
+    for (const r of rows) {
+      if (r.type === 'post' && r.targetId) {
+        try { const ps = await getDoc(doc(db, 'posts', r.targetId));
+          if (ps.exists()) { const d = ps.data(); r._author = d.userId || ''; r._name = d.authorName || ''; r._text = String(d.content || '').slice(0, 300); }
+          else r._gone = true; } catch (e) {}
+      }
+    }
     $('reportList').innerHTML = rows.map(r => `
       <div class="card">
         <span class="tag ${r.status === 'open' ? 'warn' : 'ok'}">${esc(r.status || 'open')}</span>
         <strong> ${esc(r.type || '')}</strong> <span class="muted">hedef: ${esc(r.targetId || '')}</span>
         <pre>${esc(r.reason || '')}</pre>
+        ${r._text ? `<div class="muted">Gönderi: <em>${esc(r._text)}</em></div>` : ''}
+        ${r._name ? `<div class="muted">Yazar: <strong>${esc(r._name)}</strong> (${esc(r._author)})</div>` : ''}
+        ${r._gone ? '<div class="muted">Gönderi artık yok.</div>' : ''}
         <div class="muted">bildiren: ${esc(r.reporterId || '')} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div>
         <div class="row" style="margin-top:8px">
-          ${r.type === 'post' ? `<button class="bad" data-delpost="${esc(r.targetId)}" data-rid="${esc(r.id)}">Gönderiyi sil</button>` : ''}
+          ${r._author ? `<button data-manage="${esc(r._author)}" data-name="${esc(r._name)}">Yazarı yönet</button>` : ''}
+          ${r.type === 'post' ? `<button class="sec" data-delpost="${esc(r.targetId)}" data-rid="${esc(r.id)}">Gönderiyi sil</button>` : ''}
           ${r.status === 'open' ? `<button class="sec" data-rid="${esc(r.id)}" data-resolve="1">Çözüldü say</button>` : ''}
         </div>
       </div>`).join('');
+    document.querySelectorAll('#reportList [data-manage]').forEach(b => b.onclick = () => manageUid(b.dataset.manage, b.dataset.name));
     document.querySelectorAll('#reportList [data-resolve]').forEach(b => b.onclick = async () => {
       try { await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' }); await logAction('resolve_report', '', b.dataset.rid); loadReports(); }
       catch (e) { say('Güncellenemedi: ' + e.message, 'bad'); }
