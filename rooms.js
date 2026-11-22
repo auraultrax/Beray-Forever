@@ -59,7 +59,7 @@ function syncPlusControls(){
   const features=activeRoom?.data?.features||{},stickersEnabled=features.stickers!==false,drawingEnabled=features.drawing!==false;
   if($('openStickersBtn'))$('openStickersBtn').disabled=!isPlus||!stickersEnabled;
   if($('toggleDrawingBtn'))$('toggleDrawingBtn').disabled=!isPlus||!drawingEnabled;
-  if($('stickerLock'))$('stickerLock').textContent=isPlus?'':'🔒 Plus';
+  if($('stickerLock'))$('stickerLock').textContent=isPlus?'Yeni animasyonlar aktif':'🔒 Plus üyelerine özel';
   if($('drawingLock'))$('drawingLock').textContent=isPlus?'':'🔒 Plus';
   if(!isPlus||!drawingEnabled)$('drawingBox')?.classList.add('hidden');
   if(!isPlus||!stickersEnabled)$('stickerTray')?.classList.add('hidden');
