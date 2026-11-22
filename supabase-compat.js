@@ -206,7 +206,15 @@ export async function setDoc(ref, data, options = {}) { return upsertDocument(re
 export async function updateDoc(ref, patch) {
   const current = (await readRows(ref))[0];
   if (!current) throw new Error("Güncellenecek kayıt bulunamadı.");
-  return upsertDocument(ref, patch, true);
+  const clean = cleanPublicData(ref.collection, applyPatch(current.data, patch));
+  const { data: saved, error } = await supabaseClient.from("forever_documents")
+    .update({ data: clean, updated_at: new Date().toISOString() })
+    .eq("collection_name", ref.collection)
+    .eq("id", ref.id)
+    .select("id,data,owner_id,created_at")
+    .single();
+  if (error) throw error;
+  return snap(saved);
 }
 export async function addDoc(ref, data) {
   const id = globalThis.crypto?.randomUUID?.() || ("d" + Date.now().toString(36) + Math.random().toString(36).slice(2));
