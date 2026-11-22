@@ -295,6 +295,14 @@ declare
   v_user_id text;
   v_new_media boolean := false;
 begin
+  if tg_op='UPDATE' and not public.is_forever_admin() then
+    if new.collection_name is distinct from old.collection_name
+       or new.id is distinct from old.id
+       or new.owner_id is distinct from old.owner_id then
+      raise exception 'Kayıt kimliği ve sahibi değiştirilemez.';
+    end if;
+  end if;
+
   if not public.is_forever_admin() then
     if new.collection_name='users' and tg_op='UPDATE' then
       if old.owner_id is distinct from auth.uid() then
@@ -382,7 +390,7 @@ begin
       from public.forever_documents d
       where d.collection_name in ('posts','stories') and d.owner_id=new.owner_id
         and d.created_at >= date_trunc('day', now())
-        and (tg_op <> 'UPDATE' or d.id <> new.id);
+        and (tg_op <> 'UPDATE' or d.collection_name <> new.collection_name or d.id <> new.id);
       if v_count >= case when v_is_plus then 10 else 5 end and not public.is_forever_admin() then
         raise exception 'Günlük toplam medya yükleme sınırına ulaştın.';
       end if;
