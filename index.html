@@ -459,58 +459,29 @@
       </div>
       <p class="sub" style="text-align:center;">Anılarını paylaş, topluluğa bağlan.</p>
       <div id="authAlert" class="alert hidden"></div>
-      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google ile devam et</button>
-      <button type="button" class="btn" id="auraxLoginBtn" style="background:linear-gradient(135deg,#7c3aed,#c026d3);margin-top:8px;"><i class="fa-solid fa-link"></i> Aura X ile Giriş Yap</button>
-      <form id="auraxForm" class="hidden" style="margin-top:12px;">
-        <div class="field">
-          <label>Aura X kullanıcı adı</label>
-          <input type="text" id="auraxUser" autocomplete="username" placeholder="kullaniciadi" required>
-        </div>
-        <div class="field">
-          <label>Aura X şifresi</label>
-          <input type="password" id="auraxPass" autocomplete="current-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn btn-block">Aura X hesabımı doğrula →</button>
-      </form>
-      <div class="divider">veya e-posta</div>
-      <form onsubmit="handleAuthSubmit(event)">
-        <div id="nameField" class="field hidden">
-          <label>Ad Soyad</label>
-          <input type="text" id="authName" autocomplete="name" placeholder="Adın">
-        </div>
-        <div class="field">
-          <label>E-posta</label>
-          <input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com">
-        </div>
-        <div class="field">
-          <label>Şifre</label>
-          <input type="password" id="authPassword" required autocomplete="current-password" placeholder="••••••••" minlength="6">
-        </div>
-        <button type="submit" id="authSubmitBtn" class="btn btn-block">Giriş Yap</button>
-      </form>
-      <p class="toggle-line">
-        <button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button>
-      </p>
-      <p class="toggle-line" id="authToggleText">
-        Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button>
-      </p>
-    </div>
-  </div>
-
-  <div id="forgotPasswordModal" class="modal hidden">
-    <div class="modal-card">
-      <h2>Şifre sıfırla</h2>
-      <p class="sub">E-posta adresine bağlantı gönderilir.</p>
-      <div id="forgotAlert" class="alert hidden"></div>
-      <form onsubmit="handleForgotPassword(event)">
-        <div class="field"><label>E-posta</label><input type="email" id="forgotEmail" required></div>
-        <button type="submit" id="forgotSubmitBtn" class="btn btn-block">Bağlantı Gönder</button>
-      </form>
-      <button type="button" class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="closeForgotPasswordModal()">Kapat</button>
+      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google hesabınla devam et</button>
+      <p class="sub" style="margin-top:12px;text-align:center;">Forever hesabın Google hesabına bağlanır. İlk girişte kullanıcı adını ve kayıt bilgilerini belirlersin.</p>
     </div>
   </div>
 
   <div id="usernameModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Forever'a hoş geldin ✨</h2>
+      <p class="sub">Profilini oluşturmak için bilgilerini tamamla.</p>
+      <form onsubmit="handleUsernameSubmit(event)">
+        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" autocomplete="username"></div>
+        <div class="field"><label>Ad</label><input type="text" id="regFirstName" required maxlength="50" autocomplete="given-name"></div>
+        <div class="field"><label>Soyad</label><input type="text" id="regLastName" required maxlength="50" autocomplete="family-name"></div>
+        <div class="field"><label>Doğum tarihi</label><input type="date" id="regBirthDate" required max="2026-11-22" autocomplete="bday"></div>
+        <div class="alert" style="display:block;line-height:1.5;">Ad, soyad ve doğum tarihi kayıt amacıyla saklanır. IP adresi güvenlik ve kötüye kullanımın önlenmesi için sunucu tarafından kaydedilebilir. Ayrıntılar: <a href="./kvkk.html" target="_blank" rel="noopener" style="color:var(--primary2);text-decoration:underline;">KVKK Aydınlatma Metni</a>.</div>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin:10px 0;font-size:.78rem;color:var(--muted);"><input type="checkbox" id="privacyConsent" required style="width:auto;margin-top:3px;"> KVKK Aydınlatma Metni'ni okudum.</label>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin:10px 0 16px;font-size:.78rem;color:var(--muted);"><input type="checkbox" id="termsConsent" required style="width:auto;margin-top:3px;"> <a href="./kullanim-kosullari.html" target="_blank" rel="noopener" style="color:var(--primary2);">Kullanım Koşulları</a>'nı kabul ediyorum.</label>
+        <button type="submit" id="registerProfileBtn" class="btn btn-block">Hesabımı oluştur</button>
+      </form>
+    </div>
+  </div>
+
+
     <div class="modal-card">
       <h2>Kullanıcı adı</h2>
       <p class="sub">Forever’da görünecek adın.</p>
