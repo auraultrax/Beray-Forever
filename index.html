@@ -476,7 +476,7 @@
         <div id="regionField" class="field hidden"><label>Bölge</label><select id="authRegion"><option value="">Bölgeni seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
         <div id="usernameField" class="field hidden"><label>Kullanıcı adı</label><input type="text" id="authUsername" autocomplete="username" placeholder="kullaniciadi" maxlength="24"></div>
         <div class="field" id="authEmailField"><label>E-posta</label><input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com"></div>
-        <div class="field"><label>Şifre</label><input type="password" id="authPassword" required autocomplete="current-password" placeholder="En az 8 karakter" minlength="8"></div>
+        <div class="field"><label>Şifre</label><input type="password" id="authPassword" required autocomplete="current-password" placeholder="En az 8 karakter" minlength="6"></div>
         <button type="submit" id="authSubmitBtn" class="btn btn-block">Giriş Yap</button>
       </form>
       <p class="toggle-line" id="forgotPasswordLine"><button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button></p>
@@ -790,6 +790,7 @@
       const vid = document.getElementById(vidId);
       if (!input) return;
       input.addEventListener('change', () => {
+        if (input.dataset.previewUrl) { URL.revokeObjectURL(input.dataset.previewUrl); delete input.dataset.previewUrl; }
         const f = input.files && input.files[0];
         const hide = (el) => {
           if (!el) return;
@@ -806,6 +807,7 @@
         hide(img); hide(vid);
         if (!f) return;
         const url = URL.createObjectURL(f);
+        input.dataset.previewUrl = url;
         if (f.type.startsWith('video/')) show(vid, url);
         else show(img, url);
       });
@@ -952,9 +954,9 @@
 
     async function prepareVideoForStore(file) {
       // Firestore ~1MB limit — kısa/küçük klipler; büyükse hata
-      const maxBytes = 850 * 1024;
+      const maxBytes = 650 * 1024;
       if (file.size <= maxBytes) return file;
-      throw new Error('Video çok büyük (max ~850KB). Daha kısa klip seç veya bilgisayarında upload-server kullan.');
+      throw new Error('Video çok büyük (max ~650KB). Daha uzun klipler için Forever yükleme sunucusunu ayarla.');
     }
 
     /** Foto veya video. Sunucu varsa oraya; yoksa data URL (küçük dosya). */
@@ -963,7 +965,7 @@
       if (isVideoFile(file)) {
         if (endpoint) {
           // yerel sunucuda boyut daha esnek (max 25MB)
-          if (file.size > 25 * 1024 * 1024) throw new Error('Video 25MB üstü olamaz');
+          if (file.size > 8 * 1024 * 1024) throw new Error('Video 8MB üstü olamaz (varsayılan sunucu sınırı)');
           return await uploadToLocalServer(file, folder);
         }
         const prepared = await prepareVideoForStore(file);
@@ -983,7 +985,7 @@
       if (isVid) {
         return '<video class="post-img" src="' + safe + '" controls playsinline preload="metadata"></video>';
       }
-      return '<img class="post-img" src="' + safe + '" alt="" onerror="this.style.display=\'none\'">';
+      return '<img class="post-img" src="' + safe + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">';
     }
 
     // ========== GÜVENLİK & DOĞRULAMA KATMANI (Forever Priority) ==========
@@ -1330,6 +1332,8 @@
     let followingIds = new Set();
     let allPostsCache = [];
     let feedQuery = '';
+    let feedFilterTimer = null;
+    let trendingTagCache = [];
 
     function fxToast(msg) {
       let el = document.getElementById('fxToastEl');
@@ -1372,7 +1376,7 @@
       const password = String(raw.password || '');
       const date = new Date(dateOfBirth + 'T00:00:00');
       const today = new Date(); today.setHours(23, 59, 59, 999);
-      if (!displayName || displayName.split(/\\s+/).length < 2) throw new Error('Ad ve soyadını birlikte yaz.');
+      if (!displayName || displayName.split(/\s+/).length < 2) throw new Error('Ad ve soyadını birlikte yaz.');
       if (!dateOfBirth || Number.isNaN(date.getTime()) || date > today || date.getFullYear() < 1900) throw new Error('Geçerli bir doğum tarihi seç.');
       if (!region) throw new Error('Bölgeni seç.');
       if (!isValidUsername(username)) throw new Error('Kullanıcı adı 3-24 karakter olmalı; küçük harf, rakam ve alt çizgi kullan.');
@@ -1544,6 +1548,7 @@
       if (password) {
         password.value = '';
         password.autocomplete = isSignUpMode ? 'new-password' : 'current-password';
+        password.minLength = isSignUpMode ? 8 : 6;
         password.placeholder = isSignUpMode ? 'En az 8 karakter' : 'Şifren';
       }
       document.getElementById('forgotPasswordLine')?.classList.toggle('hidden', isSignUpMode);
@@ -1653,7 +1658,7 @@
 
     function listenToStories() {
       if (unsubscribeStories) unsubscribeStories();
-      unsubscribeStories = onSnapshot(collection(db, "stories"), (snapshot) => {
+      unsubscribeStories = onSnapshot(query(collection(db, "stories"), orderBy("createdAt", "desc"), limit(30)), (snapshot) => {
         const storiesContainer = document.getElementById('storiesContainer');
         const existingAddBtn = storiesContainer.firstElementChild;
         storiesContainer.innerHTML = '';
@@ -1668,7 +1673,7 @@
           const isVid = story.mediaType === 'video' || String(story.imageUrl || '').startsWith('data:video');
           const thumb = isVid
             ? `<div class="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-white"><i class="fa-solid fa-play"></i></div>`
-            : `<img src="${story.imageUrl}" class="w-full h-full rounded-full object-cover">`;
+            : `<img src="${story.imageUrl}" loading="lazy" decoding="async" class="w-full h-full rounded-full object-cover">`;
           const canDel = currentUser && story.userId === currentUser.uid;
           const delBtn = canDel ? `<button type="button" class="story-del" title="Sil" onclick="deleteStory('${story.id}', event)" style="right:18px;"><i class="fa-solid fa-xmark"></i></button>
             <button type="button" class="story-del" title="Düzenle" onclick="openEditStory('${story.id}', event)" style="background:#047857;right:-4px;"><i class="fa-solid fa-pen" style="font-size:8px;"></i></button>` : '';
@@ -2011,7 +2016,8 @@
 
     window.filterFeed = function(q) {
       feedQuery = (q || '').trim().toLowerCase();
-      renderPostsFromCache();
+      clearTimeout(feedFilterTimer);
+      feedFilterTimer = setTimeout(renderPostsFromCache, 140);
     };
 
     function renderPostsFromCache() {
@@ -2051,10 +2057,8 @@
 
       postsFeed.innerHTML = '';
 
-      // Trend etiketler (basit frekans)
-      const tagCount = {};
-      allPostsCache.forEach(p => (p.tags || []).forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; }));
-      const trending = Object.entries(tagCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
+      // Trend etiketleri snapshot geldiğinde bir kez hesaplanır.
+      const trending = trendingTagCache;
       const trendBox = document.getElementById('trendingTags');
       if (trendBox) {
         trendBox.innerHTML = trending.length
@@ -2241,13 +2245,17 @@
       const postsFeed = document.getElementById('postsFeed');
       if (unsubscribePosts) unsubscribePosts();
 
-      unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
+      const latestPostsQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(60));
+      unsubscribePosts = onSnapshot(latestPostsQuery, (snapshot) => {
         const posts = [];
         snapshot.forEach(docSnap => {
           posts.push({ id: docSnap.id, ...docSnap.data() });
         });
         posts.sort((a, b) => (b.createdAt?.toMillis?.() || b.createdAt?.seconds || 0) - (a.createdAt?.toMillis?.() || a.createdAt?.seconds || 0));
         allPostsCache = posts;
+        const tagCount = {};
+        posts.forEach(p => (p.tags || []).forEach(t => { tagCount[t] = (tagCount[t] || 0) + 1; }));
+        trendingTagCache = Object.entries(tagCount).sort((a,b) => b[1]-a[1]).slice(0, 8);
         const postCountElem = document.getElementById('userPostCount');
         if (postCountElem && currentUser) {
           postCountElem.textContent = posts.filter(p => p.userId === currentUser.uid).length;
