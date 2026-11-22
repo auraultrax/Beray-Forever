@@ -822,14 +822,15 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { 
       getAuth, 
-      createUserWithEmailAndPassword, 
       signInWithEmailAndPassword, 
       signOut, 
       onAuthStateChanged,
       updateProfile,
       GoogleAuthProvider,
       signInWithPopup,
-      sendPasswordResetEmail
+      sendPasswordResetEmail,
+      EmailAuthProvider,
+      linkWithCredential
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { 
       getFirestore, 
@@ -843,7 +844,12 @@
       updateDoc, 
       arrayUnion, 
       arrayRemove, 
-      serverTimestamp 
+      serverTimestamp,
+      getDocs,
+      query,
+      where,
+      orderBy,
+      limit
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -859,6 +865,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: "select_account" });
 
     // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
     // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
@@ -1259,9 +1266,6 @@
       try {
         const q = collection(db, 'notifications');
         // Basit: son 30 kaydı çek, client-side filtrele (production'da query ile toUid)
-        const snap = await getDoc(doc(db, 'users', currentUser.uid)).catch(() => null);
-        // onSnapshot daha iyi ama şimdilik tek seferlik
-        const { getDocs, query, where, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
         let docs = [];
         try {
           const qq = query(collection(db, 'notifications'), where('toUid', '==', currentUser.uid), limit(25));
@@ -1350,58 +1354,147 @@
     let unsubscribePosts = null;
     let unsubscribeStories = null;
 
-    // Google ile Giriş
-    window.handleGoogleSignIn = async function() {
+    function signupProfileFromAuthForm() {
+      return {
+        displayName: document.getElementById('authName')?.value || '',
+        dateOfBirth: document.getElementById('authBirthDate')?.value || '',
+        region: document.getElementById('authRegion')?.value || '',
+        username: document.getElementById('authUsername')?.value || '',
+        password: document.getElementById('authPassword')?.value || ''
+      };
+    }
+
+    function validateSignupProfile(raw) {
+      const displayName = sanitizeText(raw.displayName, LIMITS.displayName);
+      const dateOfBirth = String(raw.dateOfBirth || '').trim();
+      const region = sanitizeText(raw.region, 40);
+      const username = normalizeUsername(raw.username);
+      const password = String(raw.password || '');
+      const date = new Date(dateOfBirth + 'T00:00:00');
+      const today = new Date(); today.setHours(23, 59, 59, 999);
+      if (!displayName || displayName.split(/\\s+/).length < 2) throw new Error('Ad ve soyadını birlikte yaz.');
+      if (!dateOfBirth || Number.isNaN(date.getTime()) || date > today || date.getFullYear() < 1900) throw new Error('Geçerli bir doğum tarihi seç.');
+      if (!region) throw new Error('Bölgeni seç.');
+      if (!isValidUsername(username)) throw new Error('Kullanıcı adı 3-24 karakter olmalı; küçük harf, rakam ve alt çizgi kullan.');
+      if (password.length < 8) throw new Error('Şifre en az 8 karakter olmalı.');
+      return { displayName, dateOfBirth, region, username, password };
+    }
+
+    async function completeGoogleRegistration(user, rawProfile) {
+      const profile = validateSignupProfile(rawProfile);
+      if (!user || !user.email) throw new Error('Seçilen Google hesabından e-posta alınamadı.');
+      const userRef = doc(db, 'users', user.uid);
+      const usernameRef = doc(db, 'usernames', profile.username);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists() && userSnap.data().username) throw new Error('Bu Google hesabı zaten Forever Plus hesabına bağlı. Giriş yapabilirsin.');
+      const usernameSnap = await getDoc(usernameRef);
+      if (usernameSnap.exists() && usernameSnap.data().uid !== user.uid) throw new Error('Bu kullanıcı adı alınmış. Başka bir tane seç.');
+
+      const hasPasswordProvider = Array.isArray(user.providerData) && user.providerData.some(p => p.providerId === 'password');
+      if (!hasPasswordProvider) {
+        try {
+          await linkWithCredential(user, EmailAuthProvider.credential(user.email, profile.password));
+        } catch (error) {
+          if (error.code !== 'auth/provider-already-linked') {
+            throw new Error('Şifre bu Google hesabına bağlanamadı: ' + (error.message || error.code || 'bilinmeyen hata'));
+          }
+        }
+      }
+
+      await updateProfile(user, { displayName: profile.displayName });
+      const usernameWasCreated = !usernameSnap.exists();
+      try {
+        if (usernameWasCreated) await setDoc(usernameRef, { uid: user.uid, createdAt: serverTimestamp() });
+        await setDoc(userRef, {
+          uid: user.uid,
+          displayName: profile.displayName,
+          username: profile.username,
+          email: user.email,
+          region: profile.region,
+          following: [],
+          followers: [],
+          bio: '',
+          createdAt: serverTimestamp()
+        }, { merge: true });
+        // Doğum tarihi herkese açık users belgesinde değil, yalnızca sahibinin okuyabildiği özel belgede tutulur.
+        await setDoc(doc(db, 'privateProfiles', user.uid), {
+          uid: user.uid,
+          dateOfBirth: profile.dateOfBirth,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (error) {
+        if (usernameWasCreated) await deleteDoc(usernameRef).catch(() => {});
+        throw error;
+      }
+
+      currentUser = user;
+      document.getElementById('authModal')?.classList.add('hidden');
+      document.getElementById('usernameModal')?.classList.add('hidden');
+      if (typeof fxToast === 'function') fxToast('Forever Plus hesabın oluşturuldu. Hoş geldin!');
+    }
+
+    async function runGoogleRegistration(rawProfile, submitButton) {
+      const profile = validateSignupProfile(rawProfile);
+      const previousText = submitButton?.textContent || '';
+      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Google hesabı seçiliyor…'; }
       try {
         const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
+        currentUser = result.user;
+        const existing = await getDoc(doc(db, 'users', result.user.uid));
+        if (existing.exists() && existing.data().username) {
+          document.getElementById('authModal')?.classList.add('hidden');
+          if (typeof fxToast === 'function') fxToast('Bu Forever Plus hesabı zaten kayıtlı. Giriş yaptın.');
+          return;
+        }
+        await completeGoogleRegistration(result.user, profile);
+      } finally {
+        if (submitButton) { submitButton.disabled = false; submitButton.textContent = previousText || (isSignUpMode ? 'Google hesabını seçip kayıt ol' : 'Giriş Yap'); }
+      }
+    }
 
-        if (!docSnap.exists()) {
-          // İlk kez giriş yapıyor, Kullanıcı adı oluştur modalı aç
+    // Google ile giriş. Yeni hesaplarda Google hesabı seçildikten sonra profil tamamlanır.
+    window.handleGoogleSignIn = async function() {
+      if (isSignUpMode) {
+        try { await runGoogleRegistration(signupProfileFromAuthForm(), document.getElementById('authSubmitBtn')); }
+        catch (error) { showAlert(error.message || 'Google ile kayıt tamamlanamadı.', 'error'); }
+        return;
+      }
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        currentUser = result.user;
+        const docSnap = await getDoc(doc(db, 'users', result.user.uid));
+        if (!docSnap.exists() || !docSnap.data().username) {
+          document.getElementById('authModal').classList.add('hidden');
           document.getElementById('usernameModal').classList.remove('hidden');
+          const display = document.getElementById('newDisplayName');
+          if (display && !display.value) display.value = result.user.displayName || '';
         } else {
           document.getElementById('authModal').classList.add('hidden');
         }
       } catch (error) {
-        showAlert(error.message, 'error');
+        showAlert(error.message || 'Google ile giriş yapılamadı.', 'error');
       }
     };
 
     window.handleUsernameSubmit = async function(e) {
       e.preventDefault();
-      if (!currentUser) return;
-      const raw = document.getElementById('newUsername').value;
-      const newUsername = normalizeUsername(raw);
-      if (!isValidUsername(newUsername)) {
-        alert('Kullanıcı adı 3-24 karakter, sadece küçük harf, rakam ve alt çizgi (_) olabilir.');
-        return;
-      }
+      const user = currentUser || auth.currentUser;
+      if (!user) return;
+      const profile = {
+        displayName: document.getElementById('newDisplayName')?.value || user.displayName || '',
+        dateOfBirth: document.getElementById('newBirthDate')?.value || '',
+        region: document.getElementById('newRegion')?.value || '',
+        username: document.getElementById('newUsername')?.value || '',
+        password: document.getElementById('newPassword')?.value || ''
+      };
+      const button = e.submitter || document.querySelector('#usernameModal button[type="submit"]');
+      if (button) { button.disabled = true; button.textContent = 'Kaydediliyor…'; }
       try {
-        // Benzersizlik kontrolü
-        const unameRef = doc(db, 'usernames', newUsername);
-        const unameSnap = await getDoc(unameRef);
-        if (unameSnap.exists() && unameSnap.data().uid !== currentUser.uid) {
-          alert('Bu kullanıcı adı alınmış. Başka bir tane dene.');
-          return;
-        }
-        await setDoc(unameRef, { uid: currentUser.uid, createdAt: serverTimestamp() });
-        await setDoc(doc(db, 'users', currentUser.uid), {
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || newUsername,
-          username: newUsername,
-          email: currentUser.email,
-          createdAt: serverTimestamp()
-        }, { merge: true });
-        try {
-          await updateProfile(currentUser, { displayName: newUsername });
-        } catch (_) {}
-        document.getElementById('usernameModal').classList.add('hidden');
-        document.getElementById('authModal').classList.add('hidden');
-      } catch (err) {
-        console.error('Kullanıcı adı kaydedilemedi:', err);
-        alert(err.message || 'Kullanıcı adı kaydedilemedi');
+        await completeGoogleRegistration(user, profile);
+      } catch (error) {
+        alert(error.message || 'Profil tamamlanamadı.');
+      } finally {
+        if (button) { button.disabled = false; button.textContent = "Forever Plus'a katıl"; }
       }
     };
 
@@ -1437,24 +1530,30 @@
       }
     };
 
-    // Form Modları
+    // Form modları: kayıt Google hesabı seçimiyle tamamlanır.
     window.toggleAuthMode = function() {
       isSignUpMode = !isSignUpMode;
-      const nameField = document.getElementById('nameField');
+      ['nameField','birthDateField','regionField','usernameField'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('hidden', !isSignUpMode);
+      });
+      const emailField = document.getElementById('authEmailField');
+      const emailInput = document.getElementById('authEmail');
+      if (emailField) emailField.classList.toggle('hidden', isSignUpMode);
+      if (emailInput) { emailInput.required = !isSignUpMode; emailInput.value = ''; }
+      const password = document.getElementById('authPassword');
+      if (password) {
+        password.value = '';
+        password.autocomplete = isSignUpMode ? 'new-password' : 'current-password';
+        password.placeholder = isSignUpMode ? 'En az 8 karakter' : 'Şifren';
+      }
+      document.getElementById('forgotPasswordLine')?.classList.toggle('hidden', isSignUpMode);
       const submitBtn = document.getElementById('authSubmitBtn');
       const toggleText = document.getElementById('authToggleText');
-      const alertBox = document.getElementById('authAlert');
-
-      alertBox.classList.add('hidden');
-      if (isSignUpMode) {
-        nameField.classList.remove('hidden');
-        submitBtn.textContent = 'Kayıt Ol';
-        toggleText.innerHTML = `Zaten hesabınız var mı? <button type="button" onclick="toggleAuthMode()" class="text-brand-400 font-semibold hover:underline">Giriş Yap</button>`;
-      } else {
-        nameField.classList.add('hidden');
-        submitBtn.textContent = 'Giriş Yap';
-        toggleText.innerHTML = `Hesabınız yok mu? <button type="button" onclick="toggleAuthMode()" class="text-brand-400 font-semibold hover:underline">Kayıt Ol</button>`;
-      }
+      document.getElementById('authAlert')?.classList.add('hidden');
+      if (submitBtn) submitBtn.textContent = isSignUpMode ? 'Google hesabını seçip kayıt ol' : 'Giriş Yap';
+      if (toggleText) toggleText.innerHTML = isSignUpMode
+        ? 'Zaten hesabın var mı? <button type="button" onclick="toggleAuthMode()">Giriş Yap</button>'
+        : 'Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button>';
     };
 
     function showAlert(message, type = 'error') {
@@ -1468,50 +1567,39 @@
       alertBox.textContent = message;
     }
 
-    // Normal E-Posta ile Giriş / Kayıt
+    // E-posta/şifre ile giriş veya Google hesabını seçerek kayıt.
     window.handleAuthSubmit = async function(e) {
       e.preventDefault();
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value.trim();
-      const name = document.getElementById('authName').value.trim();
       const submitBtn = document.getElementById('authSubmitBtn');
-
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> İşleniyor...`;
-
-      try {
-        if (isSignUpMode) {
-          if (!name) throw new Error("Lütfen ad ve soyadınızı girin.");
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-
-          await updateProfile(user, { displayName: name });
-          await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            displayName: name,
-            email: email,
-            following: [],
-            followers: [],
-            bio: '',
-            createdAt: serverTimestamp()
-          });
-
-          showAlert("Hesabınız başarıyla oluşturuldu!", "success");
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-          showAlert("Başarıyla giriş yapıldı!", "success");
+      if (isSignUpMode) {
+        try {
+          await runGoogleRegistration(signupProfileFromAuthForm(), submitBtn);
+        } catch (error) {
+          showAlert(error.message || 'Kayıt tamamlanamadı.', 'error');
         }
+        return;
+      }
+
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      if (!email || !password) { showAlert('E-posta ve şifreni gir.', 'error'); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Giriş yapılıyor…';
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
         document.getElementById('authModal').classList.add('hidden');
       } catch (err) {
-        let errText = err.message;
-        if (errText.includes("user-not-found")) errText = "Kullanıcı bulunamadı.";
-        else if (errText.includes("wrong-password")) errText = "Hatalı şifre girdiniz.";
-        else if (errText.includes("email-already-in-use")) errText = "Bu e-posta adresi zaten kullanımda.";
-        else if (errText.includes("weak-password")) errText = "Şifre en az 6 karakter olmalıdır.";
-        showAlert(errText.replace("Firebase: ", ""), 'error');
+        const messages = {
+          'auth/user-not-found':'Bu e-posta ile hesap bulunamadı.',
+          'auth/invalid-credential':'E-posta veya şifre hatalı.',
+          'auth/wrong-password':'Şifre hatalı.',
+          'auth/invalid-email':'E-posta biçimi geçersiz.',
+          'auth/too-many-requests':'Çok fazla deneme yapıldı. Biraz sonra tekrar dene.'
+        };
+        showAlert(messages[err.code] || err.message || 'Giriş yapılamadı.', 'error');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = isSignUpMode ? 'Kayıt Ol' : 'Giriş Yap';
+        submitBtn.textContent = 'Giriş Yap';
       }
     };
 
@@ -1649,6 +1737,7 @@
           following: data.following || [],
           followers: data.followers || [],
           bio: data.bio || '',
+          region: data.region || '',
           displayName: data.displayName || currentUser.displayName || ''
         };
       } catch (e) { console.warn(e); }
@@ -1709,6 +1798,7 @@
           following: Array.isArray(d.following) ? d.following : [],
           followers: Array.isArray(d.followers) ? d.followers : [],
           bio: d.bio || '',
+          region: d.region || '',
           displayName: d.displayName || currentUser.displayName || currentUser.email.split('@')[0]
         };
         followingIds = new Set(profileCache.following);
@@ -1725,6 +1815,8 @@
         if (bio) bio.textContent = profileCache.bio || 'Bio eklenmemiş — Profili düzenle ile ekle';
         const stripBio = document.getElementById('stripBio');
         if (stripBio) stripBio.textContent = profileCache.bio || 'Profilini düzenle';
+        const regionEl = document.getElementById('profileRegion');
+        if (regionEl) regionEl.textContent = profileCache.region ? '📍 ' + profileCache.region : '';
         const stripName = document.getElementById('stripName');
         if (stripName) stripName.textContent = profileCache.displayName;
         const stripAv = document.getElementById('stripAvatar');
@@ -1738,6 +1830,8 @@
       const name = profileCache.displayName || currentUser.displayName || currentUser.email.split('@')[0];
       document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
       document.getElementById('profileName').textContent = name;
+      const regionEl = document.getElementById('profileRegion');
+      if (regionEl) regionEl.textContent = profileCache.region ? '📍 ' + profileCache.region : '';
       document.getElementById('profileHandle').textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
@@ -1752,12 +1846,15 @@
       if (!box.classList.contains('hidden')) {
         document.getElementById('editDisplayName').value = profileCache.displayName || currentUser.displayName || '';
         document.getElementById('editBio').value = profileCache.bio || '';
+        const regionInput = document.getElementById('editRegion');
+        if (regionInput) regionInput.value = profileCache.region || '';
       }
     };
     window.saveProfile = async function() {
       if (!currentUser) return;
       const name = (document.getElementById('editDisplayName').value || '').trim();
       const bio = (document.getElementById('editBio').value || '').trim();
+      const region = (document.getElementById('editRegion')?.value || '').trim();
       if (!name) return alert('Ad gerekli');
       try {
         await updateProfile(currentUser, { displayName: name });
@@ -1766,11 +1863,13 @@
           displayName: name,
           email: currentUser.email || '',
           bio: bio,
+          region: region,
           following: profileCache.following || [],
           followers: profileCache.followers || []
         }, { merge: true });
         profileCache.displayName = name;
         profileCache.bio = bio;
+        profileCache.region = region;
         document.getElementById('userHeaderName').textContent = name;
         document.getElementById('userHeaderAvatar').textContent = name.charAt(0).toUpperCase();
         const postAv = document.getElementById('postCreatorAvatar');
