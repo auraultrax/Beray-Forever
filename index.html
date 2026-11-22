@@ -480,7 +480,7 @@
         <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" autocomplete="username"></div>
         <div class="field"><label>Ad</label><input type="text" id="regFirstName" required maxlength="50" autocomplete="given-name"></div>
         <div class="field"><label>Soyad</label><input type="text" id="regLastName" required maxlength="50" autocomplete="family-name"></div>
-        <div class="field"><label>Doğum tarihi</label><input type="date" id="regBirthDate" required max="2026-11-22" autocomplete="bday"></div>
+        <div class="field"><label>Doğum tarihi</label><input type="date" id="regBirthDate" required autocomplete="bday"></div>
         <div class="alert" style="display:block;line-height:1.5;">Ad, soyad ve doğum tarihi kayıt amacıyla saklanır. IP adresi güvenlik ve kötüye kullanımın önlenmesi için sunucu tarafından kaydedilebilir. Ayrıntılar: <a href="./kvkk.html" target="_blank" rel="noopener" style="color:var(--primary2);text-decoration:underline;">KVKK Aydınlatma Metni</a>.</div>
         <label style="display:flex;gap:9px;align-items:flex-start;margin:10px 0;font-size:.78rem;color:var(--muted);"><input type="checkbox" id="privacyConsent" required style="width:auto;margin-top:3px;"> KVKK Aydınlatma Metni'ni okudum.</label>
         <label style="display:flex;gap:9px;align-items:flex-start;margin:10px 0 16px;font-size:.78rem;color:var(--muted);"><input type="checkbox" id="termsConsent" required style="width:auto;margin-top:3px;"> <a href="./kullanim-kosullari.html" target="_blank" rel="noopener" style="color:var(--primary2);">Kullanım Koşulları</a>'nı kabul ediyorum.</label>
@@ -714,7 +714,7 @@
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <div id="postCreatorAvatar" class="avatar">?</div>
         <div style="flex:1;min-width:0;">
-          <textarea id="postContent" rows="3" placeholder="Ne paylaşmak istersin? (max 2000)" maxlength="2000" oninput="document.getElementById('postCharCount').textContent=this.value.length+'/2000'"></textarea>
+          <textarea id="postContent" rows="3" placeholder="Fotoğraf veya video gönder; açıklama eklemek isteğe bağlıdır. Sadece metin gönderisi Plus özelliğidir." maxlength="2000" oninput="document.getElementById('postCharCount').textContent=this.value.length+'/2000'"></textarea>
           <div id="postCharCount" style="text-align:right;font-size:.65rem;color:var(--muted);margin-top:4px;">0/2000</div>
           <div id="imageUrlContainer" class="hidden">
             <label class="file-btn" style="margin-top:8px;">
