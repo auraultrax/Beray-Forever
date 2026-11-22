@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'forever-shell-v7';
+const CACHE_VERSION = 'forever-shell-v8';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const APP_SHELL = [
   './manifest-emerald.json',
   './manifest-ocean.json',
   './supabase-compat.js',
+  './aurax-theme.css',
   './rooms.js',
   './icons/forever-violet.svg',
   './icons/forever-emerald.svg',
