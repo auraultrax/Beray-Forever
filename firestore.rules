@@ -135,6 +135,7 @@ service cloud.firestore {
                     && request.resource.data.description.size() <= 160;
       // Üye katılımı dışında oda üyelik listesini istemci değiştiremez.
       allow update: if isSignedIn() && !isBlocked()
+                    && resource.data.visibility == 'public'
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
                     && request.resource.data.memberUids is list
                     && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
