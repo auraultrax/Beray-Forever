@@ -840,26 +840,7 @@
     import { supabase } from './supabase-client.js';
 
     const googleProvider = new GoogleAuthProvider();
-    // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
-    // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
-    // 2) Yoksa → görseli sıkıştırıp Firestore belgesine data URL olarak yaz (Storage gerekmez)
-    const FOREVER_UPLOAD_KEY = 'FOREVER_UPLOAD_URL';
-
-    function getUploadServerUrl() {
-      try {
-        const saved = (localStorage.getItem(FOREVER_UPLOAD_KEY) || '').trim();
-        return saved || String(window.FOREVER_PLUS_CONFIG?.uploadUrl || '').trim();
-      } catch {
-        return String(window.FOREVER_PLUS_CONFIG?.uploadUrl || '').trim();
-      }
-    }
-
-    function getUploadServerBase() {
-      const endpoint = getUploadServerUrl();
-      if (!endpoint) return '';
-      try { return new URL(endpoint).origin; } catch { return ''; }
-    }
-
+    // ---- SUPABASE STORAGE MEDYA YÜKLEME ----
     async function sendSecurityEvent(user, event = 'session') {
       if (!user) return;
       try {
@@ -870,10 +851,6 @@
         console.warn('Güvenlik olayı Supabase Edge Function üzerinden kaydedilemedi:', error.message);
       }
     }
-
-    window.fxSaveUploadServer = function () {
-      if (typeof fxToast === 'function') fxToast('Forever medyaları artık Supabase Storage üzerinden yükleniyor.');
-    };
 
     async function compressImageFile(file, maxSide = 1280, quality = 0.72) {
       if (!file || !file.type.startsWith('image/')) throw new Error('Geçerli bir görsel seçin');
@@ -1328,8 +1305,6 @@
     setTimeout(() => {
       bindImagePreview('postImageFile', 'postImagePreview');
       bindImagePreview('storyImageFile', 'storyImagePreview');
-      const inp = document.getElementById('fxUploadServerInput');
-      if (inp) inp.value = getUploadServerUrl();
     }, 0);
 
     let currentUser = null;
