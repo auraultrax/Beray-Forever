@@ -161,7 +161,10 @@ set search_path = ''
 as $$
 begin
   if not private.is_admin() and coalesce(auth.role(), '') <> 'service_role' then
-    if new.plus_member is distinct from old.plus_member
+    if tg_op = 'INSERT' then
+      new.plus_member := false;
+      new.plus_granted_at := null;
+    elsif new.plus_member is distinct from old.plus_member
        or new.plus_granted_at is distinct from old.plus_granted_at then
       raise exception 'Plus üyeliği yalnızca yönetim tarafından değiştirilebilir.';
     end if;
@@ -173,7 +176,7 @@ $$;
 
 drop trigger if exists guard_profile_privileged_fields on public.profiles;
 create trigger guard_profile_privileged_fields
-before update on public.profiles
+before insert or update on public.profiles
 for each row execute procedure private.guard_profile_privileged_fields();
 
 -- Social graph.
@@ -1006,7 +1009,7 @@ create trigger notify_direct_message_event after insert on public.direct_message
 for each row execute procedure private.notify_direct_message_event();
 
 -- Enable Realtime for the tables watched by the app. Safe to re-run.
-as $$
+do $$
 declare t text;
 begin
   if exists(select 1 from pg_publication where pubname='supabase_realtime') then
