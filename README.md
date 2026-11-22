@@ -10,7 +10,7 @@ Forever'ın mevcut arayüzünü ve sosyal akışını koruyan geliştirme sürü
 - supabase-schema.sql: tablolar, RLS, oda/Plus işlemleri, bucket'lar ve politikalar.
 - supabase-config.js: tarayıcıya açık proje URL'si ve publishable key.
 - supabase-client.js: ortak Supabase istemcisi.
-- supabase-firestore-compat.js: mevcut Forever ekranlarını Supabase tablolarına bağlayan geçiş katmanı.
+- supabase-data.js: mevcut Forever ekranlarını Supabase tablolarına bağlayan geçiş katmanı.
 - supabase/functions: güvenlik kaydı, admin IP kayıtları ve video yükleme fonksiyonları.
 
 ## Supabase kurulumu
