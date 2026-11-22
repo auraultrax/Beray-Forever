@@ -302,6 +302,13 @@
       box-shadow: 0 0 0 3px rgba(139,92,246,.15);
     }
 
+    .forever-badges{display:inline-flex;align-items:center;gap:4px;margin-left:5px;vertical-align:middle}
+    .forever-emerald{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:6px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;font-size:10px;box-shadow:0 0 10px #8b5cf688}
+    .forever-verified{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#2495ee;color:#fff;font-size:10px;font-weight:900;box-shadow:0 0 8px #2495ee66}
+    .sticker-choice{font-size:1.8rem;background:transparent;border:1px solid var(--line);border-radius:12px;padding:7px;cursor:pointer}
+    .sticker-motion-0{animation:stickerPulse 1.2s infinite alternate}.sticker-motion-1{animation:stickerFloat 1.8s ease-in-out infinite}.sticker-motion-2{animation:stickerWiggle .8s ease-in-out infinite}.sticker-motion-3{animation:stickerSpin 2.8s linear infinite}
+    @keyframes stickerPulse{to{transform:scale(1.18)}}@keyframes stickerFloat{50%{transform:translateY(-7px)}}@keyframes stickerWiggle{25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}@keyframes stickerSpin{to{filter:hue-rotate(360deg)}}
+    .room-message{padding:8px 10px;border-bottom:1px solid var(--line);font-size:.82rem;overflow-wrap:anywhere}.room-message small{color:var(--muted)}
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -482,16 +489,6 @@
   </div>
 
 
-    <div class="modal-card">
-      <h2>Kullanıcı adı</h2>
-      <p class="sub">Forever’da görünecek adın.</p>
-      <form onsubmit="handleUsernameSubmit(event)">
-        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24"></div>
-        <button type="submit" class="btn btn-block">Kaydet</button>
-      </form>
-    </div>
-  </div>
-
   <div id="storyModal" class="modal hidden">
     <div class="modal-card">
       <h2>Hikâye</h2>
@@ -644,6 +641,45 @@
           <div class="story-ring"><div style="font-size:1.2rem;color:var(--primary2);">+</div></div>
           <span>Senin</span>
         </div>
+      </div>
+    </section>
+
+    <section class="card" id="roomsPanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div><h3 style="margin:0 0 4px;">ODALAR</h3><small style="color:var(--muted);">Topluluğa katıl, sohbet et ve birlikte çiz.</small></div>
+        <span id="roomPlanLabel" class="status-warn">Ücretsiz: en fazla 3 oda</span>
+      </div>
+      <form id="createRoomForm" style="display:flex;gap:8px;margin:12px 0;">
+        <input id="newRoomName" maxlength="40" placeholder="Yeni oda adı" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
+        <button class="btn" type="submit">Oda oluştur</button>
+      </form>
+      <div id="roomList" style="display:grid;gap:8px;"><div class="empty">Odalar yükleniyor…</div></div>
+      <div id="roomChat" class="hidden" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong id="roomChatTitle">Oda</strong><button type="button" class="btn btn-ghost" id="leaveRoomBtn">Odadan ayrıl</button></div>
+        <div id="roomMessages" style="height:260px;overflow:auto;margin:10px 0;padding:8px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
+          <button type="button" class="btn btn-ghost" id="openStickersBtn">✨ Çıkartmalar <span id="stickerLock">🔒 Plus</span></button>
+          <button type="button" class="btn btn-ghost" id="toggleDrawingBtn">🎨 Çizim <span id="drawingLock">🔒 Plus</span></button>
+          <label class="btn btn-ghost" style="cursor:pointer;">GIF ekle 🔒 <input id="customStickerFile" type="file" accept="image/gif" hidden></label>
+        </div>
+        <div id="stickerTray" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="💜">💜</button>
+          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="✨">✨</button>
+          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🌈">🌈</button>
+          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🦋">🦋</button>
+          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="🐸">🐸</button>
+          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="🌸">🌸</button>
+          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🚀">🚀</button>
+          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🎉">🎉</button>
+        </div>
+        <div id="drawingBox" class="hidden" style="margin:8px 0;">
+          <canvas id="roomDrawingCanvas" width="720" height="360" style="width:100%;height:auto;max-height:220px;background:#fff;border-radius:12px;touch-action:none;"></canvas>
+          <div style="display:flex;gap:8px;margin-top:8px;"><button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button><button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button></div>
+        </div>
+        <form id="roomMessageForm" style="display:flex;gap:8px;">
+          <input id="roomMessageText" maxlength="500" placeholder="Odaya mesaj yaz…" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
+          <button class="btn" type="submit">Gönder</button>
+        </form>
       </div>
     </section>
 
