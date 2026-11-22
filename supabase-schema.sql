@@ -649,7 +649,7 @@ begin
   if split_part(p_object_name,'/',1) <> v_uid::text or split_part(p_object_name,'/',2) <> v_date then return false; end if;
   if private.is_plus(v_uid) then return true; end if;
   select count(*) into v_count from storage.objects o
-    where o.bucket_id='forever-public'
+    where o.bucket_id in ('forever-public','forever-private')
       and split_part(o.name,'/',1)=v_uid::text
       and split_part(o.name,'/',2)=v_date
       and coalesce(o.metadata->>'mimetype','') like 'image/%';
@@ -661,27 +661,41 @@ grant execute on function private.can_upload_public_image(text) to authenticated
 -- Story media is private; the storage policy allows only the owner or their followers to read it.
 create or replace function private.can_read_private_media(p_object_name text)
 returns boolean
-language sql stable security definer
+language plpgsql stable security definer
 set search_path = ''
 as $$
-  select
-    split_part(p_object_name,'/',1) = (select auth.uid())::text
-    or (
-      split_part(p_object_name,'/',3) = 'stories'
-      and exists (
-        select 1 from public.follows f
-        where f.follower_id=(select auth.uid())
-          and f.following_id=split_part(p_object_name,'/',1)::uuid
-      )
-    )
-    or (
-      exists (
-        select 1 from public.conversation_members a
-        join public.conversation_members b on b.conversation_id=a.conversation_id
-        where a.user_id=(select auth.uid())
-          and b.user_id=split_part(p_object_name,'/',1)::uuid
-      )
+declare
+  v_owner_text text := split_part(p_object_name,'/',1);
+  v_owner uuid;
+  v_conversation_text text := split_part(p_object_name,'/',4);
+  v_conversation uuid;
+begin
+  if v_owner_text = (select auth.uid())::text then return true; end if;
+  if v_owner_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    return false;
+  end if;
+  v_owner := v_owner_text::uuid;
+
+  if split_part(p_object_name,'/',3) = 'stories' then
+    return exists (
+      select 1 from public.follows f
+      where f.follower_id=(select auth.uid()) and f.following_id=v_owner
     );
+  end if;
+
+  if split_part(p_object_name,'/',3) = 'dm'
+     and v_conversation_text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    v_conversation := v_conversation_text::uuid;
+    return exists (
+      select 1 from public.conversation_members m
+      where m.conversation_id=v_conversation and m.user_id=(select auth.uid())
+    ) and exists (
+      select 1 from public.conversation_members m
+      where m.conversation_id=v_conversation and m.user_id=v_owner
+    );
+  end if;
+  return false;
+end;
 $$;
 grant execute on function private.can_read_private_media(text) to authenticated;
 
