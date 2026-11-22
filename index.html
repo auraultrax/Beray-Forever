@@ -652,20 +652,22 @@
   </aside>
   <main class="main-content">
     <div class="wrap">
-      <header class="top header-sticky glass">
-        <div class="page-heading" id="pageTitle"><i class="fa-solid fa-sparkles"></i> Akış</div>
-        <div class="top-actions">
-          <span id="networkAuthStatus" class="status-warn" style="display:none;"></span>
-          <button type="button" class="btn-icon" title="Bildirimler" onclick="fxNavigate('notifications')" style="position:relative;">
-            <i class="fa-regular fa-bell"></i>
-            <span id="notifBadge" class="hidden" style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);"></span>
-          </button>
-          <div class="user-chip" style="cursor:pointer;" onclick="openProfile()" title="Profil">
-            <div id="userHeaderAvatar" class="avatar">?</div>
-            <div class="meta"><div id="userHeaderName">—</div><small id="userHeaderEmail"></small></div>
-          </div>
-        </div>
-      </header>
+    <div class="mobile-top-bar">
+      <div class="user-avatar-mini" id="mobileTopAvatar" onclick="openProfile()" role="button" tabindex="0" aria-label="Profili aç">?</div>
+      <button type="button" class="mobile-top-bell" onclick="openNotifPanel()" aria-label="Bildirimler">
+        <i class="fa-solid fa-bell"></i><span class="notif-badge-dot hidden" id="notifBadgeTopBar"></span>
+      </button>
+    </div>
+    <div class="desktop-top-bar">
+      <div class="user-avatar-mini" id="userHeaderAvatar" onclick="openProfile()" role="button" tabindex="0" aria-label="Profili aç">?</div>
+      <button type="button" class="desktop-top-bell" onclick="openNotifPanel()" aria-label="Bildirimler">
+        <i class="fa-solid fa-bell"></i><span class="notif-badge-dot hidden" id="notifBadgeDesktopTop"></span>
+      </button>
+    </div>
+    <div class="hidden" aria-hidden="true">
+      <span id="pageTitle">Akış</span><span id="networkAuthStatus"></span>
+      <span id="userHeaderName">—</span><span id="userHeaderEmail"></span><span id="notifBadge"></span>
+    </div>
 
     <section id="view-kesfet" class="view-section active">
     <section class="card" id="profileStrip" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
@@ -690,7 +692,7 @@
       </div>
     </section>
 
-    
+    <div class="header-sticky glass view-feed-heading">Akış <i class="fa-solid fa-sparkles" style="color:var(--primary);font-size:.9rem;margin-left:5px;"></i></div>
 
     <section id="foreverComposer" class="card composer">
       <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -752,6 +754,7 @@
     </section>
 
     <section id="view-odalar" class="view-section">
+<div class="header-sticky glass">Odalar <i class="fa-solid fa-comments" style="color:var(--primary);font-size:.9rem;margin-left:5px;"></i></div>
 <section class="card" id="roomsPanel">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
         <div><h3 style="margin:0 0 4px;">ODALAR</h3><small style="color:var(--muted);">Topluluğa katıl, sohbet et ve birlikte çiz.</small></div>
@@ -1293,6 +1296,8 @@
         notifUnread = 0;
         const badge = document.getElementById('notifBadge');
         if (badge) badge.classList.add('hidden');
+        document.getElementById('notifBadgeTopBar')?.classList.add('hidden');
+        document.getElementById('notifBadgeDesktopTop')?.classList.add('hidden');
       } catch (e) {
         list.innerHTML = '<p style="color:var(--danger);font-size:.85rem;padding:12px;">Bildirimler yüklenemedi.</p>';
       }
@@ -2393,6 +2398,7 @@
         const initial = name.charAt(0).toUpperCase();
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial);
+        set('mobileTopAvatar', initial);
         const headerName = document.getElementById('userHeaderName');
         if (headerName) headerName.innerHTML = escapeHTML(name) + foreverBadges(currentUser.isPlus);
         set('userHeaderEmail', currentUser.isPlus ? 'Forever Plus' : 'Forever üyesi');
