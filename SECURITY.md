@@ -22,6 +22,20 @@ service cloud.firestore {
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
+    // Yönetici: Firestore'da admins/{uid} belgesi olan hesap (belgeyi yalnızca Firebase Console'dan ekle)
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    // Askıya alınmış hesap yazamaz
+    function isSuspended() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true;
+    }
+    function touchesSuspension() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['suspended','suspendedReason','suspendedMessage','suspendedAt','suspendedBy']);
+    }
     function isValidUsername(name) {
       return name is string
         && name.size() >= 3
@@ -36,14 +50,22 @@ service cloud.firestore {
     }
 
     // Kullanıcı profilleri
+    match /admins/{uid} {
+      allow read: if isOwner(uid);               // yalnızca kendi yönetici kaydını görür
+      allow write: if false;                     // sadece Firebase Console
+    }
+
     match /users/{userId} {
       allow read: if true;                       // herkese açık profil
       allow create: if isOwner(userId)
+                    && !('suspended' in request.resource.data)
                     && isValidUsername(request.resource.data.username)
                     && request.resource.data.uid == userId;
-      allow update: if isOwner(userId)
+      // Sahibi kendi askı alanlarına DOKUNAMAZ; yönetici dokunabilir.
+      allow update: if (isOwner(userId) && !touchesSuspension()
                     && (!('username' in request.resource.data)
-                        || isValidUsername(request.resource.data.username));
+                        || isValidUsername(request.resource.data.username)))
+                    || isAdmin();
       allow delete: if isOwner(userId);
     }
 
@@ -60,7 +82,7 @@ service cloud.firestore {
     // Gönderiler
     match /posts/{postId} {
       allow read: if true;
-      allow create: if isSignedIn()
+      allow create: if isSignedIn() && !isSuspended()
                     && request.resource.data.userId == request.auth.uid
                     && isValidPostContent(request.resource.data.content)
                     && request.resource.data.keys().hasAll(['userId', 'authorName', 'content', 'createdAt']);
@@ -99,7 +121,8 @@ service cloud.firestore {
                     && request.resource.data.reporterId == request.auth.uid
                     && request.resource.data.reason is string
                     && request.resource.data.reason.size() <= 500;
-      allow read, update, delete: if false; // sadece Firebase Console / Admin SDK
+      allow read, update: if isAdmin();     // yönetim paneli (admin.html)
+      allow delete: if false;
     }
 
     // Kaydedilen gönderiler
@@ -176,3 +199,17 @@ Eklenen / güçlendirilenler:
 
 **Güvenlik bizim için forever.**
 Bu kurallar uygulanmadan uygulamayı canlıya alma.
+
+---
+
+## 5. Yönetim paneli (admin.html) ve hesap askıya alma
+
+1. Firebase Console → Authentication'da yönetici hesabını oluştur (e-posta/şifre), UID'sini kopyala.
+2. Firestore → `admins` koleksiyonu → belge kimliği = o UID (içine herhangi bir alan, ör. `role: "admin"`).
+3. Yukarıdaki **güncel kuralları** Rules sekmesinde yayınla. Kurallar yayınlanmadan panel "izin yok" hatası verir ve
+   askıya alınan biri kendi askısını kaldırabilir.
+4. `admin.html` adresinden giriş yap → Kullanıcılar → ara → **Askıya al** → sebep + uyarı mesajı → onayla.
+   Kullanıcı bir sonraki girişte "Hesabınız askıya alındı" ekranını görür; askıdayken gönderi oluşturamaz (kural).
+5. Askı kaldırmak için aynı panelden **Askıyı kaldır**.
+
+Not: Askı, hesabı silmez ve oturumu anında düşürmez; uygulama açılışında/girişte uygulanır, yazma engeli ise kurallarla sunucuda zorlanır.

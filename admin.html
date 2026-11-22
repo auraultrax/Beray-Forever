@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Forever · Yönetim Paneli</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--fg:#e8eaf0;--muted:#8b93a7;--acc:#7c9cff;--ok:#6ec882;--bad:#e67878;--warn:#e6b450}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+  h1{font-size:18px;margin:0} h2{font-size:16px;margin:0 0 10px}
+  main{max-width:900px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  input,textarea,select{width:100%;background:#0c0e12;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+  textarea{min-height:80px;resize:vertical}
+  button{background:var(--acc);color:#000;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+  button.sec{background:#222735;color:var(--fg)} button.bad{background:var(--bad)} button.ok{background:var(--ok)}
+  button:disabled{opacity:.5;cursor:default}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .row>*{flex:1 1 auto}
+  .tabs{display:flex;gap:8px;margin-bottom:12px} .tabs button{flex:1}
+  .tabs button.on{background:var(--acc);color:#000}
+  .muted{color:var(--muted);font-size:13px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
+  .tag.bad{background:#3a2020;color:var(--bad)} .tag.ok{background:#1d3324;color:var(--ok)} .tag.warn{background:#3a3020;color:var(--warn)}
+  .hidden{display:none} #msg{padding:10px;border-radius:10px;margin-bottom:12px;background:#222735}
+  label{display:block;margin:8px 0 4px;font-size:13px;color:var(--muted)}
+  pre{white-space:pre-wrap;word-break:break-word;margin:6px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Forever · Yönetim</h1>
+  <div class="row" style="flex:0 0 auto"><span id="who" class="muted"></span><button class="sec hidden" id="outBtn">Çıkış</button></div>
+</header>
+<main>
+  <div id="msg" class="hidden"></div>
+
+  <section id="loginBox" class="card">
+    <h2>Yönetici girişi</h2>
+    <label>E-posta</label><input id="email" type="email" autocomplete="username">
+    <label>Şifre</label><input id="pass" type="password" autocomplete="current-password">
+    <div style="margin-top:12px"><button id="loginBtn">Giriş yap</button></div>
+    <p class="muted">Yalnızca Firestore'da <code>admins</code> koleksiyonuna eklenmiş hesaplar girebilir.</p>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="tabs">
+      <button id="tabUsers" class="on">Kullanıcılar</button>
+      <button id="tabReports" class="sec">Şikayetler</button>
+    </div>
+
+    <div id="usersPane">
+      <div class="card">
+        <div class="row">
+          <input id="q" placeholder="Kullanıcı adı, ad veya e-posta ara…">
+          <button id="searchBtn" style="flex:0 0 auto">Ara</button>
+        </div>
+      </div>
+      <div id="userList"></div>
+    </div>
+
+    <div id="reportsPane" class="hidden">
+      <div id="reportList"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
+  from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, updateDoc, addDoc, collection, query, limit, serverTimestamp, deleteField }
+  from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Forever ile aynı Firebase projesi (herkese açık istemci yapılandırması; güvenlik Firestore kurallarındadır).
+const app = initializeApp({
+  apiKey: "AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
+  authDomain: "project-c443f992-d19d-4d35-a16.firebaseapp.com",
+  projectId: "project-c443f992-d19d-4d35-a16",
+  storageBucket: "project-c443f992-d19d-4d35-a16.firebasestorage.app",
+  messagingSenderId: "509248282221",
+  appId: "1:509248282221:web:84b49536d26d7d755ba964"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DEFAULT_MSG = 'Hesabınız askıya alındı';
+let me = null, users = [];
+
+function say(text, kind) {
+  const m = $('msg'); m.textContent = text; m.classList.remove('hidden');
+  m.style.color = kind === 'bad' ? 'var(--bad)' : kind === 'ok' ? 'var(--ok)' : 'var(--fg)';
+}
+function clearMsg() { $('msg').classList.add('hidden'); }
+
+$('loginBtn').onclick = async () => {
+  clearMsg();
+  try { await signInWithEmailAndPassword(auth, $('email').value.trim(), $('pass').value); }
+  catch (e) { say('Giriş başarısız: ' + (e.code || e.message), 'bad'); }
+};
+$('outBtn').onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, async user => {
+  me = null;
+  $('app').classList.add('hidden'); $('loginBox').classList.toggle('hidden', !!user);
+  $('outBtn').classList.toggle('hidden', !user); $('who').textContent = user ? user.email : '';
+  if (!user) return;
+  try {
+    const a = await getDoc(doc(db, 'admins', user.uid));
+    if (!a.exists()) { say('Bu hesap yönetici değil. Çıkış yapılıyor.', 'bad'); await signOut(auth); return; }
+  } catch (e) { say('Yönetici denetimi yapılamadı: ' + e.message, 'bad'); await signOut(auth); return; }
+  me = user; $('app').classList.remove('hidden'); clearMsg();
+  loadUsers();
+});
+
+function showTab(t) {
+  $('usersPane').classList.toggle('hidden', t !== 'users');
+  $('reportsPane').classList.toggle('hidden', t !== 'reports');
+  $('tabUsers').className = t === 'users' ? 'on' : 'sec';
+  $('tabReports').className = t === 'reports' ? 'on' : 'sec';
+  if (t === 'reports') loadReports();
+}
+$('tabUsers').onclick = () => showTab('users');
+$('tabReports').onclick = () => showTab('reports');
+
+async function loadUsers() {
+  $('userList').innerHTML = '<p class="muted">Yükleniyor…</p>';
+  try {
+    const s = await getDocs(query(collection(db, 'users'), limit(500)));
+    users = []; s.forEach(d => users.push({ id: d.id, ...d.data() }));
+    renderUsers();
+  } catch (e) { $('userList').innerHTML = ''; say('Kullanıcılar okunamadı: ' + e.message, 'bad'); }
+}
+$('searchBtn').onclick = renderUsers;
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter') renderUsers(); });
+
+function renderUsers() {
+  const q = $('q').value.trim().toLowerCase();
+  const list = users.filter(u => !q ||
+    [u.username, u.displayName, u.name, u.email, u.id].some(v => String(v || '').toLowerCase().includes(q)))
+    .slice(0, 60);
+  if (!list.length) { $('userList').innerHTML = '<p class="muted">Sonuç yok.</p>'; return; }
+  $('userList').innerHTML = list.map(u => `
+    <div class="card" data-uid="${esc(u.id)}">
+      <div class="row">
+        <div style="flex:1 1 200px">
+          <strong>@${esc(u.username || '—')}</strong> ${u.suspended ? '<span class="tag bad">Askıda</span>' : '<span class="tag ok">Aktif</span>'}
+          <div class="muted">${esc(u.displayName || u.name || '')} ${u.email ? '· ' + esc(u.email) : ''}</div>
+          <div class="muted">uid: ${esc(u.id)}</div>
+          ${u.suspended ? `<div class="muted">Sebep: ${esc(u.suspendedReason || '—')}</div>` : ''}
+        </div>
+        <button data-act="open" class="${u.suspended ? 'sec' : 'bad'}" style="flex:0 0 auto">${u.suspended ? 'Yönet' : 'Askıya al'}</button>
+      </div>
+      <div class="panel hidden"></div>
+    </div>`).join('');
+  document.querySelectorAll('#userList [data-act=open]').forEach(b => b.onclick = () => openPanel(b.closest('.card')));
+}
+
+function openPanel(card) {
+  const uid = card.dataset.uid, u = users.find(x => x.id === uid), p = card.querySelector('.panel');
+  if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
+  p.classList.remove('hidden');
+  if (u.suspended) {
+    p.innerHTML = `<label>Kullanıcıya gösterilen mesaj</label><pre>${esc(u.suspendedMessage || DEFAULT_MSG)}</pre>
+      <div class="row"><button class="ok" data-do="lift">Askıyı kaldır</button></div>`;
+    p.querySelector('[data-do=lift]').onclick = () => lift(u);
+  } else {
+    p.innerHTML = `
+      <label>Sebep (yalnızca yönetim görür, ör. hakaret / tehdit)</label>
+      <input data-f="reason" placeholder="Sebep">
+      <label>Kullanıcıya gösterilecek uyarı mesajı</label>
+      <textarea data-f="message">${esc(DEFAULT_MSG)}</textarea>
+      <div style="margin-top:10px"><button class="bad" data-do="suspend">Hesabı askıya al</button></div>`;
+    p.querySelector('[data-do=suspend]').onclick = () => suspend(u, p);
+  }
+}
+
+async function suspend(u, p) {
+  const reason = p.querySelector('[data-f=reason]').value.trim();
+  const message = p.querySelector('[data-f=message]').value.trim() || DEFAULT_MSG;
+  if (!reason) { say('Lütfen bir sebep yaz (kayıt için gerekli).', 'bad'); return; }
+  if (!confirm(`@${u.username || u.id} askıya alınsın mı?`)) return;
+  try {
+    await updateDoc(doc(db, 'users', u.id), {
+      suspended: true, suspendedReason: reason, suspendedMessage: message,
+      suspendedAt: serverTimestamp(), suspendedBy: me.uid
+    });
+    // Bildirim kutusuna da uyarıyı bırak (kurallar izin vermezse sessizce geçilir).
+    await addDoc(collection(db, 'notifications'), {
+      toUid: u.id, fromUid: me.uid, fromName: 'Forever Yönetimi', type: 'suspension',
+      text: message, read: false, createdAt: serverTimestamp()
+    }).catch(() => {});
+    say('Hesap askıya alındı. Kullanıcı bir sonraki girişte uyarıyı görecek.', 'ok');
+    await loadUsers();
+  } catch (e) { say('İşlem başarısız: ' + e.message, 'bad'); }
+}
+
+async function lift(u) {
+  if (!confirm('Askı kaldırılsın mı?')) return;
+  try {
+    await updateDoc(doc(db, 'users', u.id), {
+      suspended: false, suspendedReason: deleteField(), suspendedMessage: deleteField(),
+      suspendedAt: deleteField(), suspendedBy: deleteField()
+    });
+    say('Askı kaldırıldı.', 'ok'); await loadUsers();
+  } catch (e) { say('İşlem başarısız: ' + e.message, 'bad'); }
+}
+
+async function loadReports() {
+  $('reportList').innerHTML = '<p class="muted">Yükleniyor…</p>';
+  try {
+    const s = await getDocs(query(collection(db, 'reports'), limit(200)));
+    const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
+    rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    if (!rows.length) { $('reportList').innerHTML = '<p class="muted">Şikayet yok.</p>'; return; }
+    $('reportList').innerHTML = rows.map(r => `
+      <div class="card">
+        <span class="tag ${r.status === 'open' ? 'warn' : 'ok'}">${esc(r.status || 'open')}</span>
+        <strong> ${esc(r.type || '')}</strong> <span class="muted">hedef: ${esc(r.targetId || '')}</span>
+        <pre>${esc(r.reason || '')}</pre>
+        <div class="muted">bildiren: ${esc(r.reporterId || '')} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div>
+        ${r.status === 'open' ? `<div style="margin-top:8px"><button class="sec" data-rid="${esc(r.id)}">Çözüldü say</button></div>` : ''}
+      </div>`).join('');
+    document.querySelectorAll('#reportList [data-rid]').forEach(b => b.onclick = async () => {
+      try { await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' }); loadReports(); }
+      catch (e) { say('Güncellenemedi: ' + e.message, 'bad'); }
+    });
+  } catch (e) { $('reportList').innerHTML = ''; say('Şikayetler okunamadı (kurallar izin vermiyor olabilir): ' + e.message, 'bad'); }
+}
+</script>
+</body>
+</html>

@@ -2182,6 +2182,30 @@
       return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
+    // ---- Hesap askıya alma uyarısı ----
+    function showSuspension(message) {
+      let el = document.getElementById('suspensionOverlay');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'suspensionOverlay';
+        el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f1115;color:#e8eaf0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:system-ui,sans-serif';
+        el.innerHTML = '<div style="max-width:420px"><div style="font-size:42px">⛔</div>'
+          + '<h2 style="margin:12px 0 8px"></h2><p id="suspensionText" style="color:#8b93a7"></p>'
+          + '<button id="suspensionOut" style="margin-top:16px;padding:10px 18px;border:0;border-radius:10px;font-weight:600;cursor:pointer">Çıkış yap</button></div>';
+        document.body.appendChild(el);
+        el.querySelector('h2').textContent = 'Hesabınız askıya alındı';
+        el.querySelector('#suspensionOut').onclick = () => signOut(auth);
+      }
+      const t = String(message || '').trim();
+      el.querySelector('#suspensionText').textContent =
+        (t && t !== 'Hesabınız askıya alındı') ? t : 'Topluluk kurallarını ihlal ettiği için bu hesap yönetim tarafından askıya alındı.';
+      el.style.display = 'flex';
+    }
+    function hideSuspension() {
+      const el = document.getElementById('suspensionOverlay');
+      if (el) el.style.display = 'none';
+    }
+
     // Oturum Kontrolü
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
@@ -2191,6 +2215,13 @@
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userDocRef);
+
+        // Askıya alınmış hesap: uyarıyı göster, akışı yükleme, oturumu kapat.
+        if (docSnap.exists() && docSnap.data().suspended === true) {
+          showSuspension(docSnap.data().suspendedMessage);
+          return;
+        }
+        hideSuspension();
 
         if (!docSnap.exists()) {
           document.getElementById('usernameModal').classList.remove('hidden');
