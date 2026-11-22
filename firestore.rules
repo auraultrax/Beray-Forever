@@ -5,12 +5,22 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
 
-    // Yönetici: yalnızca doğrulanmış bu e-posta. Gerçek e-postayı SADECE Firebase Console'daki kurala yaz
-    // (bu depo herkese açık; gerçek adresi buraya/GitHub'a yazma).
+    // Yönetici UID kaydı Firebase Console'dan eklenir; e-posta/şifre istemciye gömülmez.
     function isAdmin() {
       return isSignedIn()
-        && request.auth.token.email_verified == true
-        && request.auth.token.email == 'ADMIN_EMAIL_BURAYA';
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function isPlus(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.get('plusMember', false) == true;
+    }
+    function roomCapacity(uid) { return isPlus(uid) ? 30 : 20; }
+    function roomCreationLimit(uid) { return isPlus(uid) ? 6 : 3; }
+    function isMutuallyFollowing(a, b) {
+      return exists(/databases/$(database)/documents/users/$(a))
+        && exists(/databases/$(database)/documents/users/$(b))
+        && get(/databases/$(database)/documents/users/$(a)).data.get('following', []).hasAny([b])
+        && get(/databases/$(database)/documents/users/$(b)).data.get('following', []).hasAny([a]);
     }
 
     // Askıda / yasaklı / kısıtlı hesap hiçbir şey yazamaz
@@ -25,10 +35,19 @@ service cloud.firestore {
     // Moderasyon + yetki alanları: sahibi dokunamaz (role dahil: kimse kendini yönetici yapamaz)
     function modFields() {
       return ['suspended','suspendedReason','suspendedMessage','suspendedAt','suspendedBy',
-              'banned','restrictedUntil','restrictedReason','warnCount','lastWarning','role'];
+              'banned','restrictedUntil','restrictedReason','warnCount','lastWarning','role',
+              'plusMember','plusGrantedAt','plusGrantedBy','roomCount','lastCreatedRoomId',
+              'email','dateOfBirth','lastIp','ipAddress'];
     }
     function touchesMod() {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(modFields());
+    }
+    function validRoomCounterUpdate(userId) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roomCount','lastCreatedRoomId'])
+        && request.resource.data.get('roomCount', 0) == resource.data.get('roomCount', 0) + 1
+        && request.resource.data.lastCreatedRoomId is string
+        && existsAfter(/databases/$(database)/documents/rooms/$(request.resource.data.lastCreatedRoomId))
+        && getAfter(/databases/$(database)/documents/rooms/$(request.resource.data.lastCreatedRoomId)).data.ownerUid == userId;
     }
 
     function isValidUsername(name) {
@@ -55,6 +74,7 @@ service cloud.firestore {
                     || (isOwner(userId) && !touchesMod()
                         && (!('username' in request.resource.data)
                             || isValidUsername(request.resource.data.username)))
+                    || (isOwner(userId) && !isBlocked() && validRoomCounterUpdate(userId))
                     // başkası yalnızca takipçi listesini değiştirebilir
                     || (isSignedIn() && !isBlocked()
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers']));
@@ -115,7 +135,11 @@ service cloud.firestore {
 
     // Doğum tarihi ve benzeri hassas profil bilgileri: yalnızca hesap sahibi.
     match /privateProfiles/{userId} {
-      allow read, create, update, delete: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isOwner(userId)
+                            && request.resource.data.uid == userId
+                            && !request.resource.data.keys().hasAny(['ipAddress','lastIp']);
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // Odalar: herkese açık odalar keşfedilebilir; yazışma yalnızca üyeye açık.
@@ -132,18 +156,23 @@ service cloud.firestore {
                     && request.resource.data.name.size() >= 3
                     && request.resource.data.name.size() <= 40
                     && request.resource.data.description is string
-                    && request.resource.data.description.size() <= 160;
-      // Üye katılımı dışında oda üyelik listesini istemci değiştiremez.
+                    && request.resource.data.description.size() <= 160
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('roomCount', 0) < roomCreationLimit(request.auth.uid)
+                    && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('roomCount', 0)
+                        == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('roomCount', 0) + 1
+                    && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.lastCreatedRoomId == roomId;
+      // Katılım sayacı sunucu kurallarıyla 20 (Normal) / 30 (Plus) kişiyle sınırlandırılır.
       allow update: if isSignedIn() && !isBlocked()
                     && resource.data.visibility == 'public'
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids'])
                     && request.resource.data.memberUids is list
                     && request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1
-                    && request.resource.data.memberUids.size() <= 100
+                    && resource.data.memberUids.size() < roomCapacity(request.auth.uid)
+                    && request.resource.data.memberUids.size() <= roomCapacity(request.auth.uid)
                     && request.resource.data.memberUids.hasAll(resource.data.memberUids)
                     && !(request.auth.uid in resource.data.memberUids)
                     && request.auth.uid in request.resource.data.memberUids;
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow delete: if isAdmin();
 
       match /messages/{messageId} {
         function isRoomMember() {
@@ -157,13 +186,95 @@ service cloud.firestore {
                       && request.resource.data.senderName is string
                       && request.resource.data.senderName.size() <= 40
                       && request.resource.data.text is string
-                      && request.resource.data.text.size() >= 1
                       && request.resource.data.text.size() <= 1000
-                      && request.resource.data.keys().hasAll(['senderUid','senderName','text','createdAt']);
+                      && request.resource.data.keys().hasOnly(['senderUid','senderName','text','createdAt','mediaUrl','mediaType'])
+                      && request.resource.data.keys().hasAll(['senderUid','senderName','createdAt'])
+                      && (('text' in request.resource.data && request.resource.data.text.size() >= 1)
+                          || ('mediaUrl' in request.resource.data && request.resource.data.mediaUrl is string));
         allow update: if false;
         allow delete: if isAdmin()
                       || (isRoomMember() && resource.data.senderUid == request.auth.uid);
       }
+    }
+
+    match /plusApplications/{applicationId} {
+      allow create: if isSignedIn() && !isBlocked()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.reason is string
+                    && request.resource.data.reason.size() <= 500
+                    && request.resource.data.keys().hasOnly(['uid','username','displayName','reason','status','createdAt']);
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /stickers/{stickerId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isPlus(request.auth.uid) && !isBlocked()
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.mediaUrl is string
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() <= 40;
+      allow update, delete: if isAdmin()
+                            || (isSignedIn() && isPlus(request.auth.uid)
+                                && resource.data.ownerUid == request.auth.uid);
+    }
+
+    match /drawings/{drawingId} {
+      allow read: if isSignedIn()
+                  && (request.auth.uid in resource.data.participantUids);
+      allow create: if isSignedIn() && isPlus(request.auth.uid) && !isBlocked()
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.participantUids is list
+                    && request.resource.data.participantUids.size() == 1
+                    && request.resource.data.participantUids[0] == request.auth.uid
+                    && request.resource.data.guestUids is list
+                    && request.resource.data.guestUids.size() == 0;
+      allow update: if isSignedIn() && !isBlocked()
+                    && request.auth.uid in resource.data.participantUids
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantUids','guestUids','strokes','updatedAt'])
+                    && request.resource.data.guestUids is list
+                    && request.resource.data.guestUids.size() <= 3
+                    && request.resource.data.participantUids.size() == request.resource.data.guestUids.size() + 1
+                    && request.resource.data.participantUids.hasAll(request.resource.data.guestUids)
+                    && request.resource.data.participantUids.hasAll([resource.data.ownerUid])
+                    && (resource.data.ownerUid == request.auth.uid || request.auth.uid in resource.data.participantUids);
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+    }
+
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && isPlus(request.auth.uid) && !isBlocked()
+                    && request.resource.data.participants is list
+                    && request.resource.data.participants.size() == 2
+                    && request.auth.uid in request.resource.data.participants
+                    && isMutuallyFollowing(request.resource.data.participants[0], request.resource.data.participants[1])
+                    && request.resource.data.keys().hasOnly(['participants','createdAt','lastMessage','updatedAt']);
+      allow update: if isSignedIn()
+                    && request.auth.uid in resource.data.participants
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage','updatedAt']);
+      allow delete: if isAdmin();
+      match /messages/{messageId} {
+        function isConversationParticipant() {
+          return isSignedIn()
+            && exists(/databases/$(database)/documents/conversations/$(conversationId))
+            && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        }
+        allow read: if isConversationParticipant();
+        allow create: if isConversationParticipant() && isPlus(request.auth.uid) && !isBlocked()
+                      && request.resource.data.senderUid == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() >= 1
+                      && request.resource.data.text.size() <= 2000
+                      && request.resource.data.keys().hasOnly(['senderUid','text','createdAt']);
+        allow update, delete: if false;
+      }
+    }
+
+    match /mediaUsage/{usageId} {
+      allow read: if isAdmin()
+                  || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     // Kullanılmayan koleksiyonlar kapalı
