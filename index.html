@@ -1124,8 +1124,9 @@
         const body = (sanitizeText(note, 400) || 'Yankı') + '\n\n— @' + (original.authorName || 'kullanıcı') + ': ' + (original.content || '').slice(0, 280);
         await addDoc(collection(db, 'posts'), {
           userId: currentUser.uid,
-          authorName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Kullanıcı'),
-          authorEmail: currentUser.email || null,
+          authorName: currentUser.username || currentUser.displayName || 'Kullanıcı',
+          authorUsername: currentUser.username || '',
+          authorIsPlus: Boolean(currentUser.isPlus),
           content: body,
           tags: extractTags(body),
           imageUrl: original.imageUrl || null,
@@ -1970,7 +1971,7 @@
           <div class="post-head">
             <div class="avatar">${initialLetter}</div>
             <div style="flex:1;min-width:0;">
-              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}</div>
+              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}${foreverBadges(post.authorIsPlus)}</div>
               <div class="time">${post.createdAt && post.createdAt.seconds ? new Date(post.createdAt.seconds * 1000).toLocaleString('tr-TR', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Az önce'}</div>
             </div>
             ${moreMenu}
@@ -2023,8 +2024,12 @@
       const file = fileInput && fileInput.files && fileInput.files[0];
       const publishBtn = document.getElementById('publishPostBtn');
 
+      if (!file && !currentUser.isPlus) {
+        fxToast('Gönderi için fotoğraf veya video gerekli. Sadece metin paylaşımı Plus özelliğidir.');
+        return;
+      }
       if (!content && !file) {
-        if (typeof fxToast === 'function') fxToast('Metin veya fotoğraf ekle');
+        fxToast('Bir fotoğraf veya video seçmelisin.');
         return;
       }
       if (content.length > LIMITS.postContent) {
@@ -2053,8 +2058,9 @@
         const body = content || (file ? (mediaType === 'video' ? '🎬' : '📷') : '');
         await addDoc(collection(db, "posts"), {
           userId: currentUser.uid,
-          authorName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Kullanıcı'),
-          authorEmail: currentUser.email || null,
+          authorName: currentUser.username || currentUser.displayName || 'Kullanıcı',
+          authorUsername: currentUser.username || '',
+          authorIsPlus: Boolean(currentUser.isPlus),
           content: body,
           tags: extractTags(body),
           imageUrl: imageUrl || null,
