@@ -425,6 +425,10 @@ begin
     end if;
 
     if new.collection_name='posts' and tg_op='UPDATE' and old.owner_id is distinct from auth.uid() then
+      select data ->> 'username' into v_username
+      from public.forever_documents
+      where collection_name='users' and id=auth.uid()::text
+      limit 1;
       if (new.data - 'likes' - 'comments' - 'sparks' - 'poll') is distinct from (old.data - 'likes' - 'comments' - 'sparks' - 'poll') then
         raise exception 'Başkasının gönderi metnini veya medyasını değiştiremezsin.';
       end if;
