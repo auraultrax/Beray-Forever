@@ -1,7 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
-/* Firebase-compatibility surface backed ONLY by Supabase.
-   Public publishable key: safe for browser use; database access is controlled by RLS. */
+/* Forever authentication and data access, backed exclusively by Supabase. */
 const SUPABASE_URL = window.FOREVER_SUPABASE_URL || "https://gfuewsdkytfssumxwyxz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = window.FOREVER_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_-CX6sFOEApna11EOem6oOg_39DkcaIq";
 
@@ -30,10 +29,9 @@ const auth = {
 };
 
 export function initializeApp() { return { name: "forever-supabase", supabase: supabaseClient }; }
-export function getAuth() { return auth; }
-export function getFirestore() { return { type: "supabase-document-adapter" }; }
-export class GoogleAuthProvider {}
-export async function signInWithPopup(_auth, _provider) {
+export function getForeverAuth() { return auth; }
+export function getForeverStore() { return { type: "supabase-postgres-adapter" }; }
+export async function signInWithGoogle() {
   const { data, error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: window.location.href, queryParams: { prompt: "select_account" } }
@@ -41,29 +39,18 @@ export async function signInWithPopup(_auth, _provider) {
   if (error) throw error;
   return data;
 }
-export async function createUserWithEmailAndPassword(_auth, email, password) {
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-  if (error) throw error;
-  return { user: mapUser(data.user) };
-}
-export async function signInWithEmailAndPassword(_auth, email, password) {
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  activeUser = mapUser(data.user);
-  return { user: activeUser };
-}
-export async function signOut() {
+export async function signOutForever() {
   const { error } = await supabaseClient.auth.signOut();
   if (error) throw error;
 }
-export function onAuthStateChanged(_auth, callback) {
+export function onForeverSessionChanged(callback) {
   const { data } = supabaseClient.auth.onAuthStateChange((_event, session) => {
     activeUser = mapUser(session?.user || null);
     Promise.resolve().then(() => callback(activeUser));
   });
   return () => data.subscription.unsubscribe();
 }
-export async function updateProfile(user, updates) {
+export async function updateForeverProfile(user, updates) {
   const meta = { ...(user?.raw?.user_metadata || {}) };
   if (updates.displayName) {
     meta.full_name = updates.displayName;
@@ -74,13 +61,6 @@ export async function updateProfile(user, updates) {
   activeUser = mapUser(data.user);
   return activeUser;
 }
-export async function sendPasswordResetEmail(_auth, email) {
-  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + window.location.pathname
-  });
-  if (error) throw error;
-}
-
 const clone = value => value == null ? value : JSON.parse(JSON.stringify(value));
 const isPlain = value => value && typeof value === "object" && !Array.isArray(value);
 function cleanPublicData(collectionName, source) {
