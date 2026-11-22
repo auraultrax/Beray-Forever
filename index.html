@@ -1703,15 +1703,17 @@
           button.classList.toggle('on', nowFollowing);
           button.textContent = nowFollowing ? 'Takiptesin' : 'Takip et';
         });
-        await refreshProfileStats();
-        if (auraXActiveProfileUid === targetUid) {
-          const profile = await getDoc(doc(db, 'users', targetUid));
-          if (profile.exists()) {
-            const d = profile.data() || {};
+        const targetProfile = await getDoc(doc(db, 'users', targetUid));
+        if (targetProfile.exists()) {
+          const d = targetProfile.data() || {};
+          const cached = auraXDirectoryUsers.find(row => row.id === targetUid);
+          if (cached) cached.data = Object.assign({}, cached.data || {}, d);
+          if (auraXActiveProfileUid === targetUid) {
             const stats = document.getElementById('otherProfileStats');
             if (stats) stats.innerHTML = '<span><strong>' + (Array.isArray(d.followers) ? d.followers.length : 0) + '</strong> Takipçi</span><span><strong>' + (Array.isArray(d.following) ? d.following.length : 0) + '</strong> Takip</span>';
           }
         }
+        await refreshProfileStats();
         return nowFollowing;
       } catch (error) {
         console.error(error);
