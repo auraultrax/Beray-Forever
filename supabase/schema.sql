@@ -125,11 +125,13 @@ using (
   public.is_forever_admin()
   or owner_id = auth.uid()
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
+  or (collection_name = 'room_messages' and public.is_forever_plus() and public.is_forever_room_member(data ->> 'roomId'))
 )
 with check (
   public.is_forever_admin()
   or owner_id = auth.uid()
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
+  or (collection_name = 'room_messages' and public.is_forever_plus() and public.is_forever_room_member(data ->> 'roomId'))
 );
 
 drop policy if exists forever_documents_delete on public.forever_documents;
