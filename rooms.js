@@ -2,7 +2,7 @@ import { supabaseClient } from './supabase-compat.js';
 
 const $ = id => document.getElementById(id);
 let session = null, userId = null, username = '', isPlus = false, activeRoom = null, roomChannel = null;
-let drawingDirty = false;
+let drawingDirty = false, roomUiBound = false;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -197,6 +197,8 @@ function setupCanvas() {
   };
 }
 function bindRoomUi() {
+  if (roomUiBound) return;
+  roomUiBound = true;
   $('createRoomForm').onsubmit = async event => {
     event.preventDefault();
     const name = $('newRoomName').value.trim();
