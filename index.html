@@ -636,7 +636,6 @@
         <a href="#" class="nav-link" data-nav="notifications" onclick="fxNavigate('notifications');return false;"><i class="fa-solid fa-bell"></i><span>Bildirimler</span></a>
         <a href="#" class="nav-link" data-nav="leaderboard" onclick="fxNavigate('leaderboard');return false;"><i class="fa-solid fa-trophy"></i><span>Liderlik</span></a>
         <a href="./admin.html" class="nav-link admin-nav hidden" id="auraXAdminNav" data-nav="admin"><i class="fa-solid fa-shield-halved"></i><span>Yönetim</span></a>
-        <a href="https://auraultrax.github.io/Beray-Platform/" class="nav-link" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i><span>Yeni Platform</span></a>
       </nav>
     </div>
     <div class="sidebar-bottom">
@@ -660,14 +659,14 @@
       </button>
     </div>
     <div class="desktop-top-bar">
-      <div class="user-avatar-mini" id="userHeaderAvatar" onclick="openProfile()" role="button" tabindex="0" aria-label="Profili aç">?</div>
+      <div class="user-avatar-mini" id="desktopTopAvatar" onclick="openProfile()" role="button" tabindex="0" aria-label="Profili aç">?</div>
       <button type="button" class="desktop-top-bell" onclick="openNotifPanel()" aria-label="Bildirimler">
         <i class="fa-solid fa-bell"></i><span class="notif-badge-dot hidden" id="notifBadgeDesktopTop"></span>
       </button>
     </div>
     <div class="hidden" aria-hidden="true">
       <span id="pageTitle">Akış</span><span id="networkAuthStatus"></span>
-      <span id="userHeaderName">—</span><span id="userHeaderEmail"></span><span id="notifBadge"></span>
+      <span id="userHeaderAvatar">?</span><span id="userHeaderName">—</span><span id="userHeaderEmail"></span><span id="notifBadge"></span>
     </div>
     <section class="card" id="profileStrip" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <div id="stripAvatar" class="avatar" style="width:48px;height:48px;">?</div>
@@ -2397,6 +2396,7 @@
         const initial = name.charAt(0).toUpperCase();
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial);
+        set('desktopTopAvatar', initial);
         set('mobileTopAvatar', initial);
         const headerName = document.getElementById('userHeaderName');
         if (headerName) headerName.innerHTML = escapeHTML(name) + foreverBadges(currentUser.isPlus);
