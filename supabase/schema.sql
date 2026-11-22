@@ -413,6 +413,7 @@ begin
     end if;
 
     if new.collection_name='posts' and tg_op='UPDATE'
+       and old.owner_id = auth.uid()
        and (new.data ->> 'imageUrl') is null
        and not v_is_plus then
       raise exception 'Sadece metin gönderisi paylaşımı Plus özelliğidir.';
