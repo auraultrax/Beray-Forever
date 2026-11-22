@@ -1,83 +1,123 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#047857"><meta name="robots" content="noindex,nofollow">
-<title>Forever Plus başvurusu</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#047857">
+<meta name="robots" content="noindex,nofollow">
+<title>Forever Plus · Başvuru</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#07140f;--panel:#0d2118;--line:#1e4a36;--text:#e9fff3;--muted:#9eb9aa;--green:#087f55;--mint:#8ce8bd}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:22px;background:radial-gradient(circle at 50% -5%,#15442f,transparent 45%),linear-gradient(160deg,#06110c,#0b1c13);color:var(--text);font:15px/1.55 system-ui,sans-serif;display:grid;place-items:center}
-main{width:min(560px,100%);border:1px solid var(--line);background:rgba(13,33,24,.95);border-radius:24px;padding:26px;box-shadow:0 24px 90px #0008}
-h1{margin:0 0 5px;font-size:26px}p{color:var(--muted)}.mark{color:var(--mint);font-weight:900;letter-spacing:.12em;font-size:12px}
-label{display:block;margin:16px 0 6px;color:var(--mint);font-weight:700;font-size:13px}
-textarea{width:100%;min-height:110px;resize:vertical;background:#06130c;border:1px solid var(--line);border-radius:13px;padding:12px;color:var(--text);font:inherit}
-button,a.action{display:inline-flex;justify-content:center;align-items:center;gap:8px;margin-top:14px;padding:11px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#087f55,#20ad75);color:#fff;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}
-button:disabled{opacity:.5;cursor:wait}.muted{font-size:12px}.state{padding:13px;border-radius:13px;background:#0a1b12;border:1px solid var(--line);margin:14px 0}.hidden{display:none!important}.fine{font-size:12px;color:var(--muted)}a{color:var(--mint)}
+:root{color-scheme:dark;--bg:#04110c;--surface:rgba(8,31,22,.88);--glass:rgba(255,255,255,.055);--line:rgba(52,211,153,.2);--text:#ecfdf5;--muted:#9bb8aa;--mint:#a7f3d0;--green:#059669;--neon:#34d399;--shadow:0 24px 80px #0008}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;display:grid;place-items:center;overflow-x:hidden;background:var(--bg);color:var(--text);font:15px/1.6 'Plus Jakarta Sans',system-ui,sans-serif}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 90% 60% at 50% -15%,rgba(16,185,129,.25),transparent 55%),radial-gradient(ellipse 45% 40% at 100% 80%,rgba(52,211,153,.1),transparent 55%);animation:aurora 16s ease-in-out infinite alternate}
+@keyframes aurora{to{filter:hue-rotate(18deg);opacity:.82}}
+main{position:relative;width:min(560px,100%);padding:28px;border:1px solid var(--line);border-radius:25px;background:var(--surface);backdrop-filter:blur(22px) saturate(1.3);box-shadow:var(--shadow)}
+.mark{font-size:11px;letter-spacing:.16em;font-weight:800;color:var(--mint)}h1{font-size:28px;letter-spacing:-.04em;line-height:1.2;margin:8px 0}p{color:var(--muted);margin:8px 0 18px}.state{padding:14px;border:1px solid var(--line);border-radius:15px;background:var(--glass);margin:18px 0;color:var(--text)}
+label{display:block;margin:15px 0 6px;color:var(--mint);font-size:13px;font-weight:700}textarea{width:100%;min-height:116px;resize:vertical;padding:13px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.22);color:var(--text);font:inherit;outline:none}textarea:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(52,211,153,.1)}
+button,a.action{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:11px 17px;border:1px solid transparent;border-radius:13px;background:linear-gradient(115deg,#047857,#34d399);color:#052417;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}button:disabled{opacity:.55;cursor:wait}a.subtle{color:var(--mint);text-decoration:none;font-size:13px}
+.fine{font-size:12px;color:var(--muted)}.hidden{display:none!important}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tag{display:inline-flex;padding:4px 9px;border:1px solid var(--line);border-radius:99px;color:var(--mint);font-size:11px;font-weight:800}
 </style>
 </head>
 <body>
 <main>
-  <div class="mark">FOREVER PLUS · MEMBER REVIEW</div>
-  <h1>Forever Plus'a başvur 💚</h1>
-  <p>Başvurun yönetim paneline iletilir. Üyelik otomatik açılmaz; yönetici inceleyip onaylar.</p>
-  <div id="state" class="state">Hesap kontrol ediliyor…</div>
+  <div class="mark">FOREVER · PLUS MEMBERSHIP</div>
+  <h1>Forever Plus'a başvur <span aria-hidden="true">✦</span></h1>
+  <p>Başvurun yönetim tarafından incelenir. Onaylandığında mevcut hesabında Plus özellikleri açılır.</p>
+  <div id="state" class="state" role="status" aria-live="polite">Supabase oturumu kontrol ediliyor…</div>
   <form id="applyForm" class="hidden">
-    <label for="reason">Neden Forever Plus istiyorsun? (isteğe bağlı)</label>
-    <textarea id="reason" maxlength="500" placeholder="Kısaca anlatabilirsin…"></textarea>
-    <div class="fine">E-posta, doğum tarihi veya telefon numarası yazmana gerek yok. Bu bilgiler formda istenmez.</div>
+    <label for="reason">Başvuru notun <span class="fine">(isteğe bağlı)</span></label>
+    <textarea id="reason" maxlength="500" placeholder="Kısaca neden Plus kullanmak istediğini anlatabilirsin…"></textarea>
+    <p class="fine">Bu form e-posta, telefon veya doğum tarihi istemez. Başvuru, giriş yaptığın Forever hesabına bağlanır.</p>
     <button id="applyBtn" type="submit">Başvuruyu gönder</button>
   </form>
-  <div class="fine" style="margin-top:18px"><a href="./privacy.html">Gizlilik ve kişisel veriler hakkında bilgi</a> · <a href="./index.html">Forever'a dön</a></div>
+  <div class="row" style="margin-top:18px">
+    <a class="subtle" href="./index.html">← Forever'a dön</a>
+    <span class="fine">·</span>
+    <a class="subtle" href="./privacy.html">Gizlilik</a>
+  </div>
 </main>
+<script src="./supabase-config.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, addDoc, collection, query, where, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-const app=initializeApp({
-  apiKey:"AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
-  authDomain:"project-c443f992-d19d-4d35-a16.firebaseapp.com",
-  projectId:"project-c443f992-d19d-4d35-a16",
-  storageBucket:"project-c443f992-d19d-4d35-a16.firebasestorage.app",
-  messagingSenderId:"509248282221",
-  appId:"1:509248282221:web:84b49536d26d7d755ba964"
-});
-const auth=getAuth(app), db=getFirestore(app);
-const state=document.getElementById('state'), form=document.getElementById('applyForm'), btn=document.getElementById('applyBtn');
-let activeUser=null, profile=null;
-onAuthStateChanged(auth,async user=>{
-  activeUser=user; form.classList.add('hidden');
-  if(!user){state.innerHTML='Başvuru yapmadan önce Forever hesabına giriş yapmalısın. <a href="./index.html">Giriş sayfasına git</a>.';return;}
+import { supabase } from './supabase-client.js';
+
+const state=document.getElementById('state');
+const form=document.getElementById('applyForm');
+const button=document.getElementById('applyBtn');
+let activeUser=null;
+let checking=false;
+
+function showMessage(message){state.textContent=message;}
+async function checkAccount(user){
+  if(checking)return;
+  checking=true;
+  activeUser=user;
+  form.classList.add('hidden');
   try{
-    const snap=await getDoc(doc(db,'users',user.uid));
-    profile=snap.exists()?snap.data():{};
-    if(profile.plusMember===true){state.textContent='Zaten Forever Plus üyesisin. Tüm Plus özelliklerin açık.';return;}
-    const pending=await getDocs(query(collection(db,'plusApplications'),where('uid','==',user.uid),where('status','==','pending'),limit(1)));
-    if(!pending.empty){state.textContent='Bekleyen bir başvurun var. Yönetim inceleyince hesabına bildirim gelecek.';return;}
-    state.textContent='Hesabın başvuru için hazır. Formu gönderdiğinde talebin yönetim paneline düşecek.';
+    const {data:profile,error:profileError}=await supabase.from('profiles')
+      .select('username,display_name,plus_member,onboarding_complete')
+      .eq('id',user.id).maybeSingle();
+    if(profileError)throw profileError;
+    if(!profile){showMessage('Profilin henüz oluşturulamadı. Forever ana sayfasına dönüp yeniden giriş yap.');return;}
+    if(profile.plus_member){showMessage('Zaten Forever Plus üyesisin. Plus özelliklerin hesabında açık. 💚');return;}
+    if(profile.onboarding_complete===false){showMessage('Önce Forever profil kurulumunu tamamlamalısın.');return;}
+    const {data:pending,error:pendingError}=await supabase.from('plus_applications')
+      .select('id,status,created_at').eq('user_id',user.id).eq('status','pending').limit(1);
+    if(pendingError)throw pendingError;
+    if(pending?.length){
+      showMessage('Bir Plus başvurun zaten bekliyor. Yönetim incelemesi tamamlandığında durumun güncellenecek.');
+      return;
+    }
+    showMessage('Başvuruya hazırsın. Gönderdiğinde talebin Forever yönetim paneline iletilecek.');
     form.classList.remove('hidden');
-  }catch(error){state.textContent='Başvuru bilgisi yüklenemedi: '+(error.message||'bağlantı hatası');}
-});
-form.addEventListener('submit',async event=>{
-  event.preventDefault();if(!activeUser)return;
-  const reason=(document.getElementById('reason').value||'').trim().slice(0,500);
-  btn.disabled=true;btn.textContent='Gönderiliyor…';
-  try{
-    const fresh=await getDoc(doc(db,'users',activeUser.uid));
-    if(fresh.exists()&&fresh.data().plusMember===true){state.textContent='Zaten Plus üyesisin.';form.classList.add('hidden');return;}
-    const pending=await getDocs(query(collection(db,'plusApplications'),where('uid','==',activeUser.uid),where('status','==','pending'),limit(1)));
-    if(!pending.empty){state.textContent='Zaten bekleyen bir başvurun var.';form.classList.add('hidden');return;}
-    await addDoc(collection(db,'plusApplications'),{
-      uid:activeUser.uid,
-      username:profile?.username||'',
-      displayName:profile?.displayName||activeUser.displayName||'',
-      reason,
-      status:'pending',
-      createdAt:serverTimestamp()
-    });
-    state.textContent='Başvurun alındı! Yönetim panelinden değerlendirilecek. 💚';
+  }catch(error){
+    showMessage('Başvuru bilgisi yüklenemedi: '+(error.message||'Supabase bağlantısını kontrol et.'));
+  }finally{checking=false;}
+}
+async function syncSession(){
+  const {data,error}=await supabase.auth.getSession();
+  if(error){showMessage('Oturum kontrol edilemedi.');return;}
+  if(!data.session?.user){
+    showMessage('Başvuru için giriş yapmalısın. Forever giriş sayfasına yönlendiriliyorsun…');
+    setTimeout(()=>location.replace('./index.html'),700);
+    return;
+  }
+  await checkAccount(data.session.user);
+}
+supabase.auth.onAuthStateChange((_event,session)=>{
+  if(session?.user)queueMicrotask(()=>checkAccount(session.user));
+  else{
+    activeUser=null;
     form.classList.add('hidden');
-  }catch(error){state.textContent='Başvuru gönderilemedi: '+(error.message||'bağlantı hatası');}
-  finally{btn.disabled=false;btn.textContent='Başvuruyu gönder';}
+    showMessage('Oturum bulunamadı. Forever giriş sayfasına dön.');
+  }
+});
+await syncSession();
+
+form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(!activeUser)return;
+  const reason=(document.getElementById('reason').value||'').trim().slice(0,500);
+  button.disabled=true;
+  button.textContent='Gönderiliyor…';
+  try{
+    const {data:profile,error:profileError}=await supabase.from('profiles')
+      .select('plus_member,onboarding_complete').eq('id',activeUser.id).single();
+    if(profileError)throw profileError;
+    if(profile.plus_member){showMessage('Zaten Plus üyesisin.');form.classList.add('hidden');return;}
+    if(profile.onboarding_complete===false){showMessage('Önce Forever profil kurulumunu tamamlamalısın.');form.classList.add('hidden');return;}
+    const {error}=await supabase.from('plus_applications').insert({
+      user_id:activeUser.id,reason,status:'pending'
+    });
+    if(error)throw error;
+    showMessage('Başvurun alındı! Yönetim panelinden incelenecek. 💚');
+    form.classList.add('hidden');
+  }catch(error){
+    const message=error.code==='23505'
+      ? 'Zaten bekleyen bir Plus başvurun var.'
+      : (error.message||'Başvuru gönderilemedi. Tekrar dene.');
+    showMessage(message);
+  }finally{button.disabled=false;button.textContent='Başvuruyu gönder';}
 });
 </script>
 </body>
