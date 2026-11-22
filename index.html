@@ -864,11 +864,30 @@
           <div><h2 id="auraXDirectoryTitle">Kullanıcı Bul</h2><p class="sub" id="auraXDirectorySub">Topluluğu keşfet</p></div>
           <button type="button" class="btn-icon" onclick="closeAuraXDirectory()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button>
         </div>
+        <div class="aura-x-directory-tabs" role="tablist" aria-label="Kullanıcı listeleri">
+          <button type="button" class="aura-x-directory-tab active" data-directory-tab="search" role="tab" aria-selected="true">Kullanıcı Bul</button>
+          <button type="button" class="aura-x-directory-tab" data-directory-tab="following" role="tab" aria-selected="false">Takip Ettiklerim</button>
+          <button type="button" class="aura-x-directory-tab" data-directory-tab="followers" role="tab" aria-selected="false">Takipçilerim</button>
+        </div>
         <input id="auraXDirectorySearch" type="search" placeholder="Kullanıcı adı veya isim ara..." autocomplete="off">
         <div id="auraXDirectoryList" class="aura-x-directory-list"><div class="empty">Yükleniyor…</div></div>
       </div>
     </div>
 
+
+    <div id="otherProfileModal" class="modal hidden" onclick="if(event.target===this)closeAuraXUserProfile()">
+      <div class="modal-card other-profile-card">
+        <div class="room-modal-heading"><div><h2>Profil</h2><p class="sub">Kullanıcı bilgileri ve paylaşımları</p></div><button type="button" class="btn-icon" onclick="closeAuraXUserProfile()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="other-profile-main">
+          <div id="otherProfileAvatar" class="other-profile-avatar">?</div>
+          <div class="other-profile-details"><strong id="otherProfileName">Kullanıcı</strong><small id="otherProfileHandle">@kullanıcı</small><p id="otherProfileBio"></p></div>
+        </div>
+        <div id="otherProfileStats" class="other-profile-stats"></div>
+        <button type="button" id="otherProfileFollowBtn" class="btn btn-block">Takip et</button>
+        <h3 class="other-profile-post-title">Gönderileri</h3>
+        <div id="otherProfilePosts" class="other-profile-posts"><div class="empty">Gönderiler yükleniyor…</div></div>
+      </div>
+    </div>
     </section>
 
     <footer class="foot">
@@ -2316,48 +2335,92 @@
     // Aura X navigation: directory modal + standalone leaderboard page.
     let auraXDirectoryUsers = [];
     let auraXDirectoryMode = 'users';
+    let auraXDirectoryTab = 'search';
+    let auraXActiveProfileUid = null;
     window.closeAuraXDirectory = function() {
       document.getElementById('auraXDirectoryModal')?.classList.add('hidden');
       if(auraXDirectoryMode==='users') window.setAuraXView(window.auraXReturnView || 'discover');
+    };
+    function setAuraXDirectoryTab(tab) {
+      auraXDirectoryTab = tab;
+      document.querySelectorAll('[data-directory-tab]').forEach(button => {
+        const active=button.dataset.directoryTab===tab;
+        button.classList.toggle('active',active);
+        button.setAttribute('aria-selected',active?'true':'false');
+      });
+      const search=document.getElementById('auraXDirectorySearch');
+      if(search) search.placeholder=tab==='following'?'Takip ettiğin kişilerde ara...':tab==='followers'?'Takipçilerinde ara...':'Kullanıcı adı veya isim ara...';
+      renderAuraXDirectory();
+    }
+    window.setAuraXDirectoryTab=setAuraXDirectoryTab;
+    function auraXFollowerCount(row) {
+      return Array.isArray(row?.data?.followers) ? row.data.followers.length : 0;
+    }
+    window.closeAuraXUserProfile=function(){
+      document.getElementById('otherProfileModal')?.classList.add('hidden');
+      auraXActiveProfileUid=null;
+    };
+    window.openAuraXUserProfile=async function(uid) {
+      if(!uid||!currentUser)return;
+      if(uid===currentUser.uid){window.openProfile?.();return;}
+      auraXActiveProfileUid=uid;
+      const modal=document.getElementById('otherProfileModal');
+      const row=auraXDirectoryUsers.find(item=>item.id===uid);
+      let data=row?.data||{};
+      try{
+        const snap=await getDoc(doc(db,'users',uid));
+        if(snap.exists())data=Object.assign({},data,snap.data()||{});
+      }catch(error){console.warn('Profil ayrıntıları yüklenemedi:',error);}
+      if(auraXActiveProfileUid!==uid)return;
+      const name=data.displayName||data.username||'Kullanıcı';
+      document.getElementById('otherProfileAvatar').textContent=name.charAt(0).toLocaleUpperCase('tr-TR');
+      document.getElementById('otherProfileName').textContent=name;
+      document.getElementById('otherProfileHandle').textContent='@'+(data.username||String(uid).slice(0,8));
+      document.getElementById('otherProfileBio').textContent=data.bio||'Henüz bir biyografi eklenmemiş.';
+      document.getElementById('otherProfileStats').innerHTML='<span><strong>'+auraXFollowerCount({data:data})+'</strong> Takipçi</span><span><strong>'+(Array.isArray(data.following)?data.following.length:0)+'</strong> Takip</span>';
+      const follow=document.getElementById('otherProfileFollowBtn');
+      const on=followingIds.has(uid);
+      follow.textContent=on?'Takiptesin':'Takip et';follow.classList.toggle('on',on);
+      follow.onclick=async()=>{await window.toggleFollow(uid,follow);follow.textContent=followingIds.has(uid)?'Takiptesin':'Takip et';follow.classList.toggle('on',followingIds.has(uid));};
+      const posts=(allPostsCache||[]).filter(post=>post.userId===uid);
+      document.getElementById('otherProfilePosts').innerHTML=posts.length?posts.slice(0,30).map(post=>'<article class="other-profile-post"><p>'+escapeHTML(post.content||post.text||'')+'</p></article>').join(''):'<div class="empty">Bu kullanıcının henüz gönderisi yok.</div>';
+      modal?.classList.remove('hidden');
     };
     function auraXVoteCount(row) {
       return Math.max(0, Number(row?.data?.votes) || 0);
     }
     function renderAuraXDirectory() {
-      const search = (document.getElementById('auraXDirectorySearch')?.value || '').trim().toLocaleLowerCase('tr-TR');
-      let rows = auraXDirectoryUsers.filter(row => {
-        const d = row.data || {};
+      const search=(document.getElementById('auraXDirectorySearch')?.value||'').trim().toLocaleLowerCase('tr-TR');
+      let rows=auraXDirectoryUsers.filter(row=>{
+        const d=row.data||{},uid=String(row.id||'');
+        if(auraXDirectoryTab==='following'&&!followingIds.has(uid))return false;
+        if(auraXDirectoryTab==='followers'&&!(Array.isArray(d.followers)&&d.followers.includes(currentUser?.uid)))return false;
         return [d.username,d.displayName,d.bio].join(' ').toLocaleLowerCase('tr-TR').includes(search);
       });
-      if (auraXDirectoryMode === 'leaderboard') {
-        rows = [...rows].sort((a,b) => auraXVoteCount(b)-auraXVoteCount(a)).slice(0,3);
-        const podium=document.getElementById('podiumContainer');
-        const list=document.getElementById('leaderboardList');
-        if(!podium||!list)return;
-        list.innerHTML='';
+      if(auraXDirectoryMode==='leaderboard'){
+        rows=[...rows].sort((a,b)=>auraXVoteCount(b)-auraXVoteCount(a)).slice(0,3);
+        const podium=document.getElementById('podiumContainer'),list=document.getElementById('leaderboardList');
+        if(!podium||!list)return;list.innerHTML='';
         if(!rows.length){podium.innerHTML='<p class="leaderboard-empty">Sıralama için henüz oy bulunmuyor.</p>';return;}
         const createItem=(row,rank)=>{
           if(!row)return '<div class="podium-item podium-placeholder" aria-hidden="true"></div>';
-          const d=row.data||{}, name=d.username||d.displayName||'Kullanıcı';
-          const cls=rank===1?'rank-1':rank===2?'rank-2':'rank-3';
+          const d=row.data||{},name=d.username||d.displayName||'Kullanıcı',cls=rank===1?'rank-1':rank===2?'rank-2':'rank-3';
           return '<div class="podium-item '+cls+'"><div class="podium-rank">'+rank+'</div><div class="podium-name">@'+escapeHTML(name)+'</div><div class="podium-votes">'+auraXVoteCount(row)+' Oy</div></div>';
         };
-        podium.innerHTML=createItem(rows[1],2)+createItem(rows[0],1)+createItem(rows[2],3);
-        return;
+        podium.innerHTML=createItem(rows[1],2)+createItem(rows[0],1)+createItem(rows[2],3);return;
       }
-      const list=document.getElementById('auraXDirectoryList');
-      if(!list)return;
-      if(!rows.length){list.innerHTML='<div class="empty">Sonuç bulunamadı.</div>';return;}
+      const list=document.getElementById('auraXDirectoryList');if(!list)return;
+      if(!rows.length){list.innerHTML='<div class="empty">Bu listede sonuç bulunamadı.</div>';return;}
       list.innerHTML=rows.map(row=>{
-        const d=row.data||{}, uid=String(row.id||''), name=d.username||d.displayName||'Kullanıcı';
-        const following=followingIds.has(uid), count=auraXFollowerCount(row);
+        const d=row.data||{},uid=String(row.id||''),name=d.username||d.displayName||'Kullanıcı';
+        const following=followingIds.has(uid),count=auraXFollowerCount(row);
         const action=uid===currentUser?.uid?'<span class="aura-x-self">Sen</span>':'<button type="button" class="btn-follow '+(following?'on':'')+'" data-follow-uid="'+escapeHTML(uid)+'">'+(following?'Takiptesin':'Takip et')+'</button>';
-        return '<article class="aura-x-user-row"><div class="aura-x-user-avatar">'+escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'))+'</div><div class="aura-x-user-meta"><strong>'+escapeHTML(name)+'</strong><small>'+escapeHTML(d.bio||'@'+(d.username||'kullanici'))+'</small><small>'+count+' takipçi</small></div>'+action+'</article>';
+        return '<article class="aura-x-user-row"><button type="button" class="aura-x-user-open" data-open-user-profile="'+escapeHTML(uid)+'"><span class="aura-x-user-avatar">'+escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'))+'</span><span class="aura-x-user-meta"><strong>'+escapeHTML(name)+'</strong><small>'+escapeHTML(d.bio||'@'+(d.username||'kullanici'))+'</small><small>'+count+' takipçi</small></span></button>'+action+'</article>';
       }).join('');
-      list.querySelectorAll('[data-follow-uid]').forEach(btn=>btn.addEventListener('click',async()=>{
-        await window.toggleFollow(btn.dataset.followUid,btn);
-        renderAuraXDirectory();
+      list.querySelectorAll('[data-follow-uid]').forEach(button=>button.addEventListener('click',async()=>{
+        await window.toggleFollow(button.dataset.followUid,button);renderAuraXDirectory();
       }));
+      list.querySelectorAll('[data-open-user-profile]').forEach(button=>button.addEventListener('click',()=>window.openAuraXUserProfile(button.dataset.openUserProfile)));
     }
     async function openAuraXDirectory(mode) {
       if(!currentUser)return;
@@ -2365,26 +2428,22 @@
       const modal=document.getElementById('auraXDirectoryModal');
       const search=document.getElementById('auraXDirectorySearch');
       if(mode==='leaderboard'){
-        search.value='';
-        modal?.classList.add('hidden');
-        window.setAuraXView('leaderboard');
+        search.value='';modal?.classList.add('hidden');window.setAuraXView('leaderboard');
         document.getElementById('leaderboardList').innerHTML='<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor…</div>';
-      } else {
-        window.auraXReturnView=window.auraXCurrentView || 'discover';
+      }else{
+        window.auraXReturnView=window.auraXCurrentView||'discover';
         document.querySelectorAll('[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav==='users'));
         document.getElementById('auraXDirectoryTitle').textContent='Kullanıcı Bul';
-        document.getElementById('auraXDirectorySub').textContent='Topluluğu keşfet';
-        search.placeholder='Kullanıcı adı veya isim ara...';
-        search.value='';
+        document.getElementById('auraXDirectorySub').textContent='Takip et, takipçilerini gör ve profilleri keşfet';
+        search.value='';modal?.classList.remove('hidden');setAuraXDirectoryTab('search');
         document.getElementById('auraXDirectoryList').innerHTML='<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor…</div>';
-        modal.classList.remove('hidden');
       }
       try{
-        const snap=await getDocs(collection(db,'users'));
-        auraXDirectoryUsers=[];
+        await loadFollowing();
+        const snap=await getDocs(collection(db,'users'));auraXDirectoryUsers=[];
         snap.forEach(docSnap=>{
           const data=docSnap.data()||{};
-          if(data.suspended!==true&&data.banned!==true&&String(data.username||'').toUpperCase()!=='A_UR_A_XX') auraXDirectoryUsers.push({id:docSnap.id,data});
+          if(data.suspended!==true&&data.banned!==true&&String(data.username||'').toUpperCase()!=='A_UR_A_XX')auraXDirectoryUsers.push({id:docSnap.id,data});
         });
         renderAuraXDirectory();
       }catch(error){
@@ -2401,11 +2460,16 @@
       window.loadAuraAdminReports?.();
     };
     async function refreshAuraXAdminAccess(user,profile={}) {
-      const role=String(user?.raw?.app_metadata?.role||profile?.role||'').toLowerCase();
-      const allowed=role==='admin'||profile?.isAdmin===true||String(profile?.username||'').toUpperCase()==='A_UR_A_XX';
+      let allowed=false;
+      if(user){
+        try{const result=await supabaseClient.rpc('is_forever_admin');allowed=!result.error&&result.data===true;}
+        catch(_){allowed=false;}
+      }
       document.querySelectorAll('.admin-nav').forEach(nav=>nav.classList.toggle('hidden',!allowed));
+      window.foreverIsAdmin=allowed;
     }
     document.getElementById('auraXDirectorySearch')?.addEventListener('input',renderAuraXDirectory);
+    document.querySelectorAll('[data-directory-tab]').forEach(button=>button.addEventListener('click',()=>setAuraXDirectoryTab(button.dataset.directoryTab)));
 
     // Supabase oturum kontrolü
     onForeverSessionChanged(async (user) => {
