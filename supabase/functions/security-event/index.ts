@@ -11,7 +11,7 @@ const encoder = new TextEncoder();
 
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
-  const allowed = origin && (ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin));
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin);
   return {
     "Access-Control-Allow-Origin": allowed ? origin : "",
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
