@@ -78,11 +78,17 @@ async function loadRoomMessages() {
   if (!activeRoom) return;
   const box = $('roomMessages');
   if (!box) return;
-  const { data, error } = await supabaseClient.from('forever_documents')
-    .select('id,data,created_at').eq('collection_name', 'room_messages')
-    .contains('data', { roomId: activeRoom.id }).order('created_at', { ascending: true }).limit(150);
-  if (error) { box.innerHTML = '<div class="empty">Mesajlar yüklenemedi: ' + escapeHtml(error.message) + '</div>'; return; }
-  const rows = data || [];
+  const [messageResult, blockResult] = await Promise.all([
+    supabaseClient.from('forever_documents')
+      .select('id,data,created_at').eq('collection_name', 'room_messages')
+      .contains('data', { roomId: activeRoom.id }).order('created_at', { ascending: true }).limit(150),
+    fetchDocs('blocks')
+  ]);
+  if (messageResult.error) { box.innerHTML = '<div class="empty">Mesajlar yüklenemedi: ' + escapeHtml(messageResult.error.message) + '</div>'; return; }
+  const blockedUsers = new Set((blockResult || [])
+    .filter(row => row.data?.blockerId === userId)
+    .map(row => row.data?.blockedId));
+  const rows = (messageResult.data || []).filter(row => !blockedUsers.has(row.data?.userId));
   box.innerHTML = rows.length ? rows.map(row => renderMessage(row)).join('') : '<div class="empty">Bu odada henüz mesaj yok. İlk mesajı sen gönder!</div>';
   box.scrollTop = box.scrollHeight;
   box.querySelectorAll('[data-pin]').forEach(button => button.onclick = () => pinMessage(button.dataset.pin));
