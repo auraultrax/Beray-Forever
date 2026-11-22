@@ -547,6 +547,23 @@
         </div>
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
+      <div class="card" style="margin-top:12px;padding:12px;background:rgba(139,92,246,.08);">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">
+          <strong>✦ Forever Plus</strong><span id="plusStatusLabel" class="tag">Kilitli</span>
+        </div>
+        <p class="muted" style="margin:8px 0;">Plus üyeliği yönetici tarafından kullanıcı adına tanımlanır. Bu bir satın alma ekranı değildir.</p>
+        <div style="font-size:.78rem;line-height:1.8;color:var(--muted);">
+          <div>🔒 Hazır ve özel animasyonlu çıkartmalar</div>
+          <div>🔒 Kullanıcı adının yanında mor zümrüt ve mavi doğrulama rozeti</div>
+          <div>🔒 Oda içinde çizim yapma</div>
+          <div>🔒 Özel uygulama simgeleri</div>
+          <div>🔒 3'ten fazla odaya katılma (ücretsiz hesap: 3 oda)</div>
+          <div>🔒 Oda mesajlarını sabitleme</div>
+          <div>🔒 +10 takipçi bonus hakkı</div>
+          <div>🔒 Günlük toplam 10 fotoğraf/video (ücretsiz hesap: 5)</div>
+          <div>🔒 Sadece metin gönderisi paylaşma</div>
+        </div>
+      </div>
       <div class="profile-stats">
         <button type="button" onclick="openFollowList('followers')"><strong id="statFollowers">0</strong><span>Takipçi</span></button>
         <button type="button" onclick="openFollowList('following')"><strong id="statFollowing">0</strong><span>Takip</span></button>
@@ -1708,6 +1725,8 @@
       document.getElementById('profileHandle').textContent = '@' + (currentUser.username || name.toLowerCase().replace(/\s+/g, ''));
       document.getElementById('plusIconSettings')?.classList.toggle('hidden', !currentUser.isPlus);
       document.getElementById('plusIconLocked')?.classList.toggle('hidden', Boolean(currentUser.isPlus));
+      const plusStatus = document.getElementById('plusStatusLabel');
+      if (plusStatus) { plusStatus.textContent = currentUser.isPlus ? '✦ Aktif' : 'Kilitli'; plusStatus.classList.toggle('plus', Boolean(currentUser.isPlus)); }
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
       document.getElementById('profileModal').classList.remove('hidden');
