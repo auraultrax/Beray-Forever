@@ -2278,7 +2278,7 @@
         set('userHeaderEmail', currentUser.isPlus ? 'Forever Plus' : 'Forever üyesi');
         set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('postCreatorAvatar', initial);
         if (networkAuthStatus) { networkAuthStatus.textContent = currentUser.isPlus ? 'Forever Plus' : 'Çevrimiçi'; networkAuthStatus.className = 'status-ok'; networkAuthStatus.style.display = 'inline'; }
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers();
         listenToPosts(); listenToStories();
         window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: user.uid, username: currentUser.username, isPlus: currentUser.isPlus } }));
       } catch (error) {
