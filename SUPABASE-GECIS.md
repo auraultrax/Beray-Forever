@@ -1,23 +1,31 @@
-# Firebase -> Supabase geçişi
+# Forever · Supabase kurulum ve geçiş notu
 
-Bu dalda hedef backend Supabase'tir. SQL şeması; Auth kullanıcı profilleri, takip, gönderiler, hikâyeler, odalar, sohbet, çizimler, çıkartmalar, Plus başvuruları, admin rolleri, medya ve güvenlik kayıtları için hazırlanmıştır.
+Bu geliştirme dalındaki ana uygulama kimlik doğrulaması, Plus başvuru sayfası ve admin paneli Supabase Auth kullanır. Veri modeli Postgres, RLS, Realtime, Storage ve Edge Functions üzerine kuruludur.
 
-## Kurulum
-1. Supabase Dashboard > SQL Editor > New query bölümünde `supabase-schema.sql` dosyasının tamamını çalıştır.
-2. Uygulama ayarlarında Authentication > URL Configuration alanına sitenin gerçek adresini ve yönlendirme adreslerini ekle.
-3. Authentication > Providers bölümünden ihtiyaç duyulan e-posta ve Google sağlayıcılarını etkinleştir.
-4. Site istemcisi için `supabase-config.js` kullanılır. Publishable key tarayıcıda kullanılabilir; secret/service_role key asla HTML/JS içine eklenmez.
-5. İlk yönetici normal kayıt ekranından kayıt olur. Authentication > Users bölümündeki UUID, SQL dosyasının sonundaki bootstrap komutuyla `user_roles` tablosuna eklenir. Admin paneli daha sonra aynı Supabase oturumunu ve bu rolü kontrol eder.
+## Kurulum sırası
+1. Supabase Dashboard → SQL Editor'da supabase-schema.sql dosyasının tamamını çalıştır.
+2. Authentication → URL Configuration'a gerçek site URL'si ve OAuth redirect adresini ekle.
+3. Authentication → Providers altında e-posta/parola ve kullanacağın OAuth sağlayıcısını yapılandır.
+4. supabase-config.js içindeki URL ve publishable key bu Supabase projesine aittir. Publishable key istemcide kullanılabilir; secret key asla HTML/JS içine eklenmez.
+5. Normal kayıt ekranından ilk kullanıcı hesabını oluştur. Authentication → Users bölümünden UUID'ni bulup SQL dosyasının sonundaki admin bootstrap komutunu ayrı çalıştır.
+6. supabase/config.toml dosyasını ve supabase/functions altındaki üç Edge Function'ı Supabase CLI ile deploy et.
+7. Dashboard → Edge Functions → Secrets bölümünde IP_LOG_ENCRYPTION_KEY, IP_HASH_SECRET ve CORS_ORIGINS tanımla. Gerçek secret değerlerini git'e ekleme.
+8. Supabase Cron ile public.cleanup_security_events() fonksiyonunu günlük çalıştır.
 
-## Önemli geçiş notları
-- Firebase Authentication kullanıcıları ve şifreleri SQL ile Supabase'e otomatik taşınamaz. Firebase kullanıcı dışa aktarımı ve desteklenen parola hash formatı ile ayrı bir kimlik aktarımı gerekir; uygun hash taşınamazsa kullanıcılar Supabase üzerinden parola sıfırlama / yeniden kayıt akışını kullanır.
-- Firestore koleksiyonlarının verileri bu şemaya otomatik kopyalanmaz. Önce Firebase verisi JSON dışa aktarılır, UID -> Supabase UUID eşlemesi oluşturulur ve tablolar kontrollü biçimde doldurulur. Canlı siteyi yeni Auth ve RLS testleri tamamlanmadan Firebase projesinden ayırma.
-- Hikâyeler takipçilere özel tutulur. Hikâye medyası `forever-private` bucket'ında saklanmalıdır; herkese açık gönderi ve avatar medyası `forever-public` bucket'ını kullanır.
-- Normal üyeler günde en fazla 5 görsel yükleyebilir. Plus görselleri sınırsızdır. Tarayıcıdan doğrudan video yükleme bilerek kapalıdır; gerçek MP4 süresinin doğrulanması ve günlük toplam 180 saniye sınırı için Edge Function gerekir.
-- IP adresi tarayıcıdan alınmaz. Güvenlik olayı kaydı, IP'yi sunucu tarafında şifreleyip `security_events` tablosuna yazan Edge Function ile yapılmalıdır. 30 günlük temizleme için `cleanup_security_events()` fonksiyonunu Supabase Cron ile günlük çalıştır.
+## Taşınan bileşenler
+- index.html: ana Forever istemcisi, Supabase Auth ve Supabase veri adaptörü.
+- plus-apply.html: Supabase oturumuyla Plus başvurusu.
+- admin.html: aynı normal oturumla admin rol kontrolü ve yönetim araçları.
+- supabase-schema.sql: kullanıcı profili, özel profil, roller, takip, gönderi, hikâye, oda, mesaj, Plus, çizim/çıkartma, medya ve güvenlik tabloları.
+- security-event: IP şifreleyerek güvenlik olayı kaydeder.
+- security-logs: admin rolünü doğrulayıp IP kayıtlarını yalnızca yöneticiye çözer.
+- upload-video: Plus üyeliğini, MP4 süresini ve günlük toplam 180 saniye video kotasını sunucu tarafında doğrular.
 
-## Aura X entegrasyonu
-Aura X'in eski kaynak kodu bu depoda bulunmadı. Bu şemada Aura X'ten daha önce tarif edilen takip, hikâye, özel mesaj, oda, çizim, bildirim ve yönetim işlevleri aynı Forever hesabı altında birleşecek şekilde tasarlandı. Tam eski arayüz / kod aktarımı için Aura X kaynak deposu veya arşivi ayrıca gerekir.
+## Eski Firebase verileri
+Bu repodan Firebase SDK ve Firestore kuralları kaldırılmaktadır; ancak Firebase'deki mevcut kullanıcılar, parolalar ve belgeler bu işlemlerle otomatik taşınmaz. Supabase SQL çalıştırmak Firebase Auth hesaplarını import etmez. Eski veri gerekiyorsa önce güvenli dışa aktarım ve Firebase UID → Supabase UUID eşleme planı hazırla; parola hash uyumluluğunu doğrula. Kullanıcılar aynı parola ile otomatik taşınamıyorsa parola sıfırlama/yeniden kayıt akışı gerekir. Eski Firebase projesini ve dışa aktarımları doğrulanmadan silme.
 
-## Şu anki durum
-Bu SQL ve config geçiş altyapısını hazırlar; mevcut `index.html`, `admin.html` ve `plus-apply.html` henüz Firebase SDK çağrıları içeriyorsa, istemci kodu taşıması tamamlanmadan Firebase tamamen kaldırılmış sayılmaz. Bu dosyalar sonraki uygulama aşamasında Supabase Auth + Postgres + Realtime + Storage kullanacak şekilde güncellenmelidir.
+## Aura X
+Bağlı GitHub hesabında eski Aura X kaynak deposu bulunamadı. SQL modeli, daha önce tarif ettiğin takip, hikâye, odalar, özel mesaj, çizim, çıkartma, bildirim ve yönetim özelliklerini Forever hesabıyla aynı backend'de birleştirecek biçimde tasarlanmıştır. Eski arayüzün birebir kod taşınması için Aura X kaynak kodu veya arşivi gerekir.
+
+## Sınırlar
+GitHub'a kod eklemek Supabase projesinde otomatik çalıştırmaz. SQL'i SQL Editor'da çalıştırmalı, Edge Function'ları deploy etmeli, Secrets tanımlamalı ve Auth URL/Provider ayarlarını tamamlamalısın. Canlı proje üzerinde bu kurulum adımlarını bu GitHub bağlantısından otomatik uygulayamam.
