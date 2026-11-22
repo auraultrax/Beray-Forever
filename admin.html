@@ -68,7 +68,15 @@
     </div>
 
     <div id="reportsPane" class="hidden">
-      <div<script type="module">
+      <div id="reportList"></div>
+    </div>
+    <div id="logsPane" class="hidden">
+      <div id="logList"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -341,8 +349,6 @@ async function loadLogs() {
         <pre>${esc(r.detail)}</pre>
         <div class="muted">${esc(r.adminEmail)} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div></div>`).join('');
   } catch (e) { $('logList').innerHTML = ''; say('Kayıtlar okunamadı: ' + e.message, 'bad'); }
-}
-</script>ch (e) { $('reportList').innerHTML = ''; say('Şikayetler okunamadı (kurallar izin vermiyor olabilir): ' + e.message, 'bad'); }
 }
 </script>
 </body>
