@@ -2,7 +2,7 @@ import { supabaseClient } from './supabase-compat.js';
 
 const $ = id => document.getElementById(id);
 let session = null, userId = null, username = '', isPlus = false, activeRoom = null, roomChannel = null;
-let knownPlusUserIds = new Set();
+let knownPlusUserIds = new Set(), plusUsersChannel = null;
 let drawingDirty = false, roomUiBound = false;
 
 function escapeHtml(value) {
@@ -27,6 +27,14 @@ async function refreshKnownPlusUsers() {
     const users = await fetchDocs('users');
     knownPlusUserIds = new Set(users.filter(row => row.data?.isPlus).map(row => row.id));
   } catch (error) { console.warn('Plus kullanıcı rozetleri yüklenemedi:', error); }
+}
+function watchRoomPlusUsers() {
+  if (plusUsersChannel) return;
+  plusUsersChannel = supabaseClient.channel('forever-room-plus-user-profiles')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_documents', filter: 'collection_name=eq.users' }, async () => {
+      await refreshKnownPlusUsers();
+      if (activeRoom) await loadRoomMessages();
+    }).subscribe();
 }
 function syncPlusControls() {
   const label = $('roomPlanLabel');
@@ -285,6 +293,7 @@ async function initForUser() {
   username = profile.data?.data?.username || session.user.user_metadata?.name || 'Kullanıcı';
   isPlus = Boolean(plus.data);
   await refreshKnownPlusUsers();
+  watchRoomPlusUsers();
   syncPlusControls();
   bindRoomUi();
   await loadRoomList();
