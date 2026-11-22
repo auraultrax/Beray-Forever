@@ -31,11 +31,6 @@ export function onAuthStateChanged(_auth, callback) {
     currentMappedUser = mapUser(session?.user || null);
     if (active) queueMicrotask(() => callback(currentMappedUser));
   });
-  supabase.auth.getSession().then(({ data: sessionData }) => {
-    if (!active) return;
-    currentMappedUser = mapUser(sessionData.session?.user || null);
-    callback(currentMappedUser);
-  }).catch(() => {});
   return () => {
     active = false;
     data.subscription.unsubscribe();
@@ -345,6 +340,7 @@ async function loadRows(ref) {
   const { table, roomId } = tableFor(ref.path);
   let builder = supabase.from(table).select('*');
   builder = await applyConstraints(builder, table, ref.constraints, roomId);
+  if (table === 'stories') builder = builder.gt('expires_at', new Date().toISOString());
   if (!ref.constraints?.some(x => x.__constraint === 'limit')) builder = builder.limit(200);
   const { data, error } = await builder;
   raise(error);
