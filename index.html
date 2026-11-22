@@ -451,6 +451,8 @@
       display: grid; place-items: center;
     }
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./aurax-theme.css">
 </head>
 <body>
 
@@ -787,9 +789,58 @@
     </div>
 
     <footer class="foot">
-      <strong>Forever</strong> · from <strong>Beray</strong>
+      <strong>Forever</strong> · Aura X ekosisteminde · from <strong>Beray</strong>
     </footer>
   </div>
+
+  <nav class="fx-dock" aria-label="Forever ana gezinme">
+    <button type="button" class="fx-dock-item active" onclick="fxNavigate('feed')" aria-label="Akış">
+      <i class="fa-solid fa-house"></i><span>Akış</span>
+    </button>
+    <button type="button" class="fx-dock-item" onclick="fxNavigate('rooms')" aria-label="Odalar">
+      <i class="fa-solid fa-comments"></i><span>Odalar</span>
+    </button>
+    <button type="button" class="fx-dock-item fx-dock-primary" onclick="fxNavigate('create')" aria-label="Gönderi oluştur">
+      <i class="fa-solid fa-plus"></i><span>Paylaş</span>
+    </button>
+    <button type="button" class="fx-dock-item" onclick="fxNavigate('notifications')" aria-label="Bildirimler">
+      <i class="fa-regular fa-bell"></i><span>Bildirim</span>
+    </button>
+    <button type="button" class="fx-dock-item" onclick="fxNavigate('profile')" aria-label="Profil">
+      <i class="fa-regular fa-user"></i><span>Profil</span>
+    </button>
+  </nav>
+
+  <script>
+    window.fxNavigate = function(target) {
+      document.querySelectorAll('.fx-dock-item').forEach(item => item.classList.remove('active'));
+      const active = document.querySelector('.fx-dock-item[onclick*="' + target + '"]');
+      if (active) active.classList.add('active');
+
+      if (target === 'notifications') {
+        if (typeof window.openNotifPanel === 'function') window.openNotifPanel();
+        return;
+      }
+      if (target === 'profile') {
+        if (typeof window.openProfile === 'function') window.openProfile();
+        return;
+      }
+
+      const targets = {
+        feed: document.getElementById('postsFeed') || document.querySelector('.composer'),
+        rooms: document.getElementById('roomsPanel'),
+        create: document.querySelector('.composer')
+      };
+      const el = targets[target];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (target === 'create') {
+          const input = el.querySelector('textarea');
+          if (input) window.setTimeout(() => input.focus(), 350);
+        }
+      }
+    };
+  </script>
 
   <script>
     // PWA minimal
