@@ -396,7 +396,7 @@ begin
       if (new.data ->> 'isPlus') is distinct from (old.data ->> 'isPlus') then
         new.data := jsonb_set(new.data,'{isPlus}',coalesce(old.data -> 'isPlus','false'::jsonb),true);
       end if;
-      foreach v_room_id in array array['suspended','banned','warnCount','restrictedUntil','suspendedReason','suspendedMessage'] loop
+      foreach v_room_id in array array['suspended','banned','warnCount','restrictedUntil','suspendedReason','suspendedMessage','plusSince','plusFollowerBonus'] loop
         if (new.data -> v_room_id) is distinct from (old.data -> v_room_id) then
           if old.data ? v_room_id then
             new.data := jsonb_set(new.data,array[v_room_id],old.data -> v_room_id,true);
@@ -445,12 +445,19 @@ begin
       ) or exists (
         select 1 from jsonb_array_elements(coalesce(new.data -> 'comments','[]'::jsonb)) new_comment(value)
         where not (coalesce(old.data -> 'comments','[]'::jsonb) @> jsonb_build_array(new_comment.value))
-          and (new_comment.value ->> 'userId') is distinct from auth.uid()::text
+          and (
+            (new_comment.value ->> 'userId') is distinct from auth.uid()::text
+            or (new_comment.value ->> 'author') is distinct from v_username
+          )
       ) then
         raise exception 'Yorumları düzenleyemez veya başkasının adına yorum ekleyemezsin.';
       end if;
       if (new.data -> 'poll' - 'counts' - 'voters') is distinct from (old.data -> 'poll' - 'counts' - 'voters') then
         raise exception 'Anket sorusunu veya seçeneklerini değiştiremezsin.';
+      end if;
+      if ((new.data -> 'poll' -> 'voters') - auth.uid()::text)
+         is distinct from ((old.data -> 'poll' -> 'voters') - auth.uid()::text) then
+        raise exception 'Ankette yalnızca kendi oyunuzu kaydedebilirsiniz.';
       end if;
     end if;
 
