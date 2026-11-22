@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#047857"><meta name="robots" content="noindex,nofollow">
+<title>Forever Plus başvurusu</title>
+<style>
+:root{color-scheme:dark;--bg:#07140f;--panel:#0d2118;--line:#1e4a36;--text:#e9fff3;--muted:#9eb9aa;--green:#087f55;--mint:#8ce8bd}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:22px;background:radial-gradient(circle at 50% -5%,#15442f,transparent 45%),linear-gradient(160deg,#06110c,#0b1c13);color:var(--text);font:15px/1.55 system-ui,sans-serif;display:grid;place-items:center}
+main{width:min(560px,100%);border:1px solid var(--line);background:rgba(13,33,24,.95);border-radius:24px;padding:26px;box-shadow:0 24px 90px #0008}
+h1{margin:0 0 5px;font-size:26px}p{color:var(--muted)}.mark{color:var(--mint);font-weight:900;letter-spacing:.12em;font-size:12px}
+label{display:block;margin:16px 0 6px;color:var(--mint);font-weight:700;font-size:13px}
+textarea{width:100%;min-height:110px;resize:vertical;background:#06130c;border:1px solid var(--line);border-radius:13px;padding:12px;color:var(--text);font:inherit}
+button,a.action{display:inline-flex;justify-content:center;align-items:center;gap:8px;margin-top:14px;padding:11px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,#087f55,#20ad75);color:#fff;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}.muted{font-size:12px}.state{padding:13px;border-radius:13px;background:#0a1b12;border:1px solid var(--line);margin:14px 0}.hidden{display:none!important}.fine{font-size:12px;color:var(--muted)}a{color:var(--mint)}
+</style>
+</head>
+<body>
+<main>
+  <div class="mark">FOREVER PLUS · MEMBER REVIEW</div>
+  <h1>Forever Plus'a başvur 💚</h1>
+  <p>Başvurun yönetim paneline iletilir. Üyelik otomatik açılmaz; yönetici inceleyip onaylar.</p>
+  <div id="state" class="state">Hesap kontrol ediliyor…</div>
+  <form id="applyForm" class="hidden">
+    <label for="reason">Neden Forever Plus istiyorsun? (isteğe bağlı)</label>
+    <textarea id="reason" maxlength="500" placeholder="Kısaca anlatabilirsin…"></textarea>
+    <div class="fine">E-posta, doğum tarihi veya telefon numarası yazmana gerek yok. Bu bilgiler formda istenmez.</div>
+    <button id="applyBtn" type="submit">Başvuruyu gönder</button>
+  </form>
+  <div class="fine" style="margin-top:18px"><a href="./privacy.html">Gizlilik ve kişisel veriler hakkında bilgi</a> · <a href="./index.html">Forever'a dön</a></div>
+</main>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, addDoc, collection, query, where, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+const app=initializeApp({
+  apiKey:"AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
+  authDomain:"project-c443f992-d19d-4d35-a16.firebaseapp.com",
+  projectId:"project-c443f992-d19d-4d35-a16",
+  storageBucket:"project-c443f992-d19d-4d35-a16.firebasestorage.app",
+  messagingSenderId:"509248282221",
+  appId:"1:509248282221:web:84b49536d26d7d755ba964"
+});
+const auth=getAuth(app), db=getFirestore(app);
+const state=document.getElementById('state'), form=document.getElementById('applyForm'), btn=document.getElementById('applyBtn');
+let activeUser=null, profile=null;
+onAuthStateChanged(auth,async user=>{
+  activeUser=user; form.classList.add('hidden');
+  if(!user){state.innerHTML='Başvuru yapmadan önce Forever hesabına giriş yapmalısın. <a href="./index.html">Giriş sayfasına git</a>.';return;}
+  try{
+    const snap=await getDoc(doc(db,'users',user.uid));
+    profile=snap.exists()?snap.data():{};
+    if(profile.plusMember===true){state.textContent='Zaten Forever Plus üyesisin. Tüm Plus özelliklerin açık.';return;}
+    const pending=await getDocs(query(collection(db,'plusApplications'),where('uid','==',user.uid),where('status','==','pending'),limit(1)));
+    if(!pending.empty){state.textContent='Bekleyen bir başvurun var. Yönetim inceleyince hesabına bildirim gelecek.';return;}
+    state.textContent='Hesabın başvuru için hazır. Formu gönderdiğinde talebin yönetim paneline düşecek.';
+    form.classList.remove('hidden');
+  }catch(error){state.textContent='Başvuru bilgisi yüklenemedi: '+(error.message||'bağlantı hatası');}
+});
+form.addEventListener('submit',async event=>{
+  event.preventDefault();if(!activeUser)return;
+  const reason=(document.getElementById('reason').value||'').trim().slice(0,500);
+  btn.disabled=true;btn.textContent='Gönderiliyor…';
+  try{
+    const fresh=await getDoc(doc(db,'users',activeUser.uid));
+    if(fresh.exists()&&fresh.data().plusMember===true){state.textContent='Zaten Plus üyesisin.';form.classList.add('hidden');return;}
+    const pending=await getDocs(query(collection(db,'plusApplications'),where('uid','==',activeUser.uid),where('status','==','pending'),limit(1)));
+    if(!pending.empty){state.textContent='Zaten bekleyen bir başvurun var.';form.classList.add('hidden');return;}
+    await addDoc(collection(db,'plusApplications'),{
+      uid:activeUser.uid,
+      username:profile?.username||'',
+      displayName:profile?.displayName||activeUser.displayName||'',
+      reason,
+      status:'pending',
+      createdAt:serverTimestamp()
+    });
+    state.textContent='Başvurun alındı! Yönetim panelinden değerlendirilecek. 💚';
+    form.classList.add('hidden');
+  }catch(error){state.textContent='Başvuru gönderilemedi: '+(error.message||'bağlantı hatası');}
+  finally{btn.disabled=false;btn.textContent='Başvuruyu gönder';}
+});
+</script>
+</body>
+</html>
