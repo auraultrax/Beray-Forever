@@ -5,7 +5,7 @@ const SUPABASE_URL = window.FOREVER_SUPABASE_URL || "https://gfuewsdkytfssumxwyx
 const SUPABASE_PUBLISHABLE_KEY = window.FOREVER_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_-CX6sFOEApna11EOem6oOg_39DkcaIq";
 
 export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" }
 });
 
 function mapUser(user) {
@@ -31,13 +31,25 @@ const auth = {
 export function initializeApp() { return { name: "forever-supabase", supabase: supabaseClient }; }
 export function getForeverAuth() { return auth; }
 export function getForeverStore() { return { type: "supabase-postgres-adapter" }; }
+let googleOAuthInFlight = false;
 export async function signInWithGoogle() {
-  const { data, error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: window.location.href, queryParams: { prompt: "select_account" } }
-  });
-  if (error) throw error;
-  return data;
+  if (googleOAuthInFlight) return null;
+  googleOAuthInFlight = true;
+
+  // Never carry an old OAuth error, token fragment, or query string into a new flow.
+  const redirectTo = new URL("./", window.location.href).toString();
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo, queryParams: { prompt: "select_account" } }
+    });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    googleOAuthInFlight = false;
+    throw error;
+  }
 }
 export async function signOutForever() {
   const { error } = await supabaseClient.auth.signOut();
