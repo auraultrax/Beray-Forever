@@ -2544,7 +2544,8 @@
         hideSuspension();
         watchModeration(user.uid);
 
-        if (!docSnap.exists()) {
+        if (!docSnap.exists() || !docSnap.data().username) {
+          authModal.classList.add('hidden');
           document.getElementById('usernameModal').classList.remove('hidden');
         } else {
           authModal.classList.add('hidden');
@@ -2573,39 +2574,7 @@
         listenToPosts();
         listenToStories();
       } else {
-        // Aura X yerel oturumu varsa modalı kapat VE akışı yükle
-        try {
-          const aurax = JSON.parse(localStorage.getItem('forever_aurax_user') || 'null');
-          if (aurax && aurax.username) {
-            authModal.classList.add('hidden');
-            const name = aurax.username;
-            const initial = name.charAt(0).toUpperCase();
-            // Sentetik kullanıcı — okuma için yeterli; yazma işlemleri Firebase oturumu ister
-            currentUser = {
-              uid: 'aurax_' + (aurax.auraxUid || aurax.username),
-              displayName: name,
-              email: name + '@aurax.local',
-              photoURL: null,
-              isAuraX: true
-            };
-            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-            set('userHeaderAvatar', initial);
-            set('userHeaderName', name);
-            set('userHeaderEmail', name + ' (Aura X)');
-            set('sideUserAvatar', initial);
-            set('sideUserName', name);
-            set('sideUserHandle', '@' + name.toLowerCase());
-            set('postCreatorAvatar', initial);
-            if (networkAuthStatus) {
-              networkAuthStatus.textContent = 'Aura X ile bağlı';
-              networkAuthStatus.className = 'status-ok';
-            }
-            // Akışı başlat (Firestore okuma herkese açık)
-            try { listenToPosts(); } catch (e) { console.warn('listenToPosts', e); }
-            try { listenToStories(); } catch (e) { console.warn('listenToStories', e); }
-            return;
-          }
-        } catch (_) {}
+        document.getElementById('usernameModal')?.classList.add('hidden');
         authModal.classList.remove('hidden');
         if (networkAuthStatus) {
           networkAuthStatus.textContent = 'Giriş gerekli';
@@ -2615,7 +2584,6 @@
     });
   </script>
 
-  <script type="module" src="./aurax-baglanti.js"></script>
 </body>
 </html>
 
