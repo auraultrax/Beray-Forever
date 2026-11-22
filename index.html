@@ -667,6 +667,7 @@
         </div>
       </header>
 
+    <section id="view-kesfet" class="view-section active">
     <section class="card" id="profileStrip" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <div id="stripAvatar" class="avatar" style="width:48px;height:48px;">?</div>
       <div style="flex:1;min-width:120px;">
@@ -689,44 +690,7 @@
       </div>
     </section>
 
-    <section class="card" id="roomsPanel">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div><h3 style="margin:0 0 4px;">ODALAR</h3><small style="color:var(--muted);">Topluluğa katıl, sohbet et ve birlikte çiz.</small></div>
-        <span id="roomPlanLabel" class="status-warn">Ücretsiz: en fazla 3 oda</span>
-      </div>
-      <form id="createRoomForm" style="display:flex;gap:8px;margin:12px 0;">
-        <input id="newRoomName" maxlength="40" placeholder="Yeni oda adı" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
-        <button class="btn" type="submit">Oda oluştur</button>
-      </form>
-      <div id="roomList" style="display:grid;gap:8px;"><div class="empty">Odalar yükleniyor…</div></div>
-      <div id="roomChat" class="hidden" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong id="roomChatTitle">Oda</strong><button type="button" class="btn btn-ghost" id="leaveRoomBtn">Odadan ayrıl</button></div>
-        <div id="roomMessages" style="height:260px;overflow:auto;margin:10px 0;padding:8px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);"></div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
-          <button type="button" class="btn btn-ghost" id="openStickersBtn">✨ Çıkartmalar <span id="stickerLock">🔒 Plus</span></button>
-          <button type="button" class="btn btn-ghost" id="toggleDrawingBtn">🎨 Çizim <span id="drawingLock">🔒 Plus</span></button>
-          <label class="btn btn-ghost" style="cursor:pointer;"><span id="customStickerLabel">GIF ekle 🔒 Plus</span> <input id="customStickerFile" type="file" accept="image/gif" hidden></label>
-        </div>
-        <div id="stickerTray" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="💜">💜</button>
-          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="✨">✨</button>
-          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🌈">🌈</button>
-          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🦋">🦋</button>
-          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="🐸">🐸</button>
-          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="🌸">🌸</button>
-          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🚀">🚀</button>
-          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🎉">🎉</button>
-        </div>
-        <div id="drawingBox" class="hidden" style="margin:8px 0;">
-          <canvas id="roomDrawingCanvas" width="720" height="360" style="width:100%;height:auto;max-height:220px;background:#fff;border-radius:12px;touch-action:none;"></canvas>
-          <div style="display:flex;gap:8px;margin-top:8px;"><button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button><button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button></div>
-        </div>
-        <form id="roomMessageForm" style="display:flex;gap:8px;">
-          <input id="roomMessageText" maxlength="500" placeholder="Odaya mesaj yaz…" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
-          <button class="btn" type="submit">Gönder</button>
-        </form>
-      </div>
-    </section>
+    
 
     <section id="foreverComposer" class="card composer">
       <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -785,8 +749,51 @@
     <div id="postsFeed">
       <div class="card empty"><i class="fa-solid fa-circle-notch fa-spin"></i><br><br>Akış yükleniyor…</div>
     </div>
+    </section>
 
-    <section id="leaderboardPanel" class="leaderboard-panel hidden" aria-live="polite">
+    <section id="view-odalar" class="view-section">
+<section class="card" id="roomsPanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div><h3 style="margin:0 0 4px;">ODALAR</h3><small style="color:var(--muted);">Topluluğa katıl, sohbet et ve birlikte çiz.</small></div>
+        <span id="roomPlanLabel" class="status-warn">Ücretsiz: en fazla 3 oda</span>
+      </div>
+      <form id="createRoomForm" style="display:flex;gap:8px;margin:12px 0;">
+        <input id="newRoomName" maxlength="40" placeholder="Yeni oda adı" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
+        <button class="btn" type="submit">Oda oluştur</button>
+      </form>
+      <div id="roomList" style="display:grid;gap:8px;"><div class="empty">Odalar yükleniyor…</div></div>
+      <div id="roomChat" class="hidden" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong id="roomChatTitle">Oda</strong><button type="button" class="btn btn-ghost" id="leaveRoomBtn">Odadan ayrıl</button></div>
+        <div id="roomMessages" style="height:260px;overflow:auto;margin:10px 0;padding:8px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
+          <button type="button" class="btn btn-ghost" id="openStickersBtn">✨ Çıkartmalar <span id="stickerLock">🔒 Plus</span></button>
+          <button type="button" class="btn btn-ghost" id="toggleDrawingBtn">🎨 Çizim <span id="drawingLock">🔒 Plus</span></button>
+          <label class="btn btn-ghost" style="cursor:pointer;"><span id="customStickerLabel">GIF ekle 🔒 Plus</span> <input id="customStickerFile" type="file" accept="image/gif" hidden></label>
+        </div>
+        <div id="stickerTray" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="💜">💜</button>
+          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="✨">✨</button>
+          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🌈">🌈</button>
+          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🦋">🦋</button>
+          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="🐸">🐸</button>
+          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="🌸">🌸</button>
+          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🚀">🚀</button>
+          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🎉">🎉</button>
+        </div>
+        <div id="drawingBox" class="hidden" style="margin:8px 0;">
+          <canvas id="roomDrawingCanvas" width="720" height="360" style="width:100%;height:auto;max-height:220px;background:#fff;border-radius:12px;touch-action:none;"></canvas>
+          <div style="display:flex;gap:8px;margin-top:8px;"><button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button><button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button></div>
+        </div>
+        <form id="roomMessageForm" style="display:flex;gap:8px;">
+          <input id="roomMessageText" maxlength="500" placeholder="Odaya mesaj yaz…" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
+          <button class="btn" type="submit">Gönder</button>
+        </form>
+      </div>
+    </section>
+    </section>
+
+    <section id="view-liderlik" class="view-section">
+    <section id="leaderboardPanel" class="leaderboard-panel" aria-live="polite">
       <div class="header-sticky glass">Liderlik Sıralaması</div>
       <div class="leaderboard-wrap">
         <p class="leaderboard-intro">En çok etkileşim ve oy toplayan ilk 3 üye.</p>
@@ -817,6 +824,8 @@
       </div>
     </div>
 
+    </section>
+
     <footer class="foot">
       <strong>Forever</strong> · Aura X ekosisteminde · from <strong>Beray</strong>
     </footer>
@@ -834,37 +843,27 @@
   </nav>
 
   <script>
-    window.fxNavigate = function(target) {
-      document.querySelectorAll('.nav-link[data-nav], .mobile-nav-item[data-nav]').forEach(item => {
-        item.classList.toggle('active', item.dataset.nav === target);
-      });
-      document.body.classList.toggle('fx-room-view', target === 'rooms');
-      document.body.classList.toggle('fx-leaderboard-view', target === 'leaderboard');
-      const title = document.getElementById('pageTitle');
-      const titles = {
-        discover:'<i class="fa-solid fa-sparkles"></i> Akış',
-        users:'<i class="fa-solid fa-magnifying-glass"></i> Kullanıcı Bul',
-        rooms:'<i class="fa-solid fa-comments"></i> Odalar',
-        notifications:'<i class="fa-solid fa-bell"></i> Bildirimler',
-        leaderboard:'<i class="fa-solid fa-trophy"></i> Liderlik Sıralaması',
-        admin:'<i class="fa-solid fa-shield-halved"></i> Yönetim'
-      };
-      if (title && titles[target]) title.innerHTML = titles[target];
-      if (target === 'discover') {
-        const el = document.getElementById('postsFeed') || document.querySelector('.composer');
-        if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
-        return;
-      }
-      if (target === 'rooms') {
-        document.getElementById('roomsPanel')?.scrollIntoView({ behavior:'smooth', block:'start' });
-        return;
-      }
-      if (target === 'notifications') { window.openNotifPanel?.(); return; }
-      if (target === 'users') { window.openAuraXUsers?.(); return; }
-      if (target === 'leaderboard') { window.openAuraXLeaderboard?.(); return; }
-      if (target === 'admin') { window.openAuraXAdmin?.(); return; }
+    window.auraXCurrentView='discover';
+    window.auraXReturnView='discover';
+    window.setAuraXView=function(target){
+      const viewMap={discover:'view-kesfet',rooms:'view-odalar',leaderboard:'view-liderlik'};
+      const targetId=viewMap[target]||viewMap.discover;
+      document.querySelectorAll('.view-section').forEach(section=>section.classList.toggle('active',section.id===targetId));
+      window.auraXCurrentView=target;
+      document.querySelectorAll('.nav-link[data-nav],.mobile-nav-item[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav===target));
+      const titles={discover:'<i class="fa-solid fa-sparkles"></i> Akış',rooms:'<i class="fa-solid fa-comments"></i> Odalar',leaderboard:'<i class="fa-solid fa-trophy"></i> Liderlik'};
+      const title=document.getElementById('pageTitle');
+      if(title&&titles[target])title.innerHTML=titles[target];
     };
-  </script>
+    window.fxNavigate=function(target){
+      if(target==='discover'){window.setAuraXView('discover');return;}
+      if(target==='rooms'){window.setAuraXView('rooms');return;}
+      if(target==='users'){window.openAuraXUsers?.();return;}
+      if(target==='notifications'){window.openNotifPanel?.();return;}
+      if(target==='leaderboard'){window.openAuraXLeaderboard?.();return;}
+      if(target==='admin'){window.openAuraXAdmin?.();return;}
+    };
+  </script>t>
 
   <script>
     // PWA minimal
@@ -1257,6 +1256,8 @@
     let notifUnread = 0;
     window.openNotifPanel = async function() {
       if (!currentUser) return;
+      window.auraXReturnView=window.auraXCurrentView || 'discover';
+      document.querySelectorAll('[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav==='notifications'));
       const panel = document.getElementById('notifPanel');
       const list = document.getElementById('notifList');
       if (!panel || !list) return;
@@ -1298,9 +1299,7 @@
     };
     window.closeNotifPanel = function() {
       document.getElementById('notifPanel')?.classList.add('hidden');
-      document.querySelectorAll('[data-nav]').forEach(item => item.classList.toggle('active', item.dataset.nav === 'discover'));
-      const title=document.getElementById('pageTitle');
-      if(title) title.innerHTML='<i class="fa-solid fa-sparkles"></i> Akış';
+      window.setAuraXView(window.auraXReturnView || 'discover');
     };
 
     // Akış modu: Tümü / Takip
@@ -2271,9 +2270,7 @@
     let auraXDirectoryMode = 'users';
     window.closeAuraXDirectory = function() {
       document.getElementById('auraXDirectoryModal')?.classList.add('hidden');
-      document.querySelectorAll('[data-nav]').forEach(item => item.classList.toggle('active', item.dataset.nav === 'discover'));
-      const title=document.getElementById('pageTitle');
-      if(title) title.innerHTML='<i class="fa-solid fa-sparkles"></i> Akış';
+      if(auraXDirectoryMode==='users') window.setAuraXView(window.auraXReturnView || 'discover');
     };
     function auraXVoteCount(row) {
       return Math.max(0, Number(row?.data?.votes) || 0);
@@ -2321,14 +2318,12 @@
       const search=document.getElementById('auraXDirectorySearch');
       if(mode==='leaderboard'){
         search.value='';
-        document.body.classList.remove('fx-room-view');
-        document.body.classList.add('fx-leaderboard-view');
         modal?.classList.add('hidden');
-        document.getElementById('pageTitle').innerHTML='<i class="fa-solid fa-trophy"></i> Liderlik Sıralaması';
-        document.querySelectorAll('[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav==='leaderboard'));
+        window.setAuraXView('leaderboard');
         document.getElementById('leaderboardList').innerHTML='<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i> Yükleniyor…</div>';
       } else {
-        document.body.classList.remove('fx-room-view','fx-leaderboard-view');
+        window.auraXReturnView=window.auraXCurrentView || 'discover';
+        document.querySelectorAll('[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav==='users'));
         document.getElementById('auraXDirectoryTitle').textContent='Kullanıcı Bul';
         document.getElementById('auraXDirectorySub').textContent='Topluluğu keşfet';
         search.placeholder='Kullanıcı adı veya isim ara...';
