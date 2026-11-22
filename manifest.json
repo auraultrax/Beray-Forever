@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Forever · Beray",
-  "short_name": "Forever",
-  "description": "Forever, düşüncelerini ve anılarını paylaşabileceğin sosyal platform.",
+  "name": "Forever Plus · Beray",
+  "short_name": "Forever Plus",
+  "description": "Forever Plus — zümrüt temalı paylaşım ve topluluk platformu.",
   "lang": "tr-TR",
   "start_url": "./index.html",
   "scope": "./",
@@ -12,8 +12,8 @@
     "minimal-ui"
   ],
   "orientation": "portrait-primary",
-  "background_color": "#080716",
-  "theme_color": "#6d28d9",
+  "background_color": "#04110c",
+  "theme_color": "#047857",
   "categories": [
     "social",
     "lifestyle"
