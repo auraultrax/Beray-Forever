@@ -908,23 +908,20 @@
       throw new Error('Video çok büyük (max ~850KB). Daha kısa klip seç veya bilgisayarında upload-server kullan.');
     }
 
-    /** Foto veya video. Sunucu varsa oraya; yoksa data URL (küçük dosya). */
+    /** Fotoğraf ve videolar Supabase Storage'a yüklenir; veritabanında yalnızca URL saklanır. */
     async function uploadForeverImage(file, folder = 'posts') {
-      const endpoint = getUploadServerUrl();
-      if (isVideoFile(file)) {
-        if (endpoint) {
-          // yerel sunucuda boyut daha esnek (max 25MB)
-          if (file.size > 25 * 1024 * 1024) throw new Error('Video 25MB üstü olamaz');
-          return await uploadToLocalServer(file, folder);
-        }
-        const prepared = await prepareVideoForStore(file);
-        return await fileToDataURL(prepared);
-      }
-      const compressed = await compressImageFile(file);
-      if (endpoint) {
-        return await uploadToLocalServer(compressed, folder);
-      }
-      return await fileToDataURL(compressed);
+      if (!currentUser) throw new Error('Önce giriş yapmalısın.');
+      if (!file || !/^(image|video)\//.test(file.type || '')) throw new Error('Fotoğraf veya video seçmelisin.');
+      if (file.size > 25 * 1024 * 1024) throw new Error('Dosya en fazla 25 MB olabilir.');
+      let payload = file;
+      if (file.type.startsWith('image/') && file.type !== 'image/gif') payload = await compressImageFile(file);
+      const ext = (payload.name?.split('.').pop() || file.type.split('/')[1] || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const randomId = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+      const path = currentUser.uid + '/' + folder + '/' + Date.now() + '-' + randomId + '.' + ext;
+      const { error } = await supabaseClient.storage.from('forever-media').upload(path, payload, { contentType: payload.type || file.type, upsert: false });
+      if (error) throw error;
+      const { data } = supabaseClient.storage.from('forever-media').getPublicUrl(path);
+      return data.publicUrl;
     }
 
     function mediaHtml(url, mediaType) {
