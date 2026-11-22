@@ -1300,63 +1300,63 @@
       }, 2600);
     }
     window.fxToast = fxToast;
+    function foreverBadges(isPlus) { return isPlus ? '<span class="forever-badges" title="Forever Plus"><span class="forever-emerald">◆</span><span class="forever-verified">✓</span></span>' : ''; }
 
     let isSignUpMode = false;
     let unsubscribePosts = null;
     let unsubscribeStories = null;
 
-    // Google ile Giriş
+    // Supabase Google OAuth
     window.handleGoogleSignIn = async function() {
       try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
-
-        if (!docSnap.exists()) {
-          // İlk kez giriş yapıyor, Kullanıcı adı oluştur modalı aç
-          document.getElementById('usernameModal').classList.remove('hidden');
-        } else {
-          document.getElementById('authModal').classList.add('hidden');
-        }
+        const button = document.querySelector('#authModal .google-btn');
+        if (button) { button.disabled = true; button.textContent = 'Google hesabına yönlendiriliyor…'; }
+        await signInWithPopup(auth, googleProvider);
       } catch (error) {
-        showAlert(error.message, 'error');
+        showAlert(error.message || 'Google ile giriş yapılamadı.', 'error');
+        const button = document.querySelector('#authModal .google-btn');
+        if (button) { button.disabled = false; button.innerHTML = '<i class="fa-brands fa-google"></i> Google hesabınla devam et'; }
       }
     };
 
     window.handleUsernameSubmit = async function(e) {
       e.preventDefault();
-      if (!currentUser) return;
-      const raw = document.getElementById('newUsername').value;
-      const newUsername = normalizeUsername(raw);
-      if (!isValidUsername(newUsername)) {
-        alert('Kullanıcı adı 3-24 karakter, sadece küçük harf, rakam ve alt çizgi (_) olabilir.');
-        return;
-      }
+      if (!currentUser) { showAlert('Önce Google hesabınla giriş yapmalısın.','error'); return; }
+      const username = normalizeUsername(document.getElementById('newUsername')?.value);
+      const firstName = (document.getElementById('regFirstName')?.value || '').trim();
+      const lastName = (document.getElementById('regLastName')?.value || '').trim();
+      const birthDate = document.getElementById('regBirthDate')?.value;
+      const privacyAccepted = Boolean(document.getElementById('privacyConsent')?.checked);
+      const termsAccepted = Boolean(document.getElementById('termsConsent')?.checked);
+      if (!isValidUsername(username)) return showAlert('Kullanıcı adı 3-24 karakter olmalı; küçük harf, rakam ve alt çizgi kullanabilirsin.','error');
+      if (firstName.length < 2 || lastName.length < 2 || !birthDate) return showAlert('Ad, soyad ve doğum tarihi zorunludur.','error');
+      if (!privacyAccepted || !termsAccepted) return showAlert('Devam etmek için KVKK Aydınlatma Metni ve Kullanım Koşulları onayı gereklidir.','error');
+      const button = document.getElementById('registerProfileBtn');
+      if (button) { button.disabled = true; button.textContent = 'Hesap oluşturuluyor…'; }
       try {
-        // Benzersizlik kontrolü
-        const unameRef = doc(db, 'usernames', newUsername);
-        const unameSnap = await getDoc(unameRef);
-        if (unameSnap.exists() && unameSnap.data().uid !== currentUser.uid) {
-          alert('Bu kullanıcı adı alınmış. Başka bir tane dene.');
-          return;
-        }
-        await setDoc(unameRef, { uid: currentUser.uid, createdAt: serverTimestamp() });
-        await setDoc(doc(db, 'users', currentUser.uid), {
-          uid: currentUser.uid,
-          displayName: currentUser.displayName || newUsername,
-          username: newUsername,
-          email: currentUser.email,
-          createdAt: serverTimestamp()
-        }, { merge: true });
-        try {
-          await updateProfile(currentUser, { displayName: newUsername });
-        } catch (_) {}
+        const result = await supabaseClient.rpc('register_forever_profile', {
+          p_username: username, p_first_name: firstName, p_last_name: lastName,
+          p_birth_date: birthDate, p_kvkk_notice_accepted: privacyAccepted, p_terms_accepted: termsAccepted
+        });
+        if (result.error) throw result.error;
+        if (result.data?.success !== true) throw new Error('Profil kaydı tamamlanamadı.');
+        try { currentUser = await updateProfile(currentUser, { displayName: firstName }); } catch (_) {}
+        currentUser.username = username; currentUser.displayName = firstName; currentUser.isPlus = false;
         document.getElementById('usernameModal').classList.add('hidden');
         document.getElementById('authModal').classList.add('hidden');
+        const initial = username.charAt(0).toUpperCase();
+        const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+        set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
+        set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('postCreatorAvatar', initial);
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
+        listenToPosts(); listenToStories();
+        window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: currentUser.uid, username, isPlus: false } }));
+        fxToast('Forever hesabın oluşturuldu! ✨');
       } catch (err) {
-        console.error('Kullanıcı adı kaydedilemedi:', err);
-        alert(err.message || 'Kullanıcı adı kaydedilemedi');
+        console.error('Profil kaydı başarısız:', err);
+        showAlert(err.message || 'Profil kaydı tamamlanamadı.','error');
+      } finally {
+        if (button) { button.disabled = false; button.textContent = 'Hesabımı oluştur'; }
       }
     };
 
