@@ -889,9 +889,11 @@
       const ext = (payload.name?.split('.').pop() || file.type.split('/')[1] || 'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
       const randomId = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
       const path = currentUser.uid + '/' + folder + '/' + Date.now() + '-' + randomId + '.' + ext;
-      const { error } = await supabaseClient.storage.from('forever-media').upload(path, payload, { contentType: payload.type || file.type, upsert: false });
+      const bucket = folder === 'stories' ? 'forever-stories' : 'forever-media';
+      const { error } = await supabaseClient.storage.from(bucket).upload(path, payload, { contentType: payload.type || file.type, upsert: false });
       if (error) throw error;
-      const { data } = supabaseClient.storage.from('forever-media').getPublicUrl(path);
+      if (folder === 'stories') return path;
+      const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
       return data.publicUrl;
     }
 
@@ -1420,13 +1422,13 @@
       if (btn) { btn.disabled = true; btn.textContent = 'Yükleniyor...'; }
       try {
         const mediaType = isVideoFile(file) ? 'video' : 'image';
-        const imageUrl = await uploadForeverImage(file, 'stories');
+        const imagePath = await uploadForeverImage(file, 'stories');
         await addDoc(collection(db, "stories"), {
           userId: currentUser.uid,
           authorName: currentUser.username || currentUser.displayName || 'Kullanıcı',
           authorUsername: currentUser.username || '',
-          authorIsPlus: Boolean(currentUser.isPlus),
-          imageUrl: imageUrl,
+          imagePath: imagePath,
+          imageUrl: null,
           mediaType: mediaType,
           createdAt: serverTimestamp()
         });
@@ -1448,14 +1450,19 @@
 
     function listenToStories() {
       if (unsubscribeStories) unsubscribeStories();
-      unsubscribeStories = onSnapshot(collection(db, "stories"), (snapshot) => {
+      unsubscribeStories = onSnapshot(collection(db, "stories"), async (snapshot) => {
         const storiesContainer = document.getElementById('storiesContainer');
         const existingAddBtn = storiesContainer.firstElementChild;
         storiesContainer.innerHTML = '';
         storiesContainer.appendChild(existingAddBtn);
 
-        snapshot.forEach(docSnap => {
+        for (const docSnap of snapshot.docs) {
           const story = { id: docSnap.id, ...docSnap.data() };
+          if (story.imagePath) {
+            const { data, error } = await supabaseClient.storage.from('forever-stories').createSignedUrl(story.imagePath, 86400);
+            if (error || !data?.signedUrl) continue;
+            story.imageUrl = data.signedUrl;
+          }
           const storyElem = document.createElement('div');
           storyElem.className = "flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group";
           storyElem.style.position = 'relative';
@@ -1477,7 +1484,7 @@
             <span class="text-[11px] text-slate-300 font-medium">${escapeHTML((story.authorName || '?').split(' ')[0])}${foreverBadges(plusUserIds.has(story.userId))}</span>
           `;
           storiesContainer.appendChild(storyElem);
-        });
+        }
       });
     }
 
@@ -1735,7 +1742,13 @@
       if (!currentUser || !storyId) return;
       if (!confirm('Bu durumu silmek istiyor musun?')) return;
       try {
+        const storySnap = await getDoc(doc(db, "stories", storyId));
+        const storyData = storySnap.exists() ? storySnap.data() : {};
         await deleteDoc(doc(db, "stories", storyId));
+        if (storyData.imagePath) {
+          const { error } = await supabaseClient.storage.from('forever-stories').remove([storyData.imagePath]);
+          if (error) console.warn('Hikâye medyası silinemedi:', error.message);
+        }
       } catch (err) {
         alert('Silinemedi: ' + (err.message || err));
       }
@@ -1814,8 +1827,8 @@
       btn.disabled = true; btn.textContent = 'Kaydediliyor...';
       try {
         const mediaType = isVideoFile(file) ? 'video' : 'image';
-        const imageUrl = await uploadForeverImage(file, 'stories');
-        await updateDoc(doc(db, 'stories', storyId), { imageUrl, mediaType });
+        const imagePath = await uploadForeverImage(file, 'stories');
+        await updateDoc(doc(db, 'stories', storyId), { imagePath, imageUrl: null, mediaType });
         closeEditStory();
       } catch (e) {
         alert('Kaydedilemedi: ' + (e.message || e));
