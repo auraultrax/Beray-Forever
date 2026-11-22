@@ -2261,6 +2261,8 @@
       const usernameModal = document.getElementById('usernameModal');
       const networkAuthStatus = document.getElementById('networkAuthStatus');
       if (!user) {
+        if (unsubscribePlusProfiles) { unsubscribePlusProfiles(); unsubscribePlusProfiles = null; }
+        plusUserIds = new Set();
         authModal.classList.remove('hidden'); usernameModal.classList.add('hidden');
         if (networkAuthStatus) { networkAuthStatus.textContent = 'Giriş gerekli'; networkAuthStatus.className = 'status-warn'; }
         return;
