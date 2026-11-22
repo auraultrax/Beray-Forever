@@ -138,7 +138,10 @@ with check (
 drop policy if exists forever_documents_delete on public.forever_documents;
 create policy forever_documents_delete on public.forever_documents
 for delete to authenticated
-using (public.is_forever_admin() or owner_id = auth.uid());
+using (
+  public.is_forever_admin()
+  or (owner_id = auth.uid() and collection_name not in ('users','usernames','room_bans','modlogs'))
+);
 
 drop policy if exists forever_private_user_data_select on public.forever_private_user_data;
 create policy forever_private_user_data_select on public.forever_private_user_data
@@ -320,7 +323,18 @@ begin
   end if;
 
   if not public.is_forever_admin() then
+    if new.collection_name='usernames' and tg_op='UPDATE' then
+      raise exception 'Kayıtlı kullanıcı adı eşlemesi değiştirilemez.';
+    end if;
     if new.collection_name='users' and tg_op='UPDATE' then
+      if (new.data ->> 'username') is distinct from (old.data ->> 'username')
+         or (new.data ->> 'uid') is distinct from (old.data ->> 'uid') then
+        raise exception 'Kullanıcı adı ve hesap kimliği değiştirilemez.';
+      end if;
+      if old.owner_id = auth.uid()
+         and (new.data -> 'followers') is distinct from (old.data -> 'followers') then
+        raise exception 'Takipçi listen yalnızca takip işlemleriyle güncellenebilir.';
+      end if;
       if old.owner_id is distinct from auth.uid() then
         if (new.data - 'followers') is distinct from (old.data - 'followers') then
           raise exception 'Başka kullanıcıların profilinde yalnızca takipçi listen güncellenebilir.';
