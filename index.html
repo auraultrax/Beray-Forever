@@ -632,8 +632,8 @@
       <nav class="nav-menu" aria-label="Ana gezinme">
         <a href="#" class="nav-link active" data-nav="discover" onclick="fxNavigate('discover');return false;"><i class="fa-solid fa-compass"></i><span>Keşfet</span></a>
         <a href="#" class="nav-link" data-nav="users" onclick="fxNavigate('users');return false;"><i class="fa-solid fa-magnifying-glass"></i><span>Kullanıcı Bul</span></a>
-        <a href="#" class="nav-link" data-nav="rooms" onclick="fxNavigate('rooms');return false;"><i class="fa-solid fa-comments"></i><span>Odalar</span></a>
-        <a href="#" class="nav-link" data-nav="notifications" onclick="fxNavigate('notifications');return false;"><i class="fa-solid fa-bell"></i><span>Bildirimler</span></a>
+        <a href="#" class="nav-link" data-nav="rooms" onclick="fxNavigate('rooms');return false;"><i class="fa-solid fa-comments"></i><span>Odalar</span><span class="room-notif-badge" id="roomNotifBadge" aria-label="Okunmamış oda bildirimi">0</span></a>
+        <a href="#" class="nav-link" data-nav="notifications" onclick="fxNavigate('notifications');return false;"><i class="fa-solid fa-bell"></i><span>Bildirimler</span><span class="notif-count-badge" id="navNotifBadge" aria-label="Okunmamış bildirim">0</span></a>
         <a href="#" class="nav-link" data-nav="leaderboard" onclick="fxNavigate('leaderboard');return false;"><i class="fa-solid fa-trophy"></i><span>Liderlik</span></a>
         <a href="./admin.html" class="nav-link admin-nav hidden" id="auraXAdminNav" data-nav="admin"><i class="fa-solid fa-shield-halved"></i><span>Yönetim</span></a>
       </nav>
@@ -837,8 +837,8 @@
   <nav class="mobile-bottom-nav" aria-label="Aura X ana gezinme">
     <a href="#" class="mobile-nav-item active" data-nav="discover" onclick="fxNavigate('discover');return false;" title="Keşfet" aria-label="Keşfet"><i class="fa-solid fa-compass"></i></a>
     <a href="#" class="mobile-nav-item" data-nav="users" onclick="fxNavigate('users');return false;" title="Kullanıcı Bul" aria-label="Kullanıcı Bul"><i class="fa-solid fa-magnifying-glass"></i></a>
-    <a href="#" class="mobile-nav-item" data-nav="rooms" onclick="fxNavigate('rooms');return false;" title="Odalar" aria-label="Odalar"><i class="fa-solid fa-comments"></i></a>
-    <a href="#" class="mobile-nav-item" data-nav="notifications" onclick="fxNavigate('notifications');return false;" title="Bildirimler" aria-label="Bildirimler"><i class="fa-solid fa-bell"></i></a>
+    <a href="#" class="mobile-nav-item" data-nav="rooms" onclick="fxNavigate('rooms');return false;" title="Odalar" aria-label="Odalar"><i class="fa-solid fa-comments"></i><span class="room-notif-badge" id="mobileRoomNotifBadge">0</span></a>
+    <a href="#" class="mobile-nav-item" data-nav="notifications" onclick="fxNavigate('notifications');return false;" title="Bildirimler" aria-label="Bildirimler"><i class="fa-solid fa-bell"></i><span class="notif-count-badge" id="mobileNavNotifBadge">0</span></a>
     <a href="#" class="mobile-nav-item" data-nav="leaderboard" onclick="fxNavigate('leaderboard');return false;" title="Liderlik" aria-label="Liderlik"><i class="fa-solid fa-trophy"></i></a>
     <a href="./admin.html" class="mobile-nav-item admin-nav hidden" id="mobileAuraXAdminNav" data-nav="admin" title="Yönetim" aria-label="Yönetim"><i class="fa-solid fa-shield-halved"></i></a>
   </nav>
