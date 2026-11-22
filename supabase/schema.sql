@@ -124,12 +124,14 @@ for update to authenticated
 using (
   public.is_forever_admin()
   or owner_id = auth.uid()
+  or collection_name in ('posts','users')
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
   or (collection_name = 'room_messages' and public.is_forever_plus() and public.is_forever_room_member(data ->> 'roomId'))
 )
 with check (
   public.is_forever_admin()
   or owner_id = auth.uid()
+  or collection_name in ('posts','users')
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
   or (collection_name = 'room_messages' and public.is_forever_plus() and public.is_forever_room_member(data ->> 'roomId'))
 );
@@ -291,9 +293,26 @@ declare
   v_count integer;
   v_room_id text;
   v_user_id text;
+  v_new_media boolean := false;
 begin
   if not public.is_forever_admin() then
     if new.collection_name='users' and tg_op='UPDATE' then
+      if old.owner_id is distinct from auth.uid() then
+        if (new.data - 'followers') is distinct from (old.data - 'followers') then
+          raise exception 'Başka kullanıcıların profilinde yalnızca takipçi listen güncellenebilir.';
+        end if;
+        if exists (
+          select 1 from jsonb_array_elements_text(coalesce(old.data -> 'followers','[]'::jsonb)) old_follower(value)
+          where not (coalesce(new.data -> 'followers','[]'::jsonb) @> jsonb_build_array(old_follower.value))
+             and old_follower.value <> auth.uid()::text
+        ) or exists (
+          select 1 from jsonb_array_elements_text(coalesce(new.data -> 'followers','[]'::jsonb)) new_follower(value)
+          where not (coalesce(old.data -> 'followers','[]'::jsonb) @> jsonb_build_array(new_follower.value))
+             and new_follower.value <> auth.uid()::text
+        ) then
+          raise exception 'Yalnızca kendi takip ilişkini değiştirebilirsin.';
+        end if;
+      end if;
       if (new.data ->> 'isPlus') is distinct from (old.data ->> 'isPlus') then
         new.data := jsonb_set(new.data,'{isPlus}',coalesce(old.data -> 'isPlus','false'::jsonb),true);
       end if;
@@ -307,18 +326,63 @@ begin
         end if;
       end loop;
     end if;
+
+    if new.collection_name='posts' and tg_op='UPDATE' and old.owner_id is distinct from auth.uid() then
+      if (new.data - 'likes' - 'comments' - 'sparks' - 'poll') is distinct from (old.data - 'likes' - 'comments' - 'sparks' - 'poll') then
+        raise exception 'Başkasının gönderi metnini veya medyasını değiştiremezsin.';
+      end if;
+      if exists (
+        select 1 from jsonb_array_elements_text(coalesce(old.data -> 'likes','[]'::jsonb)) old_like(value)
+        where not (coalesce(new.data -> 'likes','[]'::jsonb) @> jsonb_build_array(old_like.value))
+           and old_like.value <> auth.uid()::text
+      ) or exists (
+        select 1 from jsonb_array_elements_text(coalesce(new.data -> 'likes','[]'::jsonb)) new_like(value)
+        where not (coalesce(old.data -> 'likes','[]'::jsonb) @> jsonb_build_array(new_like.value))
+           and new_like.value <> auth.uid()::text
+      ) then
+        raise exception 'Yalnızca kendi beğenini ekleyebilir veya kaldırabilirsin.';
+      end if;
+      if exists (
+        select 1 from jsonb_array_elements(coalesce(old.data -> 'comments','[]'::jsonb)) old_comment(value)
+        where not (coalesce(new.data -> 'comments','[]'::jsonb) @> jsonb_build_array(old_comment.value))
+      ) or exists (
+        select 1 from jsonb_array_elements(coalesce(new.data -> 'comments','[]'::jsonb)) new_comment(value)
+        where not (coalesce(old.data -> 'comments','[]'::jsonb) @> jsonb_build_array(new_comment.value))
+          and (new_comment.value ->> 'userId') is distinct from auth.uid()::text
+      ) then
+        raise exception 'Yorumları düzenleyemez veya başkasının adına yorum ekleyemezsin.';
+      end if;
+      if (new.data -> 'poll' - 'counts' - 'voters') is distinct from (old.data -> 'poll' - 'counts' - 'voters') then
+        raise exception 'Anket sorusunu veya seçeneklerini değiştiremezsin.';
+      end if;
+    end if;
+
+    if new.collection_name='room_messages' and tg_op='UPDATE' and old.owner_id is distinct from auth.uid() then
+      if (new.data - 'pinned') is distinct from (old.data - 'pinned') then
+        raise exception 'Başkasının oda mesajı içeriğini değiştiremezsin.';
+      end if;
+    end if;
   end if;
 
-  if new.collection_name in ('posts','stories') and tg_op='INSERT' then
-    if new.collection_name='posts' and (new.data ->> 'imageUrl') is null
-       and not v_is_plus and not public.is_forever_admin() then
-      raise exception 'Yalnızca Plus üyeleri sadece metin gönderisi paylaşabilir.';
+  if new.collection_name='posts' and tg_op='INSERT'
+     and (new.data ->> 'imageUrl') is null
+     and not v_is_plus and not public.is_forever_admin() then
+    raise exception 'Yalnızca Plus üyeleri sadece metin gönderisi paylaşabilir.';
+  end if;
+
+  if new.collection_name in ('posts','stories') then
+    if tg_op='INSERT' then
+      v_new_media := (new.data ->> 'imageUrl') is not null;
+    else
+      v_new_media := (new.data ->> 'imageUrl') is not null
+        and (new.data ->> 'imageUrl') is distinct from (old.data ->> 'imageUrl');
     end if;
-    if (new.data ->> 'imageUrl') is not null then
+    if v_new_media then
       select count(*) into v_count
       from public.forever_documents d
       where d.collection_name in ('posts','stories') and d.owner_id=new.owner_id
-        and d.created_at >= date_trunc('day', now());
+        and d.created_at >= date_trunc('day', now())
+        and (tg_op <> 'UPDATE' or d.id <> new.id);
       if v_count >= case when v_is_plus then 10 else 5 end and not public.is_forever_admin() then
         raise exception 'Günlük toplam medya yükleme sınırına ulaştın.';
       end if;
