@@ -216,7 +216,7 @@ async function moderateRoom(action,messageId=null,targetUser=null){
     if(error)throw error;if(action==='delete_room'){await closeActiveRoom();toast('Oda silindi.');return;}
     const room=await supabaseClient.from('forever_documents').select('data').eq('collection_name','rooms').eq('id',activeRoom.id).single();
     if(room.data?.data)activeRoom.data=room.data.data;await loadRoomMessages();syncRoomControls();
-    toast(action==='mute'?'Kullanıcı susturuldu.':action==='unmute'?'Susturma kaldırıldı.':action==='delete_message'?'Mesaj herkesten silindi.':action==='pin'?'Mesaj sabitlendi.':'Sabitleme kaldırıldı.');
+    toast(action==='mute'?'Kullanıcının mesaj göndermesi engellendi.':action==='unmute'?'Susturma kaldırıldı.':action==='delete_message'?'Mesaj herkesten silindi.':action==='pin'?'Mesaj sabitlendi.':'Sabitleme kaldırıldı.');
   }catch(e){toast(e.message||'Yönetim işlemi tamamlanamadı.');}
 }
 async function reportMessage(messageId, ownerId) {
@@ -345,9 +345,17 @@ const ROOM_BUBBLES=['#1f2937','#312e81','#4c1d95','#7c2d12','#134e4a','#1e3a5f',
 function roomThemeKey(){return 'forever_room_theme_'+encodeURIComponent(String(userId||'guest'))+'_'+encodeURIComponent(String(activeRoom?.id||'room'));}
 function getRoomTheme(){try{const v=JSON.parse(localStorage.getItem(roomThemeKey())||'null');if(v&&typeof v==='object')return {space:v.space||'space-night',bubble:v.bubble||'#8b5cf6',transparent:v.transparent===true,shape:v.shape||'rounded'};}catch(_){}return {space:'space-night',bubble:'#8b5cf6',transparent:false,shape:'rounded'};}
 function applyRoomTheme(){
-  if(!$('roomChat'))return;const t=getRoomTheme(),space=ROOM_SPACE_THEMES.find(x=>x.id===t.space)||ROOM_SPACE_THEMES[0],c=$('roomChat');
-  c.style.setProperty('--room-background',space.background);c.style.setProperty('--room-bubble',t.transparent?'rgba(139,92,246,.20)':t.bubble);
-  c.style.setProperty('--room-bubble-border',t.transparent?'rgba(255,255,255,.24)':'transparent');c.style.setProperty('--room-bubble-radius',t.shape==='pill'?'28px':t.shape==='sharp'?'7px':'17px');
+  if(!$('roomChat'))return;
+  const t=getRoomTheme(),space=ROOM_SPACE_THEMES.find(x=>x.id===t.space)||ROOM_SPACE_THEMES[0],c=$('roomChat');
+  c.style.setProperty('--room-background',space.background);
+  c.style.setProperty('--room-bubble',t.transparent?'rgba(139,92,246,.20)':t.bubble);
+  c.style.setProperty('--room-bubble-border',t.transparent?'rgba(255,255,255,.24)':'transparent');
+  c.style.setProperty('--room-bubble-radius',t.shape==='pill'?'28px':t.shape==='sharp'?'7px':'17px');
+  let hex=String(t.bubble||'#8b5cf6').replace('#','');
+  if(hex.length===3)hex=hex.split('').map(x=>x+x).join('');
+  const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4));
+  const luminance=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+  c.style.setProperty('--room-bubble-text',luminance>.56?'#17131c':'#ffffff');
   c.classList.toggle('room-bubbles-transparent',t.transparent);
   document.querySelectorAll('[data-space-theme]').forEach(b=>b.classList.toggle('active',b.dataset.spaceTheme===t.space));
   document.querySelectorAll('[data-bubble-shape]').forEach(b=>b.classList.toggle('active',b.dataset.bubbleShape===t.shape));
@@ -389,7 +397,7 @@ function openRoomModeration(messageId){
   const row=lastRoomMessages.get(messageId);if(!row||!roomModerator()||row.data?.userId===userId)return;
   selectedMessage=row;$('roomModerationTarget').textContent='@'+(row.data?.username||'kullanıcı');
   const muted=(activeRoom.data?.mutedUserIds||[]).includes(row.data?.userId);
-  $('roomModerationMuteBtn').innerHTML='<i class="fa-solid fa-volume-xmark"></i> '+(muted?'Susturmayı kaldır':'Kullanıcıyı sustur');
+  $('roomModerationMuteBtn').innerHTML='<i class="fa-solid fa-volume-xmark"></i> '+(muted?'Mesaj engelini kaldır':'Mesaj göndermesini engelle');
   $('roomModerationModal').classList.remove('hidden');
 }
 window.closeRoomModeration=()=> $('roomModerationModal')?.classList.add('hidden');
