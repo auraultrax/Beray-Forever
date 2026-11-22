@@ -844,23 +844,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
-    // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
-    // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
-    // 2) Yoksa → görseli sıkıştırıp Firestore belgesine data URL olarak yaz (Storage gerekmez)
-    const FOREVER_UPLOAD_KEY = 'FOREVER_UPLOAD_URL';
-
-    function getUploadServerUrl() {
-      try { return (localStorage.getItem(FOREVER_UPLOAD_KEY) || '').trim(); } catch { return ''; }
-    }
-
-    window.fxSaveUploadServer = function () {
-      const v = (document.getElementById('fxUploadServerInput')?.value || '').trim();
-      try { localStorage.setItem(FOREVER_UPLOAD_KEY, v); } catch {}
-      if (typeof fxToast === 'function') {
-        fxToast(v ? 'Sunucu kaydedildi. Fotoğraflar oraya gidecek.' : 'Sunucu temizlendi. Fotoğraflar uygulama veritabanına (sıkıştırılmış) kaydolur.');
-      }
-    };
-
+    // Supabase Storage medya hazırlığı
     async function compressImageFile(file, maxSide = 1280, quality = 0.72) {
       if (!file || !file.type.startsWith('image/')) throw new Error('Geçerli bir görsel seçin');
       const bitmap = await createImageBitmap(file);
@@ -884,55 +868,11 @@
       return new File([outBlob], 'photo.jpg', { type: 'image/jpeg' });
     }
 
-    function fileToDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result);
-        r.onerror = () => reject(new Error('Dosya okunamadı'));
-        r.readAsDataURL(file);
-      });
-    }
 
-    async function uploadToLocalServer(file, folder) {
-      const endpoint = getUploadServerUrl();
-      if (!endpoint) return null;
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', folder || 'forever');
-      if (currentUser) fd.append('userId', currentUser.uid);
-      const headers = {};
-      try {
-        const token = (localStorage.getItem('FOREVER_UPLOAD_TOKEN') || '').trim();
-        if (token) headers['X-Upload-Token'] = token;
-      } catch {}
-      const res = await fetch(endpoint, { method: 'POST', body: fd, mode: 'cors', headers });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || ('Sunucu yükleme hatası: HTTP ' + res.status));
-      }
-      const data = await res.json().catch(() => ({}));
-      const url = data.url || data.path || data.publicUrl;
-      if (!url) throw new Error('Sunucu yanıtında url yok');
-      if (String(url).startsWith('http')) return url;
-      try {
-        const base = new URL(endpoint).origin;
-        return base + (String(url).startsWith('/') ? url : '/' + url);
-      } catch {
-        return url;
-      }
-    }
-
-    /** Kendi sunucun varsa oraya; yoksa sıkıştırılmış data URL (Storage yok) */
     function isVideoFile(file) {
       return !!(file && (file.type || '').startsWith('video/'));
     }
 
-    async function prepareVideoForStore(file) {
-      // Firestore ~1MB limit — kısa/küçük klipler; büyükse hata
-      const maxBytes = 850 * 1024;
-      if (file.size <= maxBytes) return file;
-      throw new Error('Video çok büyük (max ~850KB). Daha kısa klip seç veya bilgisayarında upload-server kullan.');
-    }
 
     /** Fotoğraf ve videolar Supabase Storage'a yüklenir; veritabanında yalnızca URL saklanır. */
     async function uploadForeverImage(file, folder = 'posts') {
@@ -1250,7 +1190,7 @@
           const s = await getDocs(qq);
           s.forEach(d => docs.push({ id: d.id, ...d.data() }));
         } catch {
-          list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:12px;">Bildirimler için Firestore indeksi gerekebilir. Şimdilik boş.</p>';
+          list.innerHTML = '<p style="color:var(--muted);font-size:.85rem;padding:12px;">Bildirimler şu anda yüklenemedi. Lütfen tekrar dene.</p>';
           return;
         }
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -1300,8 +1240,7 @@
     setTimeout(() => {
       bindImagePreview('postImageFile', 'postImagePreview');
       bindImagePreview('storyImageFile', 'storyImagePreview');
-      const inp = document.getElementById('fxUploadServerInput');
-      if (inp) inp.value = getUploadServerUrl();
+
     }, 0);
 
     let currentUser = null;
@@ -1490,7 +1429,7 @@
         else if (errText.includes("wrong-password")) errText = "Hatalı şifre girdiniz.";
         else if (errText.includes("email-already-in-use")) errText = "Bu e-posta adresi zaten kullanımda.";
         else if (errText.includes("weak-password")) errText = "Şifre en az 6 karakter olmalıdır.";
-        showAlert(errText.replace("Firebase: ", ""), 'error');
+        showAlert(errText.replace("AuthApiError: ", ""), 'error');
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = isSignUpMode ? 'Kayıt Ol' : 'Giriş Yap';
@@ -2139,7 +2078,7 @@
       }
     };
 
-    // Firestore Akış Dinleyici
+    // Supabase Realtime akış dinleyici
     function listenToPosts() {
       const postsFeed = document.getElementById('postsFeed');
       if (unsubscribePosts) unsubscribePosts();
