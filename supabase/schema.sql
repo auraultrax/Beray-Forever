@@ -76,20 +76,19 @@ create or replace function public.is_forever_room_member(p_room_id text)
 returns boolean
 language sql stable security definer
 set search_path = public
-as $
+as $$
   select auth.uid() is not null and exists (
     select 1 from public.forever_documents m
     where m.collection_name = 'room_members'
       and m.data ->> 'roomId' = p_room_id
       and m.data ->> 'userId' = auth.uid()::text
   );
-$;
-
+$$;
 create or replace function public.can_view_forever_story(p_author_id text)
 returns boolean
 language sql stable security definer
 set search_path = public
-as $
+as $$
   select auth.uid() is not null and (
     p_author_id = auth.uid()::text
     or exists (
@@ -99,8 +98,7 @@ as $
         and coalesce(profile.data -> 'following', '[]'::jsonb) @> jsonb_build_array(p_author_id)
     )
   );
-$;
-
+$$;
 grant execute on function public.is_forever_admin() to authenticated;
 grant execute on function public.is_forever_plus() to authenticated;
 grant execute on function public.is_forever_room_member(text) to authenticated;
