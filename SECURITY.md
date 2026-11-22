@@ -1,226 +1,31 @@
-# Forever — Güvenlik Politikası ve Zorunlu Kurallar
+# Forever — Supabase Güvenlik Rehberi
 
-**Öncelik: Kullanıcı güvenliği forever.**
+Bu sürüm Firebase/Firestore kullanmaz. Uygulama Supabase Auth, PostgreSQL, Row Level Security (RLS), Realtime ve Storage kullanacak şekilde hazırlanmıştır.
 
-Bu belge, uygulamayı gerçek kullanıcılarla açmadan önce **mutlaka** uygulanması gereken güvenlik önlemlerini listeler. İstemci tarafı (tarayıcı) asla tek başına güvenlik sağlamaz.
+## Canlıya almadan önce
 
----
+1. Supabase SQL Editor içinde `supabase/schema.sql` dosyasını çalıştır.
+2. Supabase Authentication bölümünde Google sağlayıcısını etkinleştir.
+3. Canlı site adresini Authentication → URL Configuration → Redirect URLs listesine ekle.
+4. Yalnızca güvenilir yönetici Google e-posta adreslerini `public.forever_admins` tablosuna ekle.
+5. RLS'nin etkin olduğunu ve `forever_documents`, `forever_private_user_data`, `forever_plus_members`, `forever_admins` tablolarının politikalarını gözden geçir.
+6. `forever-media` bucket'ı ve Storage politikalarını doğrula.
+7. Realtime yayınında `public.forever_documents` tablosunun yer aldığını kontrol et.
 
-## 1. Firebase Firestore Security Rules (ZORUNLU)
+## Güvenlik sınırları
 
-Firebase Console → Firestore → Rules kısmına aşağıdaki kuralları (veya daha sıkı versiyonunu) koy:
+- Tarayıcıda yalnızca Supabase publishable key bulunabilir. Secret/service-role key hiçbir zaman HTML, JavaScript, GitHub veya istemci tarafı ortam değişkenlerine eklenmemelidir.
+- Gerçek yetkilendirme RLS ve SECURITY DEFINER veritabanı fonksiyonlarıyla uygulanır. İstemci tarafındaki kilit/Plus görünümü tek başına güvenlik değildir.
+- Plus üyeliği yalnızca admin allowlist'indeki yönetici tarafından `grant_forever_plus` / `revoke_forever_plus` fonksiyonlarıyla değiştirilmelidir.
+- Yönetim ve moderasyon alanları yalnızca admin fonksiyonuyla doğrulanan hesaplara açık olmalıdır.
+- `forever_private_user_data` tablosundaki ad, soyad, doğum tarihi ve varsa IP adresine normal kullanıcıların erişimi kapalıdır.
+- IP bilgisi yalnızca Supabase gateway'in istek başlıklarını sağlaması hâlinde alınabilir. IP için bir saklama süresi ve otomatik imha görevi ayrıca tanımlanmalıdır.
+- Kullanıcı içeriği ekranda gösterilirken HTML escape uygulanmalıdır. Medya dosyaları için tür ve boyut sınırları korunmalıdır.
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
+## KVKK ve kullanıcı güvenliği
 
-    // Yardımcı fonksiyonlar
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    function isOwner(uid) {
-      return isSignedIn() && request.auth.uid == uid;
-    }
-    // Yönetici: Firestore'da admins/{uid} belgesi olan hesap (belgeyi yalnızca Firebase Console'dan ekle)
-    function isAdmin() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-    // Askıya alınmış hesap yazamaz
-    function isSuspended() {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false) == true;
-    }
-    function touchesSuspension() {
-      return request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['suspended','suspendedReason','suspendedMessage','suspendedAt','suspendedBy']);
-    }
-    function isValidUsername(name) {
-      return name is string
-        && name.size() >= 3
-        && name.size() <= 24
-        && name.matches('^[a-z0-9_]+$');
-    }
-    function isValidPostContent(c) {
-      return c is string && c.size() <= 2000;
-    }
-    function isValidComment(c) {
-      return c is string && c.size() >= 1 && c.size() <= 500;
-    }
+`kvkk.html` ve `kullanim-kosullari.html` yayın öncesi hizmet sahibinin gerçek bilgileriyle doldurulmalı, saklama süreleri ve varsa yurt dışı veri aktarımı incelenmeli ve uygun hukuki inceleme yapılmalıdır. Özellikle genç kullanıcıların kullanımına yönelik yaş/veli bilgilendirme süreçleri ayrıca değerlendirilmelidir.
 
-    // Kullanıcı profilleri
-    match /admins/{uid} {
-      allow read: if isOwner(uid);               // yalnızca kendi yönetici kaydını görür
-      allow write: if false;                     // sadece Firebase Console
-    }
+## Önemli
 
-    match /users/{userId} {
-      allow read: if true;                       // herkese açık profil
-      allow create: if isOwner(userId)
-                    && !('suspended' in request.resource.data)
-                    && isValidUsername(request.resource.data.username)
-                    && request.resource.data.uid == userId;
-      // Sahibi kendi askı alanlarına DOKUNAMAZ; yönetici dokunabilir.
-      allow update: if (isOwner(userId) && !touchesSuspension()
-                    && (!('username' in request.resource.data)
-                        || isValidUsername(request.resource.data.username)))
-                    || isAdmin();
-      allow delete: if isOwner(userId);
-    }
-
-    // Kullanıcı adı benzersizliği için ayrı koleksiyon (önerilir)
-    match /usernames/{username} {
-      allow read: if true;
-      allow create: if isSignedIn()
-                    && isValidUsername(username)
-                    && request.resource.data.uid == request.auth.uid;
-      allow delete: if isSignedIn()
-                    && resource.data.uid == request.auth.uid;
-    }
-
-    // Gönderiler
-    match /posts/{postId} {
-      allow read: if true;
-      allow create: if isSignedIn() && !isSuspended()
-                    && request.resource.data.userId == request.auth.uid
-                    && isValidPostContent(request.resource.data.content)
-                    && request.resource.data.keys().hasAll(['userId', 'authorName', 'content', 'createdAt']);
-      allow update: if isSignedIn() && (
-                      // Sadece sahibi içerik/medya güncelleyebilir
-                      (resource.data.userId == request.auth.uid)
-                      ||
-                      // Beğeni / yorum ekleme-çıkarma (arrayUnion / arrayRemove)
-                      (request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['likes', 'comments', 'likeCount']))
-                    );
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Hikâyeler (24 saatlik)
-    match /stories/{storyId} {
-      allow read: if true;
-      allow create: if isSignedIn()
-                    && request.resource.data.userId == request.auth.uid;
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Engellenen kullanıcılar
-    match /blocks/{blockId} {
-      allow read: if isSignedIn() && resource.data.blockerId == request.auth.uid;
-      allow create: if isSignedIn()
-                    && request.resource.data.blockerId == request.auth.uid
-                    && request.resource.data.blockedId != request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.blockerId == request.auth.uid;
-    }
-
-    // Şikayetler (sadece yazma, okuma sadece moderatör — şimdilik kapalı)
-    match /reports/{reportId} {
-      allow create: if isSignedIn()
-                    && request.resource.data.reporterId == request.auth.uid
-                    && request.resource.data.reason is string
-                    && request.resource.data.reason.size() <= 500;
-      allow read, update: if isAdmin();     // yönetim paneli (admin.html)
-      allow delete: if false;
-    }
-
-    // Kaydedilen gönderiler
-    match /saves/{saveId} {
-      allow read, write: if isSignedIn()
-                         && resource == null
-                            ? request.resource.data.userId == request.auth.uid
-                            : resource.data.userId == request.auth.uid;
-    }
-  }
-}
-```
-
-**Önemli:** Yukarıdaki kurallar olmadan istemci tarafındaki tüm kontroller kolayca atlanır.
-
----
-
-## 2. Firebase Authentication
-
-- E-posta/şifre + Google sağlayıcılarını açık tut.
-- Şifre sıfırlama e-postası zaten destekleniyor.
-- **App Check** (reCAPTCHA / Play Integrity) mümkünse etkinleştir.
-- Yetkisiz domain’leri Authentication → Settings → Authorized domains listesinden kaldır.
-
----
-
-## 3. Yükleme Sunucusu (upload-server)
-
-- `UPLOAD_TOKEN` ortam değişkeni ile koru (üretimde zorunlu).
-- `MAX_UPLOAD_BYTES` ile boyut sınırı koy.
-- `CORS_ORIGIN` ile sadece kendi domain’ini izin ver.
-- Sunucuyu asla açık internete (0.0.0.0 + token’sız) bırakma.
-- Mümkünse Cloudflare R2 / Backblaze / Firebase Storage’a geç (ücretsiz kotayı aşınca).
-
-Örnek güvenli başlatma:
-
-```bash
-UPLOAD_TOKEN="çok-güçlü-rastgele-anahtar" \
-MAX_UPLOAD_BYTES=5242880 \
-CORS_ORIGIN="https://senin-domain.com" \
-node server.mjs
-```
-
-Forever arayüzünde yükleme URL’sinin yanına token girme alanı eklenebilir (localStorage’da saklanır, asla koda gömülmez).
-
----
-
-## 4. İstemci Tarafı (index.html) Güvenlik Katmanları
-
-Zaten mevcut olanlar:
-- `escapeHTML` ile XSS koruması
-- Medya sıkıştırma + boyut sınırı
-- Auth state kontrolü
-
-Eklenen / güçlendirilenler:
-- Kullanıcı adı format + benzersizlik kontrolü
-- Gönderi / yorum karakter limiti
-- İstemci tarafı rate-limit (spam engeli)
-- Şikayet (report) ve engelleme (block) akışı
-- Kaydedilen gönderiler (sadece kendi kullanıcısına)
-- Tüm kullanıcı girdilerinde uzunluk + tip doğrulama
-
----
-
-## 5. Genel Tavsiyeler
-
-1. Gerçek kullanıcı verisiyle test etmeden önce **ayrı bir Firebase test projesi** kullan.
-2. Production’da `apiKey` gizli değildir; güvenlik **Rules + App Check + Auth** ile sağlanır.
-3. Kullanım şartları + gizlilik politikası + hesap silme akışı ekle.
-4. Moderasyon paneli olmadan topluluk büyütme.
-5. Log’larda hassas veri (şifre, token) tutma.
-
----
-
-**Güvenlik bizim için forever.**
-Bu kurallar uygulanmadan uygulamayı canlıya alma.
-
----
-
-## 5. Yönetim paneli (admin.html) ve hesap askıya alma
-
-1. Firebase Console → Authentication'da yönetici hesabını oluştur (e-posta/şifre), UID'sini kopyala.
-2. Firestore → `admins` koleksiyonu → belge kimliği = o UID (içine herhangi bir alan, ör. `role: "admin"`).
-3. Yukarıdaki **güncel kuralları** Rules sekmesinde yayınla. Kurallar yayınlanmadan panel "izin yok" hatası verir ve
-   askıya alınan biri kendi askısını kaldırabilir.
-4. `admin.html` adresinden giriş yap → Kullanıcılar → ara → **Askıya al** → sebep + uyarı mesajı → onayla.
-   Kullanıcı bir sonraki girişte "Hesabınız askıya alındı" ekranını görür; askıdayken gönderi oluşturamaz (kural).
-5. Askı kaldırmak için aynı panelden **Askıyı kaldır**.
-
-Not: Askı, hesabı silmez ve oturumu anında düşürmez; uygulama açılışında/girişte uygulanır, yazma engeli ise kurallarla sunucuda zorlanır.
-
----
-
-## 6. GÜNCEL kurallar: `firestore.rules`
-
-Bu dosya yukarıdaki örnek kuralların **yerine geçer** (güncel olan budur). Firebase Console → Firestore → Rules'a tamamını yapıştırıp Publish et.
-
-- Askıdaki, yasaklı ya da kısıtlı hesap gönderi/yorum/beğeni/hikâye yazamaz (sunucuda zorlanır).
-- Kullanıcı kendi moderasyon alanlarına (`suspended`, `banned`, `restrictedUntil`, `warnCount`…) dokunamaz.
-- Yönetici işlemleri `modlogs` koleksiyonuna silinemez/değiştirilemez şekilde kaydedilir.
-- Kullanılmayan tüm koleksiyonlar kapalıdır.
+Bu depo kod ve örnek SQL sağlar; Supabase SQL'i kendiliğinden çalıştırmaz. SQL çalıştırılmadan RLS tabloları/fonksiyonları oluşmuş olmaz. Eski Firebase verileri otomatik olarak içe aktarılmaz.
