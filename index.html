@@ -2320,6 +2320,7 @@
       const modal=document.getElementById('auraXDirectoryModal');
       const search=document.getElementById('auraXDirectorySearch');
       if(mode==='leaderboard'){
+        search.value='';
         document.body.classList.remove('fx-room-view');
         document.body.classList.add('fx-leaderboard-view');
         modal?.classList.add('hidden');
