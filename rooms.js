@@ -267,17 +267,43 @@ async function loadRoomMembers(){
     const rows=members.filter(row=>row.data?.roomId===activeRoom.id);
     const ids=new Set(rows.map(row=>row.data.userId));
     const names=new Map(users.map(row=>[row.id,row.data?.username||row.data?.displayName||'Kullanıcı']));
-    const source=currentMembersMode==='invite'?users.filter(row=>row.id!==userId):rows.map(row=>({id:row.data.userId,data:{username:names.get(row.data.userId)||row.data.username||'Kullanıcı'},memberData:row.data}));
+    const source=currentMembersMode==='invite'
+      ?users.filter(row=>row.id!==userId)
+      :rows.map(row=>({id:row.data.userId,data:{username:names.get(row.data.userId)||row.data.username||'Kullanıcı'},memberData:row.data}));
+    const canGrantRoomAdmin=roomOwner()||isAppAdmin;
     if(currentMembersMode==='invite'&&!roomModerator()){box.innerHTML='<div class="room-members-empty">Yalnızca oda yöneticisi davet gönderebilir.</div>';return;}
     box.innerHTML=source.length?source.map(row=>{
       const name=row.data?.username||row.data?.displayName||row.memberData?.username||'Kullanıcı';
-      const joined=ids.has(row.id),role=row.memberData?.role==='owner'||row.id===activeRoom.data.ownerId?'Oda sahibi':(joined?'Üye':'');
-      const button=currentMembersMode==='invite'?(joined?'<span class="room-member-state">Zaten üye</span>':'<button class="room-invite-action" type="button" data-invite-user="'+escapeHtml(row.id)+'" data-invite-name="'+escapeHtml(name)+'">Davet et</button>'):'<span class="room-member-state">'+escapeHtml(role)+'</span>';
-      return '<div class="room-member-list-row"><div class="room-member-avatar">'+escapeHtml(name.slice(0,1).toUpperCase())+'</div><div class="room-member-list-copy"><strong>'+escapeHtml(name)+'</strong><small>'+escapeHtml(role||'Forever üyesi')+'</small></div>'+button+'</div>';
+      const joined=ids.has(row.id),isOwner=row.id===activeRoom.data.ownerId;
+      const isRoomAdmin=(activeRoom.data.adminIds||[]).includes(row.id);
+      const role=isOwner?'Oda sahibi':(isRoomAdmin?'Oda yöneticisi':(joined?'Üye':''));
+      let action='';
+      if(currentMembersMode==='invite'){
+        action=joined?'<span class="room-member-state">Zaten üye</span>':'<button class="room-invite-action" type="button" data-invite-user="'+escapeHtml(row.id)+'" data-invite-name="'+escapeHtml(name)+'">Davet et</button>';
+      }else if(canGrantRoomAdmin&&!isOwner){
+        action='<button class="room-invite-action" type="button" data-room-admin-user="'+escapeHtml(row.id)+'" data-room-admin-make="'+(isRoomAdmin?'false':'true')+'">'+(isRoomAdmin?'Yöneticilikten çıkar':'Yönetici yap')+'</button>';
+      }else{
+        action='<span class="room-member-state">'+escapeHtml(role)+'</span>';
+      }
+      return '<div class="room-member-list-row"><div class="room-member-avatar">'+escapeHtml(name.slice(0,1).toUpperCase())+'</div><div class="room-member-list-copy"><strong>'+escapeHtml(name)+'</strong><small>'+escapeHtml(role||'Forever üyesi')+'</small></div>'+action+'</div>';
     }).join(''):'<div class="room-members-empty">Henüz üye görünmüyor.</div>';
     box.querySelectorAll('[data-invite-user]').forEach(button=>button.onclick=async()=>{
-      try{const {error}=await supabaseClient.rpc('forever_invite_room_member',{p_room_id:activeRoom.id,p_target_user:button.dataset.inviteUser,p_username:button.dataset.inviteName});if(error)throw error;toast(button.dataset.inviteName+' odaya davet edildi.');await loadRoomMembers();await loadRoomMemberCount();}
-      catch(e){toast(e.message||'Davet gönderilemedi.');}
+      try{
+        const {error}=await supabaseClient.rpc('forever_invite_room_member',{p_room_id:activeRoom.id,p_target_user:button.dataset.inviteUser,p_username:button.dataset.inviteName});
+        if(error)throw error;
+        toast(button.dataset.inviteName+' odaya davet edildi.');await loadRoomMembers();await loadRoomMemberCount();
+      }catch(e){toast(e.message||'Davet gönderilemedi.');}
+    });
+    box.querySelectorAll('[data-room-admin-user]').forEach(button=>button.onclick=async()=>{
+      try{
+        const {data,error}=await supabaseClient.rpc('forever_set_room_admin',{
+          p_room_id:activeRoom.id,p_target_user:button.dataset.roomAdminUser,p_make_admin:button.dataset.roomAdminMake==='true'
+        });
+        if(error)throw error;
+        if(data)activeRoom.data=data;
+        toast(button.dataset.roomAdminMake==='true'?'Oda yöneticisi atandı.':'Oda yöneticiliği kaldırıldı.');
+        syncRoomControls();await loadRoomMembers();
+      }catch(e){toast(e.message||'Oda yöneticisi güncellenemedi.');}
     });
   }catch(e){box.innerHTML='<div class="empty">Üyeler yüklenemedi: '+escapeHtml(e.message)+'</div>';}
 }
