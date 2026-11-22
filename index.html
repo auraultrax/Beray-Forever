@@ -553,7 +553,7 @@
           <strong>✦ Forever Plus</strong><span id="plusStatusLabel" class="tag">Kilitli</span>
         </div>
         <p class="muted" style="margin:8px 0;">Plus üyeliği yönetici tarafından kullanıcı adına tanımlanır. Bu bir satın alma ekranı değildir.</p>
-        <div style="font-size:.78rem;line-height:1.8;color:var(--muted);">
+        <div id="plusFeatureList" style="font-size:.78rem;line-height:1.8;color:var(--muted);">
           <div>🔒 Hazır ve özel animasyonlu çıkartmalar</div>
           <div>🔒 Kullanıcı adının yanında mor zümrüt ve mavi doğrulama rozeti</div>
           <div>🔒 Oda içinde çizim yapma</div>
@@ -1695,6 +1695,21 @@
       document.getElementById('plusIconLocked')?.classList.toggle('hidden', Boolean(currentUser.isPlus));
       const plusStatus = document.getElementById('plusStatusLabel');
       if (plusStatus) { plusStatus.textContent = currentUser.isPlus ? '✦ Aktif' : 'Kilitli'; plusStatus.classList.toggle('plus', Boolean(currentUser.isPlus)); }
+      const plusFeatureList = document.getElementById('plusFeatureList');
+      if (plusFeatureList) {
+        const labels = [
+          'Hazır ve özel animasyonlu çıkartmalar',
+          'Kullanıcı adının yanında mor zümrüt ve mavi doğrulama rozeti',
+          'Oda içinde çizim yapma',
+          'Özel uygulama simgeleri',
+          '3’ten fazla odaya katılma (ücretsiz hesap: 3 oda)',
+          'Oda mesajlarını sabitleme',
+          '+10 takipçi bonus hakkı',
+          'Günlük toplam 10 fotoğraf/video (ücretsiz hesap: 5)',
+          'Sadece metin gönderisi paylaşma'
+        ];
+        plusFeatureList.innerHTML = labels.map(label => '<div>' + (currentUser.isPlus ? '✅ ' : '🔒 ') + escapeHTML(label) + '</div>').join('');
+      }
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
       document.getElementById('profileModal').classList.remove('hidden');
