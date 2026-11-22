@@ -333,6 +333,9 @@ declare
   v_username text;
   v_new_media boolean := false;
   v_comment jsonb;
+  v_vote record;
+  v_expected_counts jsonb;
+  v_option_index integer;
 begin
   v_is_admin := private.is_forever_admin();
   v_is_plus := private.is_forever_plus();
@@ -464,6 +467,80 @@ begin
       end loop;
     end if;
 
+    -- Poll definitions are immutable; one vote per account.
+    -- Counts are recalculated in PostgreSQL, never trusted from the browser.
+    if new.collection_name = 'posts' and (old.data ? 'poll' or new.data ? 'poll') then
+      if not (old.data ? 'poll') then
+        if not v_is_plus then raise exception 'Anket oluşturma Plus özelliğidir.'; end if;
+        if jsonb_typeof(new.data -> 'poll' -> 'options') <> 'array'
+           or jsonb_array_length(new.data -> 'poll' -> 'options') < 2
+           or jsonb_array_length(new.data -> 'poll' -> 'options') > 4
+           or jsonb_typeof(coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb)) <> 'object'
+           or coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb) <> '{}'::jsonb then
+          raise exception 'Yeni anket 2-4 seçenekle ve sıfır oyla oluşturulmalıdır.';
+        end if;
+      elsif not (new.data ? 'poll') then
+        raise exception 'Oluşturulmuş anket kaldırılamaz.';
+      elsif (new.data -> 'poll' - 'counts' - 'voters') is distinct from
+            (old.data -> 'poll' - 'counts' - 'voters') then
+        raise exception 'Anket sorusunu veya seçeneklerini değiştiremezsin.';
+      end if;
+
+      if jsonb_typeof(coalesce(new.data -> 'poll' -> 'options','[]'::jsonb)) <> 'array'
+         or jsonb_array_length(new.data -> 'poll' -> 'options') < 2
+         or jsonb_array_length(new.data -> 'poll' -> 'options') > 4
+         or jsonb_typeof(coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb)) <> 'object' then
+        raise exception 'Anket oy verisi geçersiz.';
+      end if;
+
+      if (coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb) - auth.uid()::text)
+         is distinct from (coalesce(old.data -> 'poll' -> 'voters','{}'::jsonb) - auth.uid()::text) then
+        raise exception 'Yalnızca kendi oyununu kaydedebilirsin.';
+      end if;
+
+      if (coalesce(old.data -> 'poll' -> 'voters','{}'::jsonb) ? auth.uid()::text)
+         and (new.data -> 'poll' -> 'voters' -> auth.uid()::text)
+             is distinct from (old.data -> 'poll' -> 'voters' -> auth.uid()::text) then
+        raise exception 'Verilmiş oy değiştirilemez.';
+      end if;
+
+      if (coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb) ? auth.uid()::text)
+         and not (coalesce(old.data -> 'poll' -> 'voters','{}'::jsonb) ? auth.uid()::text) then
+        if jsonb_typeof(new.data -> 'poll' -> 'voters' -> auth.uid()::text) <> 'number'
+           or (new.data -> 'poll' -> 'voters' ->> auth.uid()::text) !~ '^[0-9]+$' then
+          raise exception 'Oy seçimi geçersiz.';
+        end if;
+        v_option_index := (new.data -> 'poll' -> 'voters' ->> auth.uid()::text)::integer;
+        if v_option_index < 0 or v_option_index >= jsonb_array_length(new.data -> 'poll' -> 'options') then
+          raise exception 'Oy seçimi geçersiz.';
+        end if;
+      end if;
+
+      for v_vote in
+        select key, value
+        from jsonb_each(coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb))
+      loop
+        if jsonb_typeof(v_vote.value) <> 'number'
+           or (v_vote.value #>> '{}') !~ '^[0-9]+$'
+           or (v_vote.value #>> '{}')::integer < 0
+           or (v_vote.value #>> '{}')::integer >= jsonb_array_length(new.data -> 'poll' -> 'options') then
+          raise exception 'Anket oy kayıtlarından biri geçersiz.';
+        end if;
+      end loop;
+
+      select coalesce(jsonb_agg(vote_count order by option_order),'[]'::jsonb)
+      into v_expected_counts
+      from (
+        select option_item.ord as option_order, count(voter.key)::integer as vote_count
+        from jsonb_array_elements(new.data -> 'poll' -> 'options')
+             with ordinality as option_item(value,ord)
+        left join jsonb_each(coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb)) as voter(key,value)
+          on (voter.value #>> '{}')::integer = option_item.ord - 1
+        group by option_item.ord
+      ) tally;
+      new.data := jsonb_set(new.data,'{poll,counts}',v_expected_counts,true);
+    end if;
+
     if new.collection_name = 'usernames' then
       raise exception 'Kayıtlı kullanıcı adı eşlemesi değiştirilemez.';
     elsif new.collection_name = 'users' then
@@ -523,6 +600,24 @@ begin
         end if;
       end if;
     end if;
+  end if;
+
+  if tg_op = 'INSERT' and new.collection_name = 'posts' and new.data ? 'poll' then
+    if not v_is_plus and not v_is_admin then
+      raise exception 'Anket oluşturma Plus özelliğidir.';
+    end if;
+    if jsonb_typeof(new.data -> 'poll' -> 'options') <> 'array'
+       or jsonb_array_length(new.data -> 'poll' -> 'options') < 2
+       or jsonb_array_length(new.data -> 'poll' -> 'options') > 4
+       or jsonb_typeof(coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb)) <> 'object'
+       or coalesce(new.data -> 'poll' -> 'voters','{}'::jsonb) <> '{}'::jsonb then
+      raise exception 'Yeni anket 2-4 seçenekle ve sıfır oyla oluşturulmalıdır.';
+    end if;
+    select coalesce(jsonb_agg(0 order by option_item.ord),'[]'::jsonb)
+    into v_expected_counts
+    from jsonb_array_elements(new.data -> 'poll' -> 'options')
+         with ordinality as option_item(value,ord);
+    new.data := jsonb_set(new.data,'{poll,counts}',v_expected_counts,true);
   end if;
 
   if new.collection_name = 'posts' and (new.data ->> 'imageUrl') is null
