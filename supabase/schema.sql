@@ -332,6 +332,7 @@ declare
   v_user_id text;
   v_username text;
   v_new_media boolean := false;
+  v_comment jsonb;
 begin
   v_is_admin := private.is_forever_admin();
   v_is_plus := private.is_forever_plus();
@@ -426,6 +427,41 @@ begin
        or new.id is distinct from old.id
        or new.owner_id is distinct from old.owner_id then
       raise exception 'Kayıt kimliği ve sahibi değiştirilemez.';
+    end if;
+
+    -- Comments are append-only and must belong to the signed-in user.
+    if new.collection_name = 'posts' then
+      if jsonb_typeof(coalesce(new.data -> 'comments','[]'::jsonb)) <> 'array'
+         or jsonb_typeof(coalesce(old.data -> 'comments','[]'::jsonb)) <> 'array' then
+        raise exception 'Yorum verisi geçersiz.';
+      end if;
+      if not (coalesce(new.data -> 'comments','[]'::jsonb) @>
+              coalesce(old.data -> 'comments','[]'::jsonb)) then
+        raise exception 'Yorumları silemez veya değiştiremezsin.';
+      end if;
+
+      select profile.data ->> 'username' into v_username
+      from public.forever_documents profile
+      where profile.collection_name = 'users'
+        and profile.id = auth.uid()::text
+      limit 1;
+
+      for v_comment in
+        select item.value
+        from jsonb_array_elements(coalesce(new.data -> 'comments','[]'::jsonb)) as item(value)
+      loop
+        if not (coalesce(old.data -> 'comments','[]'::jsonb) @> jsonb_build_array(v_comment)) then
+          if jsonb_typeof(v_comment) <> 'object'
+             or v_username is null
+             or v_comment ->> 'userId' is distinct from auth.uid()::text
+             or v_comment ->> 'author' is distinct from v_username
+             or coalesce(v_comment ->> 'authorIsPlus','false') is distinct from v_is_plus::text
+             or length(trim(coalesce(v_comment ->> 'text',''))) < 1
+             or length(coalesce(v_comment ->> 'text','')) > 500 then
+            raise exception 'Yorum yalnızca kendi hesabın adına eklenebilir ve en fazla 500 karakter olabilir.';
+          end if;
+        end if;
+      end loop;
     end if;
 
     if new.collection_name = 'usernames' then
