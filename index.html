@@ -827,58 +827,18 @@
   </script>
 
   <script src="./plus-config.js"></script>
+  <script src="./supabase-config.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { 
-      getAuth, 
-      signInWithEmailAndPassword, 
-      signOut, 
-      onAuthStateChanged,
-      updateProfile,
-      GoogleAuthProvider,
-      signInWithPopup,
-      sendPasswordResetEmail,
-      EmailAuthProvider,
-      linkWithCredential
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      doc, 
-      setDoc, 
-      getDoc,
-      addDoc, 
-      deleteDoc,
-      onSnapshot, 
-      updateDoc, 
-      arrayUnion, 
-      arrayRemove, 
-      serverTimestamp,
-      getDocs,
-      getCountFromServer,
-      writeBatch,
-      deleteField,
-      query,
-      where,
-      orderBy,
-      limit
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      db, auth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+      updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail,
+      collection, doc, setDoc, getDoc, addDoc, deleteDoc, onSnapshot, updateDoc,
+      arrayUnion, arrayRemove, serverTimestamp, getDocs, getCountFromServer,
+      writeBatch, deleteField, query, where, orderBy, limit
+    } from './supabase-firestore-compat.js';
+    import { supabase } from './supabase-client.js';
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
-      authDomain: "project-c443f992-d19d-4d35-a16.firebaseapp.com",
-      projectId: "project-c443f992-d19d-4d35-a16",
-      storageBucket: "project-c443f992-d19d-4d35-a16.firebasestorage.app",
-      messagingSenderId: "509248282221",
-      appId: "1:509248282221:web:84b49536d26d7d755ba964"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
-    googleProvider.setCustomParameters({ prompt: "select_account" });
-
     // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
     // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
     // 2) Yoksa → görseli sıkıştırıp Firestore belgesine data URL olarak yaz (Storage gerekmez)
@@ -900,27 +860,18 @@
     }
 
     async function sendSecurityEvent(user, event = 'session') {
-      const base = getUploadServerBase();
-      if (!base || !user) return;
+      if (!user) return;
       try {
-        const token = await user.getIdToken();
-        await fetch(base + '/security/event', {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event })
-        });
+        const { data, error } = await supabase.functions.invoke('security-event', { body: { event } });
+        if (error) throw error;
+        if (data?.ok === false) throw new Error(data.message || 'Güvenlik kaydı alınamadı.');
       } catch (error) {
-        console.warn('Güvenlik olayı sunucuya gönderilemedi:', error.message);
+        console.warn('Güvenlik olayı Supabase Edge Function üzerinden kaydedilemedi:', error.message);
       }
     }
 
     window.fxSaveUploadServer = function () {
-      const v = (document.getElementById('fxUploadServerInput')?.value || '').trim();
-      try { localStorage.setItem(FOREVER_UPLOAD_KEY, v); } catch {}
-      if (typeof fxToast === 'function') {
-        fxToast(v ? 'Medya sunucusu kaydedildi.' : 'plus-config.js içindeki medya sunucusu adresi kullanılacak.');
-      }
+      if (typeof fxToast === 'function') fxToast('Forever medyaları artık Supabase Storage üzerinden yükleniyor.');
     };
 
     async function compressImageFile(file, maxSide = 1280, quality = 0.72) {
@@ -956,26 +907,53 @@
     }
 
     async function uploadToLocalServer(file, folder) {
-      const endpoint = getUploadServerUrl();
-      if (!endpoint) throw new Error('Medya yüklemek için plus-config.js dosyasındaki uploadUrl alanına HTTPS medya sunucunu ekle.');
       if (!currentUser) throw new Error('Medya yüklemek için giriş yapmalısın.');
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('folder', folder || 'posts');
-      const token = await currentUser.getIdToken();
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        body: fd,
-        mode: 'cors',
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || ('Medya sunucusu hatası: HTTP ' + res.status));
+      const day = new Date().toISOString().slice(0, 10);
+      const ext = file.type === 'image/jpeg' ? 'jpg'
+        : file.type === 'image/png' ? 'png'
+        : file.type === 'image/webp' ? 'webp'
+        : file.type === 'image/gif' ? 'gif'
+        : file.type === 'video/mp4' ? 'mp4' : '';
+      if (!ext) throw new Error('Bu dosya türü desteklenmiyor.');
+
+      const bucket = folder === 'stories' ? 'forever-private' : 'forever-public';
+      const objectPath = currentUser.uid + '/' + day + '/' + (folder || 'posts') + '/' +
+        (crypto.randomUUID ? crypto.randomUUID() : (Date.now() + '_' + Math.random().toString(36).slice(2))) + '.' + ext;
+
+      if (file.type === 'video/mp4') {
+        const form = new FormData();
+        form.append('file', file, 'upload.mp4');
+        form.append('folder', folder || 'posts');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
+        if (!session?.access_token) throw new Error('Oturum doğrulanamadı. Yeniden giriş yap.');
+        const cfg = window.FOREVER_SUPABASE_CONFIG;
+        const response = await fetch(cfg.url.replace(/\\/+$/, '') + '/functions/v1/upload-video', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + session.access_token,
+            'apikey': cfg.publishableKey
+          },
+          body: form
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.url) throw new Error(result.error || 'Video yüklenemedi.');
+        return result.url;
       }
-      const data = await res.json().catch(() => ({}));
-      if (!data.url) throw new Error('Medya sunucusu geçerli dosya adresi döndürmedi.');
-      return data.url;
+
+      const { data, error } = await supabase.storage.from(bucket).upload(objectPath, file, {
+        cacheControl: '31536000',
+        contentType: file.type,
+        upsert: false
+      });
+      if (error) throw new Error(error.message || 'Supabase Storage yüklemesi başarısız.');
+
+      if (bucket === 'forever-private') {
+        const signed = await supabase.storage.from(bucket).createSignedUrl(data.path, 86400);
+        if (signed.error) throw signed.error;
+        return signed.data.signedUrl;
+      }
+      return supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
     }
 
     function isVideoFile(file) {
@@ -1431,16 +1409,8 @@
       const usernameSnap = await getDoc(usernameRef);
       if (usernameSnap.exists() && usernameSnap.data().uid !== user.uid) throw new Error('Bu kullanıcı adı alınmış. Başka bir tane seç.');
 
-      const hasPasswordProvider = Array.isArray(user.providerData) && user.providerData.some(p => p.providerId === 'password');
-      if (!hasPasswordProvider) {
-        try {
-          await linkWithCredential(user, EmailAuthProvider.credential(user.email, profile.password));
-        } catch (error) {
-          if (error.code !== 'auth/provider-already-linked') {
-            throw new Error('Şifre bu Google hesabına bağlanamadı: ' + (error.message || error.code || 'bilinmeyen hata'));
-          }
-        }
-      }
+      const { error: passwordError } = await supabase.auth.updateUser({ password: profile.password });
+      if (passwordError) throw new Error('Şifre Supabase hesabına kaydedilemedi: ' + passwordError.message);
 
       await updateProfile(user, { displayName: profile.displayName });
       const usernameWasCreated = !usernameSnap.exists();
@@ -1479,6 +1449,8 @@
       const previousText = submitButton?.textContent || '';
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Google hesabı seçiliyor…'; }
       try {
+        sessionStorage.setItem('FOREVER_PENDING_GOOGLE_SIGNUP', JSON.stringify(profile));
+
         const result = await signInWithPopup(auth, googleProvider);
         currentUser = result.user;
         const existing = await getDoc(doc(db, 'users', result.user.uid));
@@ -2594,67 +2566,69 @@
       if (el) el.style.display = 'none';
     }
 
-    // Oturum Kontrolü
+    // Supabase Auth tek oturum kaynağıdır. Admin paneli de aynı oturumu kullanır.
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       const authModal = document.getElementById('authModal');
       const networkAuthStatus = document.getElementById('networkAuthStatus');
 
       if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
+        const userDocRef = doc(db, 'users', user.uid);
+        let docSnap;
+        try {
+          docSnap = await getDoc(userDocRef);
+        } catch (error) {
+          console.error('Supabase profil yükleme hatası:', error);
+          fxToast('Profil bilgileri yüklenemedi. Supabase RLS ve SQL kurulumunu kontrol et.');
+          return;
+        }
 
-        // Askıya alınmış hesap: uyarıyı göster, akışı yükleme, oturumu kapat.
-        if (docSnap.exists() && docSnap.data().suspended === true) {
-          showSuspension(docSnap.data().suspendedMessage);
+        let profileData = docSnap.exists() ? (docSnap.data() || {}) : {};
+        if (profileData.suspended === true || profileData.banned === true) {
+          showSuspension(profileData.suspendedMessage || 'Hesabın yönetim tarafından kısıtlandı.');
           return;
         }
         hideSuspension();
         watchModeration(user.uid);
         sendSecurityEvent(user, 'session').catch(() => {});
-        try {
-          await setDoc(doc(db, 'privateProfiles', user.uid), {
-            uid: user.uid,
-            email: user.email || ''
-          }, { merge: true });
-          if (docSnap.exists() && docSnap.data().email) {
-            await updateDoc(userDocRef, { email: deleteField() }).catch(() => {});
-          }
-        } catch (privacyError) {
-          console.warn('Private account profile migration failed:', privacyError.message);
-        }
 
-        if (!docSnap.exists() || !docSnap.data().username) {
-          if (!isSignUpMode) {
+        if (!profileData.username) {
+          let pendingSignup = null;
+          try {
+            pendingSignup = JSON.parse(sessionStorage.getItem('FOREVER_PENDING_GOOGLE_SIGNUP') || 'null');
+          } catch {}
+          if (pendingSignup) {
+            sessionStorage.removeItem('FOREVER_PENDING_GOOGLE_SIGNUP');
+            await completeGoogleRegistration(user, pendingSignup);
+            docSnap = await getDoc(userDocRef);
+            profileData = docSnap.exists() ? (docSnap.data() || {}) : {};
+          } else {
             authModal.classList.add('hidden');
             document.getElementById('usernameModal').classList.remove('hidden');
           }
-        } else {
-          authModal.classList.add('hidden');
         }
 
-        const name = user.displayName || user.email.split('@')[0];
-        const initial = name.charAt(0).toUpperCase();
+        if (profileData.username) {
+          authModal.classList.add('hidden');
+          document.getElementById('usernameModal')?.classList.add('hidden');
+        }
 
+        const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Forever üyesi');
+        const initial = name.charAt(0).toUpperCase();
         document.getElementById('userHeaderAvatar').textContent = initial;
         document.getElementById('userHeaderName').textContent = name;
-        document.getElementById('userHeaderEmail').textContent = user.email;
+        document.getElementById('userHeaderEmail').textContent = user.email || '';
 
         const sideAv = document.getElementById('sideUserAvatar'); if (sideAv) sideAv.textContent = initial;
         const sideNm = document.getElementById('sideUserName'); if (sideNm) sideNm.textContent = name;
-        const sideHd = document.getElementById('sideUserHandle'); if (sideHd) sideHd.textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
+        const sideHd = document.getElementById('sideUserHandle'); if (sideHd) sideHd.textContent = '@' + name.toLowerCase().replace(/\\s+/g, '');
         const postAv = document.getElementById('postCreatorAvatar'); if (postAv) postAv.textContent = initial;
         if (networkAuthStatus) {
           networkAuthStatus.textContent = 'Çevrimiçi';
           networkAuthStatus.className = 'status-ok';
         }
 
-        await Promise.all([
-          loadFollowing(),
-          loadBlocked(),
-          loadSaves(),
-          refreshProfileStats()
-        ]);
+        await Promise.all([loadFollowing(), loadBlocked(), loadSaves(), refreshProfileStats()]);
         listenToPosts();
         listenToStories();
       } else {
