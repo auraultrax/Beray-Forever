@@ -24,7 +24,7 @@ create table if not exists public.profiles (
   plus_granted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint profiles_username_format check (username ~ '^[a-z0-9_]{3,24}
+  constraint profiles_username_format check (char_length(username) between 3 and 24 and username = lower(username) and username !~ '[^a-z0-9_]'),
   constraint profiles_bio_length check (char_length(bio) <= 240)
 );
 
