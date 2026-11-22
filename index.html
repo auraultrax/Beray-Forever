@@ -1332,7 +1332,7 @@
         });
         if (result.error) throw result.error;
         if (result.data?.success !== true) throw new Error('Profil kaydı tamamlanamadı.');
-        try { currentUser = await updateProfile(currentUser, { displayName: firstName }); } catch (_) {}
+        try { currentUser = await updateProfile(currentUser, { displayName: username }); } catch (_) {}
         currentUser.username = username; currentUser.displayName = firstName; currentUser.isPlus = false;
         document.getElementById('usernameModal').classList.add('hidden');
         document.getElementById('authModal').classList.add('hidden');
