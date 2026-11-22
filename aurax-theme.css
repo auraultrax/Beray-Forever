@@ -223,3 +223,45 @@ body.chat-keyboard-open .mobile-bottom-nav { display:none !important; }
   .podium { gap:5px; }
   .podium-name { font-size:.76rem; overflow-wrap:anywhere; }
 }
+
+
+/* Aura X source top bars: desktop avatar-left / bell-right and compact mobile bar. */
+.mobile-top-bar {
+  display:none; align-items:center; justify-content:space-between;
+  background:rgba(10,10,12,.92); border-bottom:1px solid var(--border);
+  padding:12px 16px; margin:0;
+}
+.mobile-top-bar .user-avatar-mini { cursor:pointer; width:34px; height:34px; }
+.mobile-top-bar .mobile-top-bell {
+  position:relative; cursor:pointer; font-size:1.25rem; color:var(--text-main);
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  border:0; background:transparent;
+}
+.desktop-top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg-base);
+}
+.desktop-top-bar .user-avatar-mini { cursor:pointer; width:38px; height:38px; }
+.desktop-top-bar .desktop-top-bell {
+  position:relative; cursor:pointer; font-size:1.3rem; color:var(--text-main);
+  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  border:0; background:transparent;
+}
+.notif-badge-dot {
+  position:absolute; top:8px; left:30px; min-width:18px; height:18px; padding:0 4px;
+  border-radius:99px; background:var(--danger); color:#fff; font-size:.65rem; font-weight:800;
+  display:none; align-items:center; justify-content:center; box-shadow:0 0 0 2px var(--bg-surface);
+}
+.notif-badge-dot.show { display:flex; }
+.desktop-top-bar .desktop-top-bell .notif-badge-dot { top:-2px; left:20px; }
+.mobile-top-bar .mobile-top-bell .notif-badge-dot { top:-2px; left:18px; }
+.view-feed-heading { margin:0; }
+@media (max-width:900px) {
+  .mobile-top-bar { display:flex; }
+  .desktop-top-bar { display:none; }
+  .main-content { padding-bottom:80px; }
+}
+@media (min-width:901px) {
+  .mobile-top-bar { display:none; }
+  .desktop-top-bar { display:flex; }
+}
