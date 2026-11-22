@@ -170,6 +170,16 @@ async function blockRoomUser(targetId) {
   if (!confirm('Bu kullanıcıyı engellemek istiyor musun?')) return;
   try {
     await insertDoc('blocks', userId + '_' + targetId, { blockerId: userId, blockedId: targetId, createdAt: { seconds: Math.floor(Date.now() / 1000) } });
+    const profile = await supabaseClient.from('forever_documents').select('data')
+      .eq('collection_name','users').eq('id',userId).single();
+    if (!profile.error) {
+      const blocked = new Set(profile.data?.data?.blocked || []);
+      blocked.add(targetId);
+      const update = await supabaseClient.from('forever_documents')
+        .update({ data: Object.assign({}, profile.data.data || {}, { blocked: [...blocked] }), updated_at: new Date().toISOString() })
+        .eq('collection_name','users').eq('id',userId);
+      if (update.error) throw update.error;
+    }
     toast('Kullanıcı engellendi.');
   } catch (e) { toast(e.message || 'Kullanıcı engellenemedi.'); }
 }
