@@ -224,3 +224,24 @@ Bu dosya yukarıdaki örnek kuralların **yerine geçer** (güncel olan budur). 
 - Kullanıcı kendi moderasyon alanlarına (`suspended`, `banned`, `restrictedUntil`, `warnCount`…) dokunamaz.
 - Yönetici işlemleri `modlogs` koleksiyonuna silinemez/değiştirilemez şekilde kaydedilir.
 - Kullanılmayan tüm koleksiyonlar kapalıdır.
+
+
+---
+
+## 2026-11-22 — Forever Plus ilaveleri
+
+firestore.rules bu dalda güncel kural dosyasıdır ve önceki örnek kuralların tamamının yerine uygulanmalıdır.
+
+- privateProfiles/{uid}: doğum tarihi gibi özel alanlar; yalnızca ilgili UID okuyabilir, yazabilir veya silebilir.
+- rooms/{roomId}: herkese açık odaları keşfetme; oda oluşturma ve üye ekleme alanları sunucuda kuralla denetlenir.
+- rooms/{roomId}/messages/{messageId}: yalnızca oda üyeleri okuyabilir; kullanıcı yalnızca kendi UID'siyle mesaj oluşturabilir.
+- Oda başına üyelik üst sınırı 100, mesaj uzunluğu 1000 karakterdir.
+- Profildeki region alanı herkese açık profil bilgisidir. Doğum tarihi public users belgesine yazılmaz.
+
+### Firebase Console kontrol listesi
+1. Firebase Authentication → Sign-in method içinde Google ve Email/Password sağlayıcılarını etkinleştir.
+2. Yayın alan adını Authorized domains'e ekle.
+3. Bu depodaki firestore.rules dosyasının tamamını Firestore → Rules alanına yayınla.
+4. Farklı iki test hesabıyla kayıt, özel doğum tarihi erişimi, oda oluşturma, katılma, üye olmayan kullanıcının mesaj okuyamaması ve mesaj yazamaması senaryolarını test et.
+
+GitHub'a kural dosyası göndermek, kuralları Firebase projesinde otomatik yayınlamaz. Canlı projeye kuralları ayrıca uygulamak gerekir.
