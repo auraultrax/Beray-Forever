@@ -798,47 +798,19 @@
   </script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      signInWithEmailAndPassword, 
-      signOut, 
-      onAuthStateChanged,
-      updateProfile,
-      GoogleAuthProvider,
-      signInWithPopup,
-      sendPasswordResetEmail
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      doc, 
-      setDoc, 
-      getDoc,
-      addDoc, 
-      deleteDoc,
-      onSnapshot, 
-      updateDoc, 
-      arrayUnion, 
-      arrayRemove, 
-      serverTimestamp 
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      initializeApp, getAuth, getFirestore, collection, doc, setDoc, getDoc, getDocs,
+      addDoc, deleteDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove, serverTimestamp,
+      query, where, orderBy, limit, GoogleAuthProvider, signInWithPopup,
+      createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+      onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteField, increment,
+      supabaseClient
+    } from "./supabase-compat.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
-      authDomain: "project-c443f992-d19d-4d35-a16.firebaseapp.com",
-      projectId: "project-c443f992-d19d-4d35-a16",
-      storageBucket: "project-c443f992-d19d-4d35-a16.firebasestorage.app",
-      messagingSenderId: "509248282221",
-      appId: "1:509248282221:web:84b49536d26d7d755ba964"
-    };
-
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp();
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
-
     // ---- FOTOĞRAF YÜKLEME (Firebase Storage YOK — ücretsiz) ----
     // 1) Sağ panelde sunucu adresi varsa → kendi sunucuna POST
     // 2) Yoksa → görseli sıkıştırıp Firestore belgesine data URL olarak yaz (Storage gerekmez)
