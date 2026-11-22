@@ -4,13 +4,8 @@ const $ = id => document.getElementById(id);
 let session = null, userId = null, username = '', isPlus = false, activeRoom = null, roomChannel = null;
 let knownPlusUserIds = new Set(), plusUsersChannel = null;
 let drawingDirty = false, roomUiBound = false, currentMembersMode = 'members';
-let themeIndex = 0;
-const roomThemes = [
-  { name: 'Mor', accent: '#8b5cf6', bubble: '#8b5cf6' },
-  { name: 'Pembe', accent: '#ec4899', bubble: '#db4b9b' },
-  { name: 'Mavi', accent: '#3b82f6', bubble: '#326bd1' },
-  { name: 'Yeşil', accent: '#10b981', bubble: '#0c9270' }
-];
+let isAppAdmin = false, selectedMessage = null, pendingReply = null, longPressTimer = null;
+let lastRoomMessages = new Map(), lastRoomReactions = [];
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -26,11 +21,10 @@ function toast(message) {
   else alert(message);
 }
 function plusBadge(plus) {
-  return plus ? '<span class="forever-badges"><span class="forever-emerald">◆</span><span class="forever-verified">✓</span></span>' : '';
+  return plus ? '<span class="forever-badges"><span class="forever-emerald" title="Zümrüt Plus rozeti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7 8 3h8l4 4-8 14L4 7Z" fill="#087f45" stroke="#34d399" stroke-width="1.1"/><path d="M4 7h16L12 21 4 7Z" fill="#10b981"/><path d="M8 3 9.5 7 12 21 4 7 8 3Z" fill="#064e3b"/><path d="M16 3 14.5 7 12 21 20 7 16 3Z" fill="#6ee7b7"/><path d="M8 3h8l-1.5 4h-5L8 3Z" fill="#a7f3d0"/></svg></span><span class="forever-verified">✓</span></span>' : '';
 }
-function roomOwner() {
-  return Boolean(activeRoom && activeRoom.data && activeRoom.data.ownerId === userId);
-}
+function roomOwner(){return Boolean(activeRoom?.data?.ownerId===userId);}
+function roomModerator(){return Boolean(roomOwner()||isAppAdmin||(activeRoom?.data?.adminIds||[]).includes(userId));}
 async function fetchDocs(collectionName) {
   const { data, error } = await supabaseClient.from('forever_documents')
     .select('id,data,owner_id,created_at').eq('collection_name', collectionName)
@@ -60,22 +54,15 @@ function applyRoomTheme(themeName) {
   chat.style.setProperty('--room-bubble', theme.bubble);
   themeIndex = Math.max(0, roomThemes.findIndex(item => item.name === theme.name));
 }
-function syncPlusControls() {
-  const label = $('roomPlanLabel');
-  if (label) label.textContent = isPlus ? '✦ Plus: oda sınırı yok' : 'Ücretsiz: en fazla 3 oda';
-  const features = activeRoom?.data?.features || {};
-  const stickersEnabled = features.stickers !== false;
-  const drawingEnabled = features.drawing !== false;
-  const stickerButton = $('openStickersBtn');
-  const drawingButton = $('toggleDrawingBtn');
-  const stickerFile = $('customStickerFile');
-  if (stickerButton) stickerButton.disabled = !isPlus || !stickersEnabled;
-  if (drawingButton) drawingButton.disabled = !isPlus || !drawingEnabled;
-  if (stickerFile) stickerFile.disabled = !isPlus || !stickersEnabled;
-  if ($('stickerLock')) $('stickerLock').textContent = isPlus ? '' : '🔒 Plus';
-  if ($('drawingLock')) $('drawingLock').textContent = isPlus ? '' : '🔒 Plus';
-  if (!isPlus || !drawingEnabled) $('drawingBox')?.classList.add('hidden');
-  if (!isPlus || !stickersEnabled) $('stickerTray')?.classList.add('hidden');
+function syncPlusControls(){
+  const label=$('roomPlanLabel');if(label)label.textContent=isPlus?'✦ Plus: oda sınırı yok':'Ücretsiz: en fazla 3 oda';
+  const features=activeRoom?.data?.features||{},stickersEnabled=features.stickers!==false,drawingEnabled=features.drawing!==false;
+  if($('openStickersBtn'))$('openStickersBtn').disabled=!isPlus||!stickersEnabled;
+  if($('toggleDrawingBtn'))$('toggleDrawingBtn').disabled=!isPlus||!drawingEnabled;
+  if($('stickerLock'))$('stickerLock').textContent=isPlus?'':'🔒 Plus';
+  if($('drawingLock'))$('drawingLock').textContent=isPlus?'':'🔒 Plus';
+  if(!isPlus||!drawingEnabled)$('drawingBox')?.classList.add('hidden');
+  if(!isPlus||!stickersEnabled)$('stickerTray')?.classList.add('hidden');
 }
 async function insertDoc(collectionName, id, data) {
   const { error } = await supabaseClient.from('forever_documents').insert({
@@ -107,156 +94,84 @@ function switchRoomTab(tabName) {
 }
 window.switchRoomTab = switchRoomTab;
 
-async function loadRoomList() {
-  if (!userId) return;
-  const list = $('roomList');
-  if (!list) return;
-  list.innerHTML = '<div class="empty">Odalar yükleniyor…</div>';
-  try {
-    const [rooms, memberships] = await Promise.all([fetchDocs('rooms'), currentMemberships()]);
-    const joined = new Set(memberships.map(m => m.data.roomId));
-    const plan = $('roomPlanLabel');
-    if (plan) plan.textContent = isPlus ? '✦ Plus: oda sınırı yok' : 'Ücretsiz: en fazla 3 oda';
-    list.innerHTML = rooms.length ? rooms.map(room => {
-      const d = room.data || {};
-      const isJoined = joined.has(room.id);
-      const isPrivate = Boolean(d.isPrivate);
-      const unavailable = isPrivate && !isJoined && d.ownerId !== userId;
-      const info = isPrivate ? '🔒 Özel oda' : (isJoined ? 'Üyesisin' : 'Topluluk odası');
-      const action = unavailable ? 'Özel' : ((isJoined || d.ownerId === userId) ? 'Odaya Gir' : 'Odaya Katıl');
-      return '<article class="room-list-item">' +
-        '<div class="room-list-icon"><i class="fa-solid fa-hashtag"></i></div>' +
-        '<div class="room-list-copy"><strong>' + escapeHtml(d.name || 'Adsız oda') + '</strong><small>' + escapeHtml(info) + '</small></div>' +
-        '<button type="button" class="room-list-open" data-room-open="' + escapeHtml(room.id) + '" data-room-name="' + escapeHtml(d.name || 'Oda') + '" ' + (unavailable ? 'disabled' : '') + '>' + action + '</button>' +
-      '</article>';
-    }).join('') : '<div class="room-empty-state"><i class="fa-regular fa-comments"></i><strong>Henüz oda yok</strong><span>İlk odayı oluşturup arkadaşlarını davet edebilirsin.</span><button type="button" class="btn" data-open-create-room>Oda Ekle</button></div>';
-    list.querySelectorAll('[data-open-create-room]').forEach(button => button.onclick = () => switchRoomTab('create'));
-    list.querySelectorAll('[data-room-open]').forEach(button => button.onclick = async () => {
-      const id = button.dataset.roomOpen;
-      const name = button.dataset.roomName;
-      const room = rooms.find(item => item.id === id);
-      const data = room?.data || {};
-      if (!joined.has(id)) {
-        if (data.isPrivate && data.ownerId !== userId) return toast('Bu oda özel. Oda sahibinden davet istemelisin.');
-        try {
-          await insertDoc('room_members', userId + '_' + id, {
-            roomId: id, userId, username, role: 'member',
-            joinedAt: { seconds: Math.floor(Date.now() / 1000) }
-          });
-          toast('Odaya katıldın! 🎉');
-        } catch (e) { toast(e.message || 'Odaya katılamadın.'); return; }
-      }
-      await openRoom(id, name, data);
-    });
-  } catch (e) {
-    list.innerHTML = '<div class="empty">Odalar yüklenemedi: ' + escapeHtml(e.message) + '</div>';
-  }
+async function loadRoomList(){
+  if(!userId)return;const list=$('roomList');if(!list)return;
+  list.innerHTML='<div class="empty">Kayıtlı odaların yükleniyor…</div>';
+  try{
+    const [rooms,memberships]=await Promise.all([fetchDocs('rooms'),currentMemberships()]);
+    const savedIds=new Set(memberships.map(row=>row.data?.roomId).filter(Boolean));
+    const saved=rooms.filter(room=>savedIds.has(room.id)).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    if($('roomPlanLabel'))$('roomPlanLabel').textContent=isPlus?'✦ Plus: oda sınırı yok':'Ücretsiz: en fazla 3 oda';
+    list.innerHTML=saved.length?saved.map(room=>{
+      const d=room.data||{};
+      return '<article class="room-list-item"><div class="room-list-icon"><i class="fa-solid fa-hashtag"></i></div><div class="room-list-copy"><strong>'+escapeHtml(d.name||'Adsız oda')+'</strong><small>'+(d.ownerId===userId?'Oda sahibi sensin':'Kayıtlı odan')+'</small></div><button type="button" class="room-list-open" data-room-open="'+escapeHtml(room.id)+'">Odaya Gir</button></article>';
+    }).join(''):'<div class="room-empty-state"><i class="fa-regular fa-comments"></i><strong>Henüz kayıtlı odan yok</strong><span>Oda adı ve şifresini girerek katılabilirsin.</span></div>';
+    list.querySelectorAll('[data-room-open]').forEach(btn=>btn.onclick=async()=>{const room=saved.find(x=>x.id===btn.dataset.roomOpen);if(room)await openRoom(room.id,room.data?.name||'Oda',room.data||{});});
+  }catch(e){list.innerHTML='<div class="empty">Kayıtlı odalar yüklenemedi: '+escapeHtml(e.message)+'</div>';}
 }
-function renderMessage(row) {
-  const d = row.data || {};
-  const mine = d.userId === userId;
-  let body = '';
-  if (d.kind === 'sticker') {
-    body = '<div class="room-sticker-message">' + escapeHtml(d.sticker || '✨') + '</div>';
-  } else if (d.kind === 'custom_sticker' && d.stickerUrl) {
-    const url = safeMediaUrl(d.stickerUrl);
-    body = url ? '<img class="room-message-media" src="' + url + '" alt="Çıkartma">' : '<div>Çıkartma</div>';
-  } else if (d.kind === 'drawing' && d.drawingUrl) {
-    const url = safeMediaUrl(d.drawingUrl);
-    body = url ? '<img class="room-message-media room-drawing-media" src="' + url + '" alt="Oda çizimi">' : '<div>Çizim</div>';
-  } else {
-    body = '<div class="room-message-text">' + escapeHtml(d.text || '') + '</div>';
-  }
-  const time = row.created_at ? new Date(row.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}) : '';
-  const badges = plusBadge(knownPlusUserIds.has(d.userId));
-  const meta = '<div class="room-message-meta"><span class="room-message-author">' + escapeHtml(d.username || 'kullanıcı') + '</span>' + badges + (d.pinned ? '<span class="room-pinned-label">📌 Sabit</span>' : '') + '<time>' + time + '</time></div>';
-  const actions = '<div class="room-message-actions">' +
-    (isPlus ? '<button type="button" data-pin="' + escapeHtml(row.id) + '">' + (d.pinned ? 'Sabitlemeyi kaldır' : 'Sabitle') + '</button>' : '') +
-    (!mine ? '<button type="button" data-report="' + escapeHtml(row.id) + '" data-owner="' + escapeHtml(d.userId || '') + '">Şikâyet</button><button type="button" data-block="' + escapeHtml(d.userId || '') + '">Engelle</button>' : '') +
-    '</div>';
-  return '<article class="room-message-row ' + (mine ? 'mine' : 'others') + (d.pinned ? ' is-pinned' : '') + '">' +
-    '<div class="room-message-card">' + meta + '<div class="room-message-bubble">' + body + '</div>' + actions + '</div></article>';
+function isSingleEmoji(value){
+  const text=String(value||'').trim();if(!text||!/\p{Extended_Pictographic}/u.test(text))return false;
+  return typeof Intl.Segmenter==='function'?Array.from(new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(text)).length===1:Array.from(text).length<=4;
 }
-async function loadRoomMessages() {
-  if (!activeRoom) return;
-  const box = $('roomMessages');
-  if (!box) return;
-  const [messageResult, blockResult] = await Promise.all([
-    supabaseClient.from('forever_documents')
-      .select('id,data,created_at').eq('collection_name', 'room_messages')
-      .contains('data', { roomId: activeRoom.id }).order('created_at', { ascending: true }).limit(150),
-    fetchDocs('blocks')
+function renderMessage(row){
+  const d=row.data||{},mine=d.userId===userId;let body='';
+  if(d.kind==='animated_sticker')body='<div class="room-animated-sticker sticker-'+escapeHtml(d.stickerId||'sparkle')+'">'+escapeHtml(d.emoji||'✨')+'</div>';
+  else if((d.kind==='emoji_mix'||d.kind==='custom_sticker'||d.kind==='sticker')&&d.stickerUrl){const url=safeMediaUrl(d.stickerUrl);body=url?'<img class="room-message-media '+(d.kind==='emoji_mix'?'room-emoji-mix':'')+'" src="'+url+'" alt="Görsel">':'<div>Görsel</div>';}
+  else if(d.kind==='drawing'&&d.drawingUrl){const url=safeMediaUrl(d.drawingUrl);body=url?'<img class="room-message-media room-drawing-media" src="'+url+'" alt="Oda çizimi">':'<div>Çizim</div>';}
+  else if(isSingleEmoji(d.text))body='<button type="button" class="room-single-emoji" data-fly-emoji="'+escapeHtml(d.text.trim())+'">'+escapeHtml(d.text.trim())+'</button>';
+  else body='<div class="room-message-text">'+escapeHtml(d.text||'')+'</div>';
+  const time=row.created_at?new Date(row.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
+  const meta='<div class="room-message-meta"><span class="room-message-author">'+escapeHtml(d.username||'kullanıcı')+'</span>'+plusBadge(knownPlusUserIds.has(d.userId))+(d.pinned?'<span class="room-pinned-label">📌 Sabit</span>':'')+'<time>'+time+'</time><button type="button" class="room-message-menu-btn" data-message-menu="'+escapeHtml(row.id)+'">•••</button></div>';
+  const reply=d.replyTo?'<div class="room-reply-quote"><strong>'+escapeHtml(d.replyTo.username||'Yanıtlanan mesaj')+'</strong><span>'+escapeHtml(d.replyTo.text||'Mesaj')+'</span></div>':'';
+  const groups=new Map();lastRoomReactions.filter(x=>x.data?.messageId===row.id).forEach(x=>{const e=x.data?.emoji;if(e)groups.set(e,(groups.get(e)||0)+1);});
+  const reactions=groups.size?'<div class="room-reaction-list">'+[...groups].map(([emoji,count])=>'<button type="button" data-react="'+escapeHtml(emoji)+'" data-react-message="'+escapeHtml(row.id)+'">'+escapeHtml(emoji)+' <span>'+count+'</span></button>').join('')+'</div>':'';
+  return '<article class="room-message-row '+(mine?'mine':'others')+(d.pinned?' is-pinned':'')+'" data-message-card="'+escapeHtml(row.id)+'"><div class="room-message-card">'+meta+'<div class="room-message-bubble">'+reply+body+'</div><div class="room-message-footer">'+reactions+'<button type="button" class="room-add-reaction" data-message-menu="'+escapeHtml(row.id)+'"><i class="fa-regular fa-face-smile"></i></button></div></div></article>';
+}
+async function loadRoomMessages(){
+  if(!activeRoom)return;const box=$('roomMessages');if(!box)return;
+  const [messageResult,blocks,reactions]=await Promise.all([
+    supabaseClient.from('forever_documents').select('id,data,created_at').eq('collection_name','room_messages').contains('data',{roomId:activeRoom.id}).order('created_at',{ascending:true}).limit(180),
+    fetchDocs('blocks'),fetchDocs('room_reactions')
   ]);
-  if (messageResult.error) {
-    box.innerHTML = '<div class="empty">Mesajlar yüklenemedi: ' + escapeHtml(messageResult.error.message) + '</div>';
-    return;
-  }
-  const blockedUsers = new Set((blockResult || [])
-    .filter(row => row.data?.blockerId === userId)
-    .map(row => row.data?.blockedId));
-  const rows = (messageResult.data || []).filter(row => !blockedUsers.has(row.data?.userId));
-  if (!rows.length) {
-    box.innerHTML = '<div class="room-chat-empty"><i class="fa-regular fa-comments"></i><strong>Henüz mesaj yok</strong><span>İlk mesajı sen gönder!</span></div>';
-  } else {
-    let lastDate = '';
-    box.innerHTML = rows.map(row => {
-      const date = row.created_at ? new Date(row.created_at) : null;
-      const dateKey = date ? date.toLocaleDateString('tr-TR') : '';
-      const separator = dateKey && dateKey !== lastDate
-        ? '<div class="room-date-separator"><span>' + escapeHtml(date.toLocaleDateString('tr-TR', {day:'2-digit',month:'2-digit',year:'numeric',weekday:'long'})) + '</span></div>'
-        : '';
-      lastDate = dateKey || lastDate;
-      return separator + renderMessage(row);
-    }).join('');
-  }
-  box.scrollTop = box.scrollHeight;
-  box.querySelectorAll('[data-pin]').forEach(button => button.onclick = () => pinMessage(button.dataset.pin));
-  box.querySelectorAll('[data-report]').forEach(button => button.onclick = () => reportMessage(button.dataset.report, button.dataset.owner));
-  box.querySelectorAll('[data-block]').forEach(button => button.onclick = () => blockRoomUser(button.dataset.block));
+  if(messageResult.error){box.innerHTML='<div class="empty">Mesajlar yüklenemedi: '+escapeHtml(messageResult.error.message)+'</div>';return;}
+  const blocked=new Set((blocks||[]).filter(x=>x.data?.blockerId===userId).map(x=>x.data?.blockedId));
+  const rows=(messageResult.data||[]).filter(row=>!blocked.has(row.data?.userId)&&row.data?.kind!=='emoji_flight');
+  lastRoomMessages=new Map(rows.map(row=>[row.id,row]));lastRoomReactions=(reactions||[]).filter(row=>row.data?.roomId===activeRoom.id);
+  if(!rows.length)box.innerHTML='<div class="room-chat-empty"><i class="fa-regular fa-comments"></i><strong>Henüz mesaj yok</strong><span>İlk mesajı sen gönder!</span></div>';
+  else{let lastDate='';box.innerHTML=rows.map(row=>{const date=row.created_at?new Date(row.created_at):null,key=date?date.toLocaleDateString('tr-TR'):'';const sep=key&&key!==lastDate?'<div class="room-date-separator"><span>'+escapeHtml(date.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',weekday:'long'}))+'</span></div>':'';lastDate=key||lastDate;return sep+renderMessage(row);}).join('');}
+  box.scrollTop=box.scrollHeight;
+  box.querySelectorAll('[data-message-menu]').forEach(btn=>btn.onclick=()=>openRoomMessageActions(btn.dataset.messageMenu));
+  box.querySelectorAll('[data-react]').forEach(btn=>btn.onclick=()=>toggleRoomReaction(btn.dataset.reactMessage,btn.dataset.react));
+  box.querySelectorAll('[data-fly-emoji]').forEach(btn=>btn.onclick=()=>emojiChallenge(btn.dataset.flyEmoji));
+  box.querySelectorAll('[data-message-card]').forEach(card=>{
+    card.addEventListener('pointerdown',()=>{clearTimeout(longPressTimer);if(roomModerator())longPressTimer=setTimeout(()=>openRoomModeration(card.dataset.messageCard),520);});
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>card.addEventListener(ev,()=>clearTimeout(longPressTimer)));
+    card.addEventListener('contextmenu',ev=>{if(roomModerator()){ev.preventDefault();openRoomModeration(card.dataset.messageCard);}});
+  });
+  const pinId=activeRoom.data?.pinnedMessageId,pinned=pinId?lastRoomMessages.get(pinId):null;
+  $('roomPinnedBar')?.classList.toggle('hidden',!pinned);if(pinned)$('roomPinnedText').textContent=(pinned.data?.username||'Üye')+': '+(pinned.data?.text||'Mesaj');
+  if($('roomUnpinBtn'))$('roomUnpinBtn').onclick=()=>moderateRoom('unpin');
 }
-async function updateActiveRoomSettings(patch) {
-  if (!activeRoom || !roomOwner()) throw new Error('Bu ayarı yalnızca oda sahibi değiştirebilir.');
-  const result = await supabaseClient.from('forever_documents').select('data')
-    .eq('collection_name','rooms').eq('id',activeRoom.id).single();
-  if (result.error) throw result.error;
-  const updatedData = Object.assign({}, result.data?.data || {}, patch);
-  const update = await supabaseClient.from('forever_documents')
-    .update({ data: updatedData, updated_at: new Date().toISOString() })
-    .eq('collection_name','rooms').eq('id',activeRoom.id);
-  if (update.error) throw update.error;
-  activeRoom.data = updatedData;
-  syncRoomControls();
-  await loadRoomList();
+async function updateActiveRoomSettings(patch){
+  if(!activeRoom||!roomModerator())throw new Error('Bu ayarı yalnızca oda yöneticisi değiştirebilir.');
+  const {data,error}=await supabaseClient.rpc('forever_update_room_settings',{
+    p_room_id:activeRoom.id,
+    p_is_private:Object.prototype.hasOwnProperty.call(patch,'isPrivate')?Boolean(patch.isPrivate):null,
+    p_messages_locked:Object.prototype.hasOwnProperty.call(patch,'messagesLocked')?Boolean(patch.messagesLocked):null,
+    p_theme:Object.prototype.hasOwnProperty.call(patch,'theme')?String(patch.theme):null
+  });
+  if(error)throw error;activeRoom.data=data||Object.assign({},activeRoom.data,patch);syncRoomControls();syncPlusControls();await loadRoomList();
 }
-function syncRoomControls() {
-  if (!activeRoom) return;
-  const owner = roomOwner();
-  const privateButton = $('roomPrivateBtn');
-  const lockButton = $('roomSendLockBtn');
-  if (privateButton) {
-    privateButton.innerHTML = activeRoom.data.isPrivate ? '<i class="fa-solid fa-lock"></i>' : '<i class="fa-solid fa-lock-open"></i>';
-    privateButton.title = activeRoom.data.isPrivate ? 'Oda özel: yeni katılıma kapalı' : 'Oda herkese açık';
-    privateButton.classList.toggle('is-active', Boolean(activeRoom.data.isPrivate));
-    privateButton.disabled = !owner;
-  }
-  if (lockButton) {
-    lockButton.innerHTML = activeRoom.data.messagesLocked ? '<i class="fa-solid fa-lock"></i>' : '<i class="fa-solid fa-lock-open"></i>';
-    lockButton.title = activeRoom.data.messagesLocked ? 'Mesaj gönderme kilitli' : 'Mesaj gönderme açık';
-    lockButton.classList.toggle('is-active', Boolean(activeRoom.data.messagesLocked));
-    lockButton.disabled = !owner;
-  }
-  const deleteButton = $('roomDeleteBtn');
-  if (deleteButton) deleteButton.hidden = !owner;
-  const lockedForUser = Boolean(activeRoom.data.messagesLocked && !owner);
-  const textInput = $('roomMessageText');
-  const sendButton = $('sendRoomMessageBtn');
-  if (textInput) {
-    textInput.disabled = lockedForUser;
-    textInput.placeholder = lockedForUser ? 'Oda sahibi mesaj göndermeyi kilitledi.' : 'Mesaj yazın...';
-  }
-  if (sendButton) sendButton.disabled = lockedForUser;
-  const status = $('roomStatusLine');
-  if (status) status.textContent = (activeRoom.data.isPrivate ? '🔒 Özel oda' : 'Açık oda') + (activeRoom.data.messagesLocked ? ' · Mesaj gönderme kilitli' : ' · Sohbet açık');
+function syncRoomControls(){
+  if(!activeRoom)return;const owner=roomModerator(),muted=(activeRoom.data.mutedUserIds||[]).includes(userId);
+  const p=$('roomPrivateBtn'),l=$('roomSendLockBtn');
+  if(p){p.innerHTML=activeRoom.data.isPrivate?'<i class="fa-solid fa-lock"></i>':'<i class="fa-solid fa-lock-open"></i>';p.title=activeRoom.data.isPrivate?'Şifreli oda':'Açık oda';p.disabled=!owner;}
+  if(l){l.innerHTML=activeRoom.data.messagesLocked?'<i class="fa-solid fa-lock"></i>':'<i class="fa-solid fa-lock-open"></i>';l.title=activeRoom.data.messagesLocked?'Mesaj gönderme kilitli':'Mesaj gönderme açık';l.disabled=!owner;}
+  if($('roomDeleteBtn'))$('roomDeleteBtn').hidden=!roomOwner()&&!isAppAdmin;
+  const locked=Boolean((activeRoom.data.messagesLocked&&!owner)||muted);
+  if($('roomMessageText')){$('roomMessageText').disabled=locked;$('roomMessageText').placeholder=muted?'Bu odada mesaj gönderme iznin yok.':locked?'Oda sahibi mesaj göndermeyi kilitledi.':'Mesaj yazın...';}
+  if($('sendRoomMessageBtn'))$('sendRoomMessageBtn').disabled=locked;
+  if($('roomStatusLine'))$('roomStatusLine').textContent=(activeRoom.data.isPrivate?'🔒 Şifreli oda':'Açık oda')+(activeRoom.data.messagesLocked?' · Mesaj gönderme kilitli':' · Sohbet açık')+(muted?' · Susturuldun':'');
 }
 async function loadRoomMemberCount() {
   if (!activeRoom) return;
@@ -266,57 +181,43 @@ async function loadRoomMemberCount() {
     if ($('roomChatMemberCount')) $('roomChatMemberCount').textContent = count ? '· ' + count + ' üye' : '';
   } catch (_) {}
 }
-async function openRoom(id, name, data) {
-  activeRoom = { id, name, data: Object.assign({}, data || {}) };
-  $('roomSelectionArea')?.classList.add('hidden');
-  $('roomChat')?.classList.remove('hidden');
-  $('roomChatTitle').textContent = name;
-  document.body.classList.add('room-chat-open');
-  const savedTheme = activeRoom.data.theme || 'Mor';
-  applyRoomTheme(savedTheme);
-  syncPlusControls();
-  syncRoomControls();
-  await Promise.all([loadRoomMessages(), loadRoomMemberCount()]);
-  if (roomChannel) await supabaseClient.removeChannel(roomChannel);
-  roomChannel = supabaseClient.channel('forever-room-' + id)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_documents', filter: 'collection_name=eq.room_messages' }, payload => {
-      if (payload.new?.data?.roomId === activeRoom?.id || payload.old?.data?.roomId === activeRoom?.id) loadRoomMessages();
+async function openRoom(id,name,data){
+  activeRoom={id,name,data:Object.assign({},data||{})};$('roomSelectionArea')?.classList.add('hidden');$('roomChat')?.classList.remove('hidden');
+  $('roomChatTitle').textContent=name;document.body.classList.add('room-chat-open');
+  applyRoomTheme();renderRoomThemePanel();syncPlusControls();syncRoomControls();
+  await Promise.all([loadRoomMessages(),loadRoomMemberCount()]);
+  if(roomChannel)await supabaseClient.removeChannel(roomChannel);
+  roomChannel=supabaseClient.channel('forever-room-'+id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'forever_documents',filter:'collection_name=eq.room_messages'},payload=>{
+      const row=payload.new;
+      if(row?.data?.roomId===activeRoom?.id){if(row.data.kind==='emoji_flight'&&row.data.userId!==userId)animateFlyingEmoji(row.data.emoji);else if(row.data.kind!=='emoji_flight')loadRoomMessages();}
+      else if(payload.old?.data?.roomId===activeRoom?.id)loadRoomMessages();
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_documents', filter: 'collection_name=eq.room_members' }, () => loadRoomMemberCount())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_documents', filter: 'collection_name=eq.rooms' }, async payload => {
-      if (payload.new?.id === activeRoom?.id && payload.new?.data) {
-        activeRoom.data = payload.new.data;
-        syncRoomControls();
-        syncPlusControls();
-      }
+    .on('postgres_changes',{event:'*',schema:'public',table:'forever_documents',filter:'collection_name=eq.room_members'},()=>loadRoomMemberCount())
+    .on('postgres_changes',{event:'*',schema:'public',table:'forever_documents',filter:'collection_name=eq.rooms'},payload=>{
+      if(payload.new?.id===activeRoom?.id&&payload.new?.data){activeRoom.data=payload.new.data;syncRoomControls();syncPlusControls();}
     }).subscribe();
 }
-async function sendRoomMessage(payload) {
-  if (!activeRoom || !userId) return;
-  if (activeRoom.data.messagesLocked && !roomOwner()) return toast('Bu odada mesaj gönderme geçici olarak kilitlendi.');
-  const data = Object.assign({
-    roomId: activeRoom.id, userId, username, isPlus,
-    createdAt: { seconds: Math.floor(Date.now() / 1000) }
-  }, payload);
-  try {
-    await insertDoc('room_messages', crypto.randomUUID(), data);
-    if (payload.kind === 'text') {
-      $('roomMessageText').value = '';
-      $('roomMessageText').style.height = 'auto';
-    }
-    await loadRoomMessages();
-  } catch (e) { toast(e.message || 'Mesaj gönderilemedi.'); }
+async function sendRoomMessage(payload){
+  if(!activeRoom||!userId)return;
+  if(activeRoom.data.messagesLocked&&!roomModerator())return toast('Bu odada mesaj gönderme geçici olarak kilitlendi.');
+  if((activeRoom.data.mutedUserIds||[]).includes(userId))return toast('Bu odada mesaj gönderme iznin yok.');
+  if(['animated_sticker','emoji_mix'].includes(payload.kind)&&!isPlus)return toast('Bu özellik yalnızca Plus üyelerine açık. 🔒');
+  const data=Object.assign({roomId:activeRoom.id,userId,username,isPlus,createdAt:{seconds:Math.floor(Date.now()/1000)}},payload);
+  if(pendingReply)data.replyTo={id:pendingReply.id,username:pendingReply.username,text:pendingReply.text.slice(0,160)};
+  try{await insertDoc('room_messages',crypto.randomUUID(),data);if(payload.kind==='text'){$('roomMessageText').value='';$('roomMessageText').style.height='auto';}pendingReply=null;renderReplyPreview();await loadRoomMessages();}
+  catch(e){toast(e.message||'Mesaj gönderilemedi.');}
 }
-async function pinMessage(id) {
-  if (!isPlus) return toast('Mesaj sabitleme Plus üyeliği gerektirir. 🔒');
-  try {
-    const r = await supabaseClient.from('forever_documents').select('data').eq('collection_name','room_messages').eq('id',id).single();
-    if (r.error) throw r.error;
-    const data = Object.assign({}, r.data.data, { pinned: !r.data.data.pinned });
-    const update = await supabaseClient.from('forever_documents').update({ data, updated_at: new Date().toISOString() }).eq('collection_name','room_messages').eq('id',id);
-    if (update.error) throw update.error;
-    await loadRoomMessages();
-  } catch (e) { toast(e.message || 'Mesaj sabitlenemedi.'); }
+async function pinMessage(id){if(!roomModerator())return toast('Mesaj sabitlemek için oda yöneticisi olmalısın.');await moderateRoom(activeRoom?.data?.pinnedMessageId===id?'unpin':'pin',id);}
+async function moderateRoom(action,messageId=null,targetUser=null){
+  if(!activeRoom||!roomModerator())return toast('Bu işlem oda yönetimi yetkisi gerektirir.');
+  try{
+    const {error}=await supabaseClient.rpc('forever_moderate_room',{p_room_id:activeRoom.id,p_action:action,p_message_id:messageId,p_target_user:targetUser});
+    if(error)throw error;if(action==='delete_room'){await closeActiveRoom();toast('Oda silindi.');return;}
+    const room=await supabaseClient.from('forever_documents').select('data').eq('collection_name','rooms').eq('id',activeRoom.id).single();
+    if(room.data?.data)activeRoom.data=room.data.data;await loadRoomMessages();syncRoomControls();
+    toast(action==='mute'?'Kullanıcı susturuldu.':action==='unmute'?'Susturma kaldırıldı.':action==='delete_message'?'Mesaj herkesten silindi.':action==='pin'?'Mesaj sabitlendi.':'Sabitleme kaldırıldı.');
+  }catch(e){toast(e.message||'Yönetim işlemi tamamlanamadı.');}
 }
 async function reportMessage(messageId, ownerId) {
   const reason = prompt('Şikâyet sebebi nedir?');
@@ -428,33 +329,14 @@ async function toggleRoomMessageLock() {
     toast(messagesLocked ? 'Mesaj gönderme kilitlendi.' : 'Mesaj gönderme açıldı.');
   } catch (error) { toast(error.message || 'Mesaj kilidi değiştirilemedi.'); }
 }
-async function deleteActiveRoom() {
-  if (!activeRoom || !roomOwner()) return toast('Odayı yalnızca sahibi silebilir.');
-  if (!confirm('Bu odayı ve oda mesajlarını silmek istediğine emin misin?')) return;
-  const roomId = activeRoom.id;
-  try {
-    const [messages, members, room] = await Promise.all([
-      supabaseClient.from('forever_documents').delete().eq('collection_name','room_messages').contains('data', { roomId }),
-      supabaseClient.from('forever_documents').delete().eq('collection_name','room_members').contains('data', { roomId }),
-      supabaseClient.from('forever_documents').delete().eq('collection_name','rooms').eq('id', roomId)
-    ]);
-    if (messages.error) throw messages.error;
-    if (members.error) throw members.error;
-    if (room.error) throw room.error;
-    await closeActiveRoom();
-    toast('Oda silindi.');
-  } catch (error) { toast(error.message || 'Oda silinemedi.'); }
+async function deleteActiveRoom(){
+  if(!activeRoom||(!roomOwner()&&!isAppAdmin))return toast('Odayı yalnızca oda sahibi silebilir.');
+  if(!confirm('Bu odayı ve içindeki mesajları silmek istediğine emin misin?'))return;await moderateRoom('delete_room');
 }
-async function leaveActiveRoom() {
-  if (!activeRoom) return;
-  const roomId = activeRoom.id;
-  try {
-    const result = await supabaseClient.from('forever_documents').delete()
-      .eq('collection_name','room_members').eq('id', userId + '_' + roomId);
-    if (result.error) throw result.error;
-    await closeActiveRoom();
-    toast('Odadan ayrıldın.');
-  } catch (error) { toast(error.message || 'Odadan ayrılamadın.'); }
+async function leaveActiveRoom(){
+  if(!activeRoom)return;
+  try{const {error}=await supabaseClient.rpc('forever_leave_room',{p_room_id:activeRoom.id});if(error)throw error;await closeActiveRoom();toast('Kayıtlı oda listesine döndün.');}
+  catch(e){toast(e.message||'Odadan ayrılamadın.');}
 }
 async function closeActiveRoom() {
   if (roomChannel) {
