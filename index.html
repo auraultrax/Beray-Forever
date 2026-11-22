@@ -820,6 +820,7 @@
     });
   </script>
 
+  <script src="./plus-config.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { 
@@ -849,6 +850,8 @@
       serverTimestamp,
       getDocs,
       getCountFromServer,
+      writeBatch,
+      deleteField,
       query,
       where,
       orderBy,
@@ -876,14 +879,41 @@
     const FOREVER_UPLOAD_KEY = 'FOREVER_UPLOAD_URL';
 
     function getUploadServerUrl() {
-      try { return (localStorage.getItem(FOREVER_UPLOAD_KEY) || '').trim(); } catch { return ''; }
+      try {
+        const saved = (localStorage.getItem(FOREVER_UPLOAD_KEY) || '').trim();
+        return saved || String(window.FOREVER_PLUS_CONFIG?.uploadUrl || '').trim();
+      } catch {
+        return String(window.FOREVER_PLUS_CONFIG?.uploadUrl || '').trim();
+      }
+    }
+
+    function getUploadServerBase() {
+      const endpoint = getUploadServerUrl();
+      if (!endpoint) return '';
+      try { return new URL(endpoint).origin; } catch { return ''; }
+    }
+
+    async function sendSecurityEvent(user, event = 'session') {
+      const base = getUploadServerBase();
+      if (!base || !user) return;
+      try {
+        const token = await user.getIdToken();
+        await fetch(base + '/security/event', {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event })
+        });
+      } catch (error) {
+        console.warn('Güvenlik olayı sunucuya gönderilemedi:', error.message);
+      }
     }
 
     window.fxSaveUploadServer = function () {
       const v = (document.getElementById('fxUploadServerInput')?.value || '').trim();
       try { localStorage.setItem(FOREVER_UPLOAD_KEY, v); } catch {}
       if (typeof fxToast === 'function') {
-        fxToast(v ? 'Sunucu kaydedildi. Fotoğraflar oraya gidecek.' : 'Sunucu temizlendi. Fotoğraflar uygulama veritabanına (sıkıştırılmış) kaydolur.');
+        fxToast(v ? 'Medya sunucusu kaydedildi.' : 'plus-config.js içindeki medya sunucusu adresi kullanılacak.');
       }
     };
 
@@ -921,62 +951,62 @@
 
     async function uploadToLocalServer(file, folder) {
       const endpoint = getUploadServerUrl();
-      if (!endpoint) return null;
+      if (!endpoint) throw new Error('Medya yüklemek için plus-config.js dosyasındaki uploadUrl alanına HTTPS medya sunucunu ekle.');
+      if (!currentUser) throw new Error('Medya yüklemek için giriş yapmalısın.');
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('folder', folder || 'forever');
-      if (currentUser) fd.append('userId', currentUser.uid);
-      const headers = {};
-      try {
-        const token = (localStorage.getItem('FOREVER_UPLOAD_TOKEN') || '').trim();
-        if (token) headers['X-Upload-Token'] = token;
-      } catch {}
-      const res = await fetch(endpoint, { method: 'POST', body: fd, mode: 'cors', headers });
+      fd.append('folder', folder || 'posts');
+      const token = await currentUser.getIdToken();
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: fd,
+        mode: 'cors',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || ('Sunucu yükleme hatası: HTTP ' + res.status));
+        throw new Error(errBody.error || ('Medya sunucusu hatası: HTTP ' + res.status));
       }
       const data = await res.json().catch(() => ({}));
-      const url = data.url || data.path || data.publicUrl;
-      if (!url) throw new Error('Sunucu yanıtında url yok');
-      if (String(url).startsWith('http')) return url;
-      try {
-        const base = new URL(endpoint).origin;
-        return base + (String(url).startsWith('/') ? url : '/' + url);
-      } catch {
-        return url;
-      }
+      if (!data.url) throw new Error('Medya sunucusu geçerli dosya adresi döndürmedi.');
+      return data.url;
     }
 
-    /** Kendi sunucun varsa oraya; yoksa sıkıştırılmış data URL (Storage yok) */
     function isVideoFile(file) {
       return !!(file && (file.type || '').startsWith('video/'));
     }
 
-    async function prepareVideoForStore(file) {
-      // Firestore ~1MB limit — kısa/küçük klipler; büyükse hata
-      const maxBytes = 650 * 1024;
-      if (file.size <= maxBytes) return file;
-      throw new Error('Video çok büyük (max ~650KB). Daha uzun klipler için Forever yükleme sunucusunu ayarla.');
+    async function getVideoDuration(file) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          const duration = Number(video.duration);
+          URL.revokeObjectURL(url);
+          if (!Number.isFinite(duration) || duration <= 0) reject(new Error('Video süresi okunamadı.'));
+          else resolve(duration);
+        };
+        video.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Video dosyası okunamadı. MP4 kullan.')); };
+        video.src = url;
+      });
     }
 
-    /** Foto veya video. Sunucu varsa oraya; yoksa data URL (küçük dosya). */
     async function uploadForeverImage(file, folder = 'posts') {
-      const endpoint = getUploadServerUrl();
+      if (!file) throw new Error('Dosya seçilmedi.');
       if (isVideoFile(file)) {
-        if (endpoint) {
-          // yerel sunucuda boyut daha esnek (max 25MB)
-          if (file.size > 8 * 1024 * 1024) throw new Error('Video 8MB üstü olamaz (varsayılan sunucu sınırı)');
-          return await uploadToLocalServer(file, folder);
-        }
-        const prepared = await prepareVideoForStore(file);
-        return await fileToDataURL(prepared);
+        if (file.type !== 'video/mp4') throw new Error('Plus videoları şimdilik MP4 biçiminde yüklenebilir.');
+        if (file.size > 50 * 1024 * 1024) throw new Error('Video 50 MB üstü olamaz.');
+        const duration = await getVideoDuration(file);
+        if (duration > 180) throw new Error('Plus video sınırı 3 dakikadır.');
+        return await uploadToLocalServer(file, folder);
+      }
+      if (folder === 'stickers' && file.type === 'image/gif') {
+        if (file.size > 5 * 1024 * 1024) throw new Error('GIF çıkartma en fazla 5 MB olabilir.');
+        return await uploadToLocalServer(file, folder);
       }
       const compressed = await compressImageFile(file);
-      if (endpoint) {
-        return await uploadToLocalServer(compressed, folder);
-      }
-      return await fileToDataURL(compressed);
+      return await uploadToLocalServer(compressed, folder);
     }
 
     function mediaHtml(url, mediaType) {
