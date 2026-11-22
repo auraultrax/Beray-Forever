@@ -753,49 +753,130 @@
     </div>
     </section>
 
-    <section id="view-odalar" class="view-section">
-<div class="header-sticky glass">Odalar <i class="fa-solid fa-comments" style="color:var(--primary);font-size:.9rem;margin-left:5px;"></i></div>
-<section class="card" id="roomsPanel">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div><h3 style="margin:0 0 4px;">ODALAR</h3><small style="color:var(--muted);">Topluluğa katıl, sohbet et ve birlikte çiz.</small></div>
-        <span id="roomPlanLabel" class="status-warn">Ücretsiz: en fazla 3 oda</span>
+    <section id="view-odalar" class="view-section aura-rooms-view">
+  <div id="roomSelectionArea" class="room-selection-area">
+    <div class="room-browser-heading">
+      <div>
+        <h1>Odalar</h1>
+        <p>Bir odaya katıl veya kendi odanı oluştur.</p>
       </div>
-      <form id="createRoomForm" style="display:flex;gap:8px;margin:12px 0;">
-        <input id="newRoomName" maxlength="40" placeholder="Yeni oda adı" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
-        <button class="btn" type="submit">Oda oluştur</button>
-      </form>
-      <div id="roomList" style="display:grid;gap:8px;"><div class="empty">Odalar yükleniyor…</div></div>
-      <div id="roomChat" class="hidden" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><strong id="roomChatTitle">Oda</strong><button type="button" class="btn btn-ghost" id="leaveRoomBtn">Odadan ayrıl</button></div>
-        <div id="roomMessages" style="height:260px;overflow:auto;margin:10px 0;padding:8px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);"></div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
-          <button type="button" class="btn btn-ghost" id="openStickersBtn">✨ Çıkartmalar <span id="stickerLock">🔒 Plus</span></button>
-          <button type="button" class="btn btn-ghost" id="toggleDrawingBtn">🎨 Çizim <span id="drawingLock">🔒 Plus</span></button>
-          <label class="btn btn-ghost" style="cursor:pointer;"><span id="customStickerLabel">GIF ekle 🔒 Plus</span> <input id="customStickerFile" type="file" accept="image/gif" hidden></label>
-        </div>
-        <div id="stickerTray" class="hidden" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
-          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="💜">💜</button>
-          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="✨">✨</button>
-          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🌈">🌈</button>
-          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🦋">🦋</button>
-          <button type="button" class="sticker-choice sticker-motion-0" data-sticker="🐸">🐸</button>
-          <button type="button" class="sticker-choice sticker-motion-1" data-sticker="🌸">🌸</button>
-          <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🚀">🚀</button>
-          <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🎉">🎉</button>
-        </div>
-        <div id="drawingBox" class="hidden" style="margin:8px 0;">
-          <canvas id="roomDrawingCanvas" width="720" height="360" style="width:100%;height:auto;max-height:220px;background:#fff;border-radius:12px;touch-action:none;"></canvas>
-          <div style="display:flex;gap:8px;margin-top:8px;"><button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button><button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button></div>
-        </div>
-        <form id="roomMessageForm" style="display:flex;gap:8px;">
-          <input id="roomMessageText" maxlength="500" placeholder="Odaya mesaj yaz…" required style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:12px;padding:10px;font:inherit;">
-          <button class="btn" type="submit">Gönder</button>
-        </form>
-      </div>
-    </section>
-    </section>
+      <span id="roomPlanLabel" class="room-plan-label">Ücretsiz: en fazla 3 oda</span>
+    </div>
 
-    <section id="view-liderlik" class="view-section">
+    <div class="room-tabs" role="tablist" aria-label="Oda işlemleri">
+      <button type="button" class="room-tab-btn active" data-room-tab="join" role="tab" aria-selected="true">
+        <i class="fa-solid fa-door-open"></i><span>Odaya Gir</span>
+      </button>
+      <button type="button" class="room-tab-btn" data-room-tab="create" role="tab" aria-selected="false">
+        <i class="fa-solid fa-circle-plus"></i><span>Oda Ekle</span>
+      </button>
+    </div>
+
+    <div id="tab-join" class="room-tab-content active" role="tabpanel">
+      <div class="room-section-intro">
+        <div><h2>Katılabileceğin odalar</h2><p>Bir odayı seçerek sohbete katılabilirsin.</p></div>
+        <button type="button" class="btn btn-ghost room-refresh-btn" id="refreshRoomListBtn" title="Odaları yenile" aria-label="Odaları yenile">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </div>
+      <div id="roomList" class="room-list" aria-live="polite">
+        <div class="empty">Odalar yükleniyor…</div>
+      </div>
+    </div>
+
+    <div id="tab-create" class="room-tab-content" role="tabpanel">
+      <form id="createRoomForm" class="room-create-form">
+        <div class="room-create-icon"><i class="fa-solid fa-comments"></i></div>
+        <h2>Yeni bir oda oluştur</h2>
+        <p>Arkadaşlarını davet edebileceğin kendi sohbet alanını kur.</p>
+        <label class="room-field-label" for="newRoomName">Oda adı</label>
+        <input id="newRoomName" maxlength="40" placeholder="Örn. m" autocomplete="off" required>
+        <div class="room-feature-settings">
+          <label class="room-feature-option">
+            <input type="checkbox" id="newRoomDrawingEnabled" checked>
+            <span class="room-feature-icon"><i class="fa-solid fa-palette"></i></span>
+            <span><strong>Çizim alanı</strong><small>Oda içinde çizim gönder</small></span>
+          </label>
+          <label class="room-feature-option">
+            <input type="checkbox" id="newRoomStickersEnabled" checked>
+            <span class="room-feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+            <span><strong>Çıkartmalar</strong><small>Animasyonlu çıkartma gönder</small></span>
+          </label>
+        </div>
+        <button class="btn room-create-submit" type="submit"><i class="fa-solid fa-plus"></i> Odayı Oluştur</button>
+      </form>
+    </div>
+  </div>
+
+  <section id="roomChat" class="room-chat hidden" aria-label="Oda sohbeti">
+    <header class="room-chat-header">
+      <div class="room-chat-title">
+        <span class="room-chat-hash">#</span>
+        <strong id="roomChatTitle">Oda</strong>
+        <small id="roomChatMemberCount"></small>
+      </div>
+      <div class="room-chat-actions">
+        <button type="button" class="room-tool-btn" id="roomThemeBtn" title="Oda rengini değiştir" aria-label="Oda rengini değiştir"><i class="fa-solid fa-palette"></i></button>
+        <button type="button" class="room-tool-btn" id="roomInviteBtn" title="Üye davet et" aria-label="Üye davet et"><i class="fa-solid fa-user-plus"></i></button>
+        <button type="button" class="room-tool-btn" id="roomPrivateBtn" title="Oda gizliliğini değiştir" aria-label="Oda gizliliğini değiştir"><i class="fa-solid fa-lock-open"></i></button>
+        <button type="button" class="room-tool-btn" id="roomSendLockBtn" title="Mesaj gönderme iznini değiştir" aria-label="Mesaj gönderme iznini değiştir"><i class="fa-solid fa-lock"></i></button>
+        <button type="button" class="room-tool-btn" id="openStickersBtn" title="Çıkartmalar" aria-label="Çıkartmaları aç"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+        <button type="button" class="room-tool-btn" id="roomMembersBtn" title="Oda üyeleri" aria-label="Oda üyeleri"><i class="fa-solid fa-users"></i></button>
+        <button type="button" class="room-delete-btn" id="roomDeleteBtn">Odayı Sil</button>
+        <button type="button" class="room-exit-btn" id="leaveRoomBtn">Çık</button>
+      </div>
+    </header>
+
+    <div id="roomStatusLine" class="room-status-line">Oda sohbeti</div>
+    <div id="roomMessages" class="room-messages" aria-live="polite">
+      <div class="empty">Mesajlar yükleniyor…</div>
+    </div>
+
+    <div id="stickerTray" class="room-sticker-tray hidden">
+      <button type="button" class="sticker-choice sticker-motion-0" data-sticker="💜">💜</button>
+      <button type="button" class="sticker-choice sticker-motion-1" data-sticker="✨">✨</button>
+      <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🌈">🌈</button>
+      <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🦋">🦋</button>
+      <button type="button" class="sticker-choice sticker-motion-0" data-sticker="🐸">🐸</button>
+      <button type="button" class="sticker-choice sticker-motion-1" data-sticker="🌸">🌸</button>
+      <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🚀">🚀</button>
+      <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🎉">🎉</button>
+    </div>
+
+    <div id="drawingBox" class="room-drawing-box hidden">
+      <canvas id="roomDrawingCanvas" width="720" height="360"></canvas>
+      <div class="room-drawing-actions">
+        <button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button>
+        <button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button>
+      </div>
+    </div>
+
+    <div class="room-compose-shell">
+      <div id="roomComposerMenu" class="room-composer-menu hidden">
+        <button type="button" id="toggleDrawingBtn"><i class="fa-solid fa-palette"></i> Çizim alanı <span id="drawingLock">🔒 Plus</span></button>
+        <button type="button" id="roomUploadStickerBtn"><i class="fa-solid fa-image"></i> GIF çıkartması yükle <span id="stickerLock">🔒 Plus</span></button>
+      </div>
+      <form id="roomMessageForm" class="room-message-form">
+        <button type="button" class="room-compose-plus" id="roomComposerPlusBtn" title="Oda araçları" aria-label="Oda araçlarını aç"><i class="fa-solid fa-plus"></i><i class="fa-solid fa-user-group"></i></button>
+        <input id="customStickerFile" type="file" accept="image/gif" hidden>
+        <textarea id="roomMessageText" maxlength="500" rows="1" placeholder="Mesaj yazın..." autocomplete="off"></textarea>
+        <button class="room-send-btn" id="sendRoomMessageBtn" type="submit" aria-label="Mesajı gönder"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
+    </div>
+  </section>
+</section>
+
+<div id="roomMembersModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomMembersModal()">
+  <div class="modal-card room-members-dialog" role="dialog" aria-modal="true" aria-labelledby="roomMembersTitle">
+    <div class="room-members-dialog-head">
+      <div><h2 id="roomMembersTitle">Oda üyeleri</h2><p id="roomMembersSubtitle" class="sub">Bu odadaki kişiler</p></div>
+      <button type="button" class="btn-icon" onclick="window.closeRoomMembersModal()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="roomMembersList" class="room-members-list"><div class="empty">Üyeler yükleniyor…</div></div>
+  </div>
+</div>
+
+<section id="view-liderlik" class="view-section">
     <section id="leaderboardPanel" class="leaderboard-panel" aria-live="polite">
       <div class="header-sticky glass">Liderlik Sıralaması</div>
       <div class="leaderboard-wrap">
