@@ -122,7 +122,7 @@ function renderMessage(row) {
   else if (d.kind === 'drawing' && d.drawingUrl) body = '<img src="' + escapeHtml(d.drawingUrl) + '" alt="Oda çizimi" style="width:min(100%,360px);border-radius:12px;background:white;">';
   else body = '<div>' + escapeHtml(d.text || '') + '</div>';
   const time = row.created_at ? new Date(row.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}) : '';
-  const badges = plusBadge(Boolean(d.isPlus) || knownPlusUserIds.has(d.userId));
+  const badges = plusBadge(knownPlusUserIds.has(d.userId));
   const tools = '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">' +
     (isPlus ? '<button type="button" class="btn btn-ghost" style="padding:4px 7px;font-size:11px;" data-pin="' + escapeHtml(row.id) + '">' + (d.pinned ? 'Sabitlemeyi kaldır' : 'Sabitle') + '</button>' : '<small>🔒 Sabitleme Plus</small>') +
     (!mine ? '<button type="button" class="btn btn-ghost" style="padding:4px 7px;font-size:11px;" data-report="' + escapeHtml(row.id) + '" data-owner="' + escapeHtml(d.userId || '') + '">Şikâyet</button><button type="button" class="btn btn-ghost" style="padding:4px 7px;font-size:11px;" data-block="' + escapeHtml(d.userId || '') + '">Engelle</button>' : '') +
