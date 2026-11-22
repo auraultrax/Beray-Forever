@@ -303,7 +303,7 @@
     }
 
     .forever-badges{display:inline-flex;align-items:center;gap:4px;margin-left:5px;vertical-align:middle}
-    .forever-emerald{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:6px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;font-size:10px;box-shadow:0 0 10px #8b5cf688}
+    .forever-emerald{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:6px;background:linear-gradient(135deg,#047857,#10b981,#064e3b);color:#fff;font-size:10px;box-shadow:0 0 10px #10b98188}
     .forever-verified{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:#2495ee;color:#fff;font-size:10px;font-weight:900;box-shadow:0 0 8px #2495ee66}
     .sticker-choice{font-size:1.8rem;background:transparent;border:1px solid var(--line);border-radius:12px;padding:7px;cursor:pointer}
     .sticker-motion-0{animation:stickerPulse 1.2s infinite alternate}.sticker-motion-1{animation:stickerFloat 1.8s ease-in-out infinite}.sticker-motion-2{animation:stickerWiggle .8s ease-in-out infinite}.sticker-motion-3{animation:stickerSpin 2.8s linear infinite}
@@ -1440,7 +1440,7 @@
       }, 2600);
     }
     window.fxToast = fxToast;
-    function foreverBadges(isPlus) { return isPlus ? '<span class="forever-badges" title="Forever Plus"><span class="forever-emerald">◆</span><span class="forever-verified">✓</span></span>' : ''; }
+    function foreverBadges(isPlus) { return isPlus ? '<span class="forever-badges" title="Forever Plus"><span class="forever-emerald"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7 8 3h8l4 4-8 14L4 7Z" fill="#087f45" stroke="#34d399" stroke-width="1.1"/><path d="M4 7h16L12 21 4 7Z" fill="#10b981"/><path d="M8 3 9.5 7 12 21 4 7 8 3Z" fill="#064e3b"/><path d="M16 3 14.5 7 12 21 20 7 16 3Z" fill="#6ee7b7"/><path d="M8 3h8l-1.5 4h-5L8 3Z" fill="#a7f3d0"/></svg></span><span class="forever-verified">✓</span></span>' : ''; }
 
     let isSignUpMode = false;
     let unsubscribePosts = null;
