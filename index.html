@@ -1252,6 +1252,17 @@
 
     let currentUser = null;
     let followingIds = new Set();
+    let plusUserIds = new Set();
+
+    async function loadPlusUsers() {
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const ids = new Set();
+        snap.forEach(row => { if (row.data()?.isPlus) ids.add(row.id); });
+        plusUserIds = ids;
+      } catch (error) { console.warn('Plus kullanıcı listesi yüklenemedi:', error); }
+    }
+
     let allPostsCache = [];
     let feedQuery = '';
 
@@ -1329,7 +1340,7 @@
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
         set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('postCreatorAvatar', initial);
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers();
         listenToPosts(); listenToStories();
         const savedIcon = localStorage.getItem('forever_app_icon');
         if (currentUser.isPlus && savedIcon && typeof window.changeAppIcon === 'function') window.changeAppIcon(savedIcon);
@@ -1531,7 +1542,7 @@
                 ${thumb}
               </div>
             </div>
-            <span class="text-[11px] text-slate-300 font-medium">${escapeHTML((story.authorName || '?').split(' ')[0])}${foreverBadges(story.authorIsPlus)}</span>
+            <span class="text-[11px] text-slate-300 font-medium">${escapeHTML((story.authorName || '?').split(' ')[0])}${foreverBadges(plusUserIds.has(story.userId) || story.authorIsPlus)}</span>
           `;
           storiesContainer.appendChild(storyElem);
         });
@@ -1971,7 +1982,7 @@
           <div class="post-head">
             <div class="avatar">${initialLetter}</div>
             <div style="flex:1;min-width:0;">
-              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}${foreverBadges(post.authorIsPlus)}</div>
+              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}${foreverBadges(plusUserIds.has(post.userId) || post.authorIsPlus)}</div>
               <div class="time">${post.createdAt && post.createdAt.seconds ? new Date(post.createdAt.seconds * 1000).toLocaleString('tr-TR', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Az önce'}</div>
             </div>
             ${moreMenu}
@@ -2002,7 +2013,7 @@
           <div id="comments-${post.id}" class="comments hidden">
             <div>
               ${(post.comments && post.comments.length) ? post.comments.map(cm =>
-                `<div class="comment"><strong>${escapeHTML(cm.author)}${foreverBadges(cm.authorIsPlus)}:</strong> ${escapeHTML(cm.text)}</div>`
+                `<div class="comment"><strong>${escapeHTML(cm.author)}${foreverBadges(plusUserIds.has(cm.userId) || cm.authorIsPlus)}:</strong> ${escapeHTML(cm.text)}</div>`
               ).join('') : '<p class="comment">Henüz yorum yok.</p>'}
             </div>
             <div class="comment-row">
@@ -2173,7 +2184,15 @@
       restrictedNotified = false;
       unsubscribeModeration = onSnapshot(doc(db, 'users', uid), (snap) => {
         const d = snap.exists() ? snap.data() : {};
-        if (d.suspended === true) { showSuspension(d.suspendedMessage); return; }
+        if (d.suspended === true || d.banned === true) { showSuspension(d.suspendedMessage); return; }
+        const wasPlus = Boolean(currentUser?.isPlus);
+        if (currentUser) currentUser.isPlus = Boolean(d.isPlus);
+        if (currentUser && wasPlus !== currentUser.isPlus) {
+          const headerName = document.getElementById('userHeaderName');
+          if (headerName) headerName.innerHTML = escapeHTML(currentUser.username || currentUser.displayName || 'Kullanıcı') + foreverBadges(currentUser.isPlus);
+          loadPlusUsers().then(() => renderPostsFromCache());
+          window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid, username: currentUser.username, isPlus: currentUser.isPlus } }));
+        }
         hideSuspension();
         if ((d.restrictedUntil || 0) > Date.now() && !restrictedNotified) {
           restrictedNotified = true;
