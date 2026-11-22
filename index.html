@@ -1263,6 +1263,16 @@
         plusUserIds = ids;
       } catch (error) { console.warn('Plus kullanıcı listesi yüklenemedi:', error); }
     }
+    let unsubscribePlusProfiles = null;
+    function watchPlusProfiles() {
+      if (unsubscribePlusProfiles) unsubscribePlusProfiles();
+      unsubscribePlusProfiles = onSnapshot(collection(db, 'users'), snap => {
+        const ids = new Set();
+        snap.forEach(row => { if (row.data()?.isPlus) ids.add(row.id); });
+        plusUserIds = ids;
+        renderPostsFromCache();
+      }, error => console.warn('Plus rozetleri gerçek zamanlı güncellenemedi:', error));
+    }
 
     let allPostsCache = [];
     let feedQuery = '';
@@ -1341,7 +1351,7 @@
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
         set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('postCreatorAvatar', initial);
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers(); watchPlusProfiles();
         listenToPosts(); listenToStories();
         const savedIcon = localStorage.getItem('forever_app_icon');
         if (currentUser.isPlus && savedIcon && typeof window.changeAppIcon === 'function') window.changeAppIcon(savedIcon);
@@ -2278,7 +2288,7 @@
         set('userHeaderEmail', currentUser.isPlus ? 'Forever Plus' : 'Forever üyesi');
         set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('postCreatorAvatar', initial);
         if (networkAuthStatus) { networkAuthStatus.textContent = currentUser.isPlus ? 'Forever Plus' : 'Çevrimiçi'; networkAuthStatus.className = 'status-ok'; networkAuthStatus.style.display = 'inline'; }
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers(); watchPlusProfiles();
         listenToPosts(); listenToStories();
         window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: user.uid, username: currentUser.username, isPlus: currentUser.isPlus } }));
       } catch (error) {
