@@ -41,6 +41,11 @@ create index if not exists forever_documents_owner_idx
 create index if not exists forever_documents_data_gin_idx
   on public.forever_documents using gin (data);
 
+-- Explicit API privileges; row-level policies below remain the authorization boundary.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.forever_documents to authenticated;
+grant select on public.forever_private_user_data to authenticated;
+
 alter table public.forever_admins enable row level security;
 alter table public.forever_plus_members enable row level security;
 alter table public.forever_private_user_data enable row level security;
