@@ -36,6 +36,7 @@ function syncPlusControls() {
   $('customStickerFile') && ($('customStickerFile').disabled = !isPlus);
   if ($('stickerLock')) $('stickerLock').textContent = isPlus ? '' : '🔒 Plus';
   if ($('drawingLock')) $('drawingLock').textContent = isPlus ? '' : '🔒 Plus';
+  if ($('customStickerLabel')) $('customStickerLabel').textContent = isPlus ? 'Özel GIF çıkartması' : 'GIF ekle 🔒 Plus';
   if (!isPlus) $('drawingBox')?.classList.add('hidden');
 }
 async function insertDoc(collectionName, id, data) {
