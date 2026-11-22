@@ -789,7 +789,7 @@
     <section id="leaderboardPanel" class="leaderboard-panel hidden" aria-live="polite">
       <div class="header-sticky glass">Liderlik Sıralaması</div>
       <div class="leaderboard-wrap">
-        <p class="leaderboard-intro">En çok takip edilen topluluk üyeleri.</p>
+        <p class="leaderboard-intro">En çok etkileşim ve oy toplayan ilk 3 üye.</p>
         <div class="podium" id="podiumContainer"></div>
         <div id="leaderboardList" class="leaderboard-list"></div>
       </div>
@@ -2275,9 +2275,8 @@
       const title=document.getElementById('pageTitle');
       if(title) title.innerHTML='<i class="fa-solid fa-sparkles"></i> Akış';
     };
-    function auraXFollowerCount(row) {
-      const followers = row?.data?.followers;
-      return Array.isArray(followers) ? followers.length : (Number(row?.data?.followerCount) || 0);
+    function auraXVoteCount(row) {
+      return Math.max(0, Number(row?.data?.votes) || 0);
     }
     function renderAuraXDirectory() {
       const search = (document.getElementById('auraXDirectorySearch')?.value || '').trim().toLocaleLowerCase('tr-TR');
@@ -2286,21 +2285,19 @@
         return [d.username,d.displayName,d.bio].join(' ').toLocaleLowerCase('tr-TR').includes(search);
       });
       if (auraXDirectoryMode === 'leaderboard') {
-        rows = [...rows].sort((a,b) => auraXFollowerCount(b)-auraXFollowerCount(a)).slice(0,30);
-        const podium = document.getElementById('podiumContainer');
-        const list = document.getElementById('leaderboardList');
-        if (!list || !podium) return;
-        if (!rows.length) { podium.innerHTML=''; list.innerHTML='<div class="empty">Henüz sıralama verisi bulunamadı.</div>'; return; }
-        const top=rows.slice(0,3);
-        podium.innerHTML=[top[1],top[0],top[2]].filter(Boolean).map(row=>{
-          const rank=rows.indexOf(row)+1, d=row.data||{}, name=d.username||d.displayName||'Kullanıcı';
-          const cls=rank===1?'rank-1':rank===2?'rank-2':'rank-3';
-          return '<div class="podium-item '+cls+'"><div class="podium-rank">'+rank+'</div><div class="podium-avatar">'+escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'))+'</div><div class="podium-name">'+escapeHTML(name)+'</div><div class="podium-votes">'+auraXFollowerCount(row)+' takipçi</div></div>';
-        }).join('');
-        list.innerHTML=rows.slice(3).map((row,index)=>{
+        rows = [...rows].sort((a,b) => auraXVoteCount(b)-auraXVoteCount(a)).slice(0,3);
+        const podium=document.getElementById('podiumContainer');
+        const list=document.getElementById('leaderboardList');
+        if(!podium||!list)return;
+        list.innerHTML='';
+        if(!rows.length){podium.innerHTML='<p class="leaderboard-empty">Sıralama için henüz oy bulunmuyor.</p>';return;}
+        const createItem=(row,rank)=>{
+          if(!row)return '<div class="podium-item podium-placeholder" aria-hidden="true"></div>';
           const d=row.data||{}, name=d.username||d.displayName||'Kullanıcı';
-          return '<article class="aura-x-user-row"><span class="aura-x-rank">#'+(index+4)+'</span><div class="aura-x-user-avatar">'+escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'))+'</div><div class="aura-x-user-meta"><strong>'+escapeHTML(name)+'</strong><small>'+auraXFollowerCount(row)+' takipçi</small></div></article>';
-        }).join('');
+          const cls=rank===1?'rank-1':rank===2?'rank-2':'rank-3';
+          return '<div class="podium-item '+cls+'"><div class="podium-rank">'+rank+'</div><div class="podium-name">@'+escapeHTML(name)+'</div><div class="podium-votes">'+auraXVoteCount(row)+' Oy</div></div>';
+        };
+        podium.innerHTML=createItem(rows[1],2)+createItem(rows[0],1)+createItem(rows[2],3);
         return;
       }
       const list=document.getElementById('auraXDirectoryList');
@@ -2343,7 +2340,7 @@
         auraXDirectoryUsers=[];
         snap.forEach(docSnap=>{
           const data=docSnap.data()||{};
-          if(data.suspended!==true&&data.banned!==true) auraXDirectoryUsers.push({id:docSnap.id,data});
+          if(data.suspended!==true&&data.banned!==true&&String(data.username||'').toUpperCase()!=='A_UR_A_XX') auraXDirectoryUsers.push({id:docSnap.id,data});
         });
         renderAuraXDirectory();
       }catch(error){
