@@ -1690,45 +1690,33 @@
 
     window.toggleFollow = async function(targetUid, btn) {
       if (!currentUser || !targetUid || targetUid === currentUser.uid) return;
-      const meRef = doc(db, "users", currentUser.uid);
-      const themRef = doc(db, "users", targetUid);
       const isFollowing = followingIds.has(targetUid);
       try {
-        const snap = await getDoc(meRef);
-        if (!snap.exists()) {
-          await setDoc(meRef, {
-            uid: currentUser.uid,
-            displayName: currentUser.displayName || '',
-            email: currentUser.email || '',
-            following: [],
-            followers: [],
-            bio: '',
-            createdAt: serverTimestamp()
-          }, { merge: true });
-        }
-        // hedef kullanıcı belgesi yoksa minimal oluştur
-        const themSnap = await getDoc(themRef);
-        if (!themSnap.exists()) {
-          await setDoc(themRef, { uid: targetUid, following: [], followers: [], bio: '' }, { merge: true });
-        }
-        if (isFollowing) {
-          await updateDoc(meRef, { following: arrayRemove(targetUid) });
-          try { await updateDoc(themRef, { followers: arrayRemove(currentUser.uid) }); } catch (_) {}
-          followingIds.delete(targetUid);
-        } else {
-          await updateDoc(meRef, { following: arrayUnion(targetUid) });
-          try { await updateDoc(themRef, { followers: arrayUnion(currentUser.uid) }); } catch (_) {}
-          followingIds.add(targetUid);
-        }
-        document.querySelectorAll('[data-follow-uid="' + targetUid + '"]').forEach(b => {
-          const on = followingIds.has(targetUid);
-          b.classList.toggle('on', on);
-          b.textContent = on ? 'Takipte' : 'Takip et';
+        const { data, error } = await supabaseClient.rpc('forever_toggle_follow', {
+          p_target_user: targetUid
         });
-        refreshProfileStats();
-      } catch (e) {
-        console.error(e);
-        alert('Takip güncellenemedi: ' + (e.message || e));
+        if (error) throw error;
+        const nowFollowing = Boolean(data);
+        if (nowFollowing) followingIds.add(targetUid);
+        else followingIds.delete(targetUid);
+        document.querySelectorAll('[data-follow-uid="' + targetUid + '"]').forEach(button => {
+          button.classList.toggle('on', nowFollowing);
+          button.textContent = nowFollowing ? 'Takiptesin' : 'Takip et';
+        });
+        await refreshProfileStats();
+        if (auraXActiveProfileUid === targetUid) {
+          const profile = await getDoc(doc(db, 'users', targetUid));
+          if (profile.exists()) {
+            const d = profile.data() || {};
+            const stats = document.getElementById('otherProfileStats');
+            if (stats) stats.innerHTML = '<span><strong>' + (Array.isArray(d.followers) ? d.followers.length : 0) + '</strong> Takipçi</span><span><strong>' + (Array.isArray(d.following) ? d.following.length : 0) + '</strong> Takip</span>';
+          }
+        }
+        return nowFollowing;
+      } catch (error) {
+        console.error(error);
+        alert('Takip güncellenemedi: ' + (error.message || error));
+        return isFollowing;
       }
     };
 
