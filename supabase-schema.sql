@@ -97,27 +97,27 @@ create or replace function private.is_room_member(p_room_id uuid, p_user_id uuid
 returns boolean
 language plpgsql stable security definer
 set search_path = ''
-as $
+as $$
 begin
   return exists (
     select 1 from public.room_members m
     where m.room_id = p_room_id and m.user_id = p_user_id
   );
 end;
-$;
+$$;
 
 create or replace function private.is_conversation_member(p_conversation_id uuid, p_user_id uuid default auth.uid())
 returns boolean
 language plpgsql stable security definer
 set search_path = ''
-as $
+as $$
 begin
   return exists (
     select 1 from public.conversation_members m
     where m.conversation_id = p_conversation_id and m.user_id = p_user_id
   );
 end;
-$;
+$$;
 
 grant execute on function private.is_admin() to authenticated;
 grant execute on function private.is_moderator() to authenticated;
@@ -449,14 +449,14 @@ create or replace function private.is_drawing_member(p_drawing_id uuid, p_user_i
 returns boolean
 language plpgsql stable security definer
 set search_path = ''
-as $
+as $$
 begin
   return exists (
     select 1 from public.drawing_members m
     where m.drawing_id = p_drawing_id and m.user_id = p_user_id
   );
 end;
-$;
+$$;
 grant execute on function private.is_drawing_member(uuid,uuid) to authenticated;
 
 
