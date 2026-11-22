@@ -1216,7 +1216,7 @@
         // Basit: son 30 kaydı çek, client-side filtrele (production'da query ile toUid)
         const snap = await getDoc(doc(db, 'users', currentUser.uid)).catch(() => null);
         // onSnapshot daha iyi ama şimdilik tek seferlik
-        const { getDocs, query, where, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        const { getDocs, query, where, orderBy, limit } = await import('./supabase-compat.js');
         let docs = [];
         try {
           const qq = query(collection(db, 'notifications'), where('toUid', '==', currentUser.uid), limit(25));
@@ -2200,96 +2200,50 @@
       if (el) el.style.display = 'none';
     }
 
-    // Oturum Kontrolü
+    // Supabase oturum kontrolü
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       const authModal = document.getElementById('authModal');
+      const usernameModal = document.getElementById('usernameModal');
       const networkAuthStatus = document.getElementById('networkAuthStatus');
-
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
-
-        // Askıya alınmış hesap: uyarıyı göster, akışı yükleme, oturumu kapat.
-        if (docSnap.exists() && docSnap.data().suspended === true) {
-          showSuspension(docSnap.data().suspendedMessage);
+      if (!user) {
+        authModal.classList.remove('hidden'); usernameModal.classList.add('hidden');
+        if (networkAuthStatus) { networkAuthStatus.textContent = 'Giriş gerekli'; networkAuthStatus.className = 'status-warn'; }
+        return;
+      }
+      try {
+        const profileSnap = await getDoc(doc(db, 'users', user.uid));
+        if (!profileSnap.exists()) {
+          authModal.classList.add('hidden'); usernameModal.classList.remove('hidden');
+          if (networkAuthStatus) { networkAuthStatus.textContent = 'Profil kurulumu'; networkAuthStatus.className = 'status-warn'; }
           return;
         }
-        hideSuspension();
+        const profile = profileSnap.data() || {};
+        currentUser.username = profile.username || '';
+        currentUser.displayName = profile.username || profile.displayName || user.displayName || 'Kullanıcı';
+        currentUser.isPlus = Boolean(profile.isPlus);
+        if (profile.suspended === true || profile.banned === true) { showSuspension(profile.suspendedMessage || 'Hesabınız yönetim tarafından askıya alındı.'); return; }
+        hideSuspension(); authModal.classList.add('hidden'); usernameModal.classList.add('hidden');
         watchModeration(user.uid);
-
-        if (!docSnap.exists()) {
-          document.getElementById('usernameModal').classList.remove('hidden');
-        } else {
-          authModal.classList.add('hidden');
-        }
-
-        const name = user.displayName || user.email.split('@')[0];
+        const name = currentUser.username || currentUser.displayName;
         const initial = name.charAt(0).toUpperCase();
-
-        document.getElementById('userHeaderAvatar').textContent = initial;
-        document.getElementById('userHeaderName').textContent = name;
-        document.getElementById('userHeaderEmail').textContent = user.email;
-
-        const sideAv = document.getElementById('sideUserAvatar'); if (sideAv) sideAv.textContent = initial;
-        const sideNm = document.getElementById('sideUserName'); if (sideNm) sideNm.textContent = name;
-        const sideHd = document.getElementById('sideUserHandle'); if (sideHd) sideHd.textContent = '@' + name.toLowerCase().replace(/\s+/g, '');
-        const postAv = document.getElementById('postCreatorAvatar'); if (postAv) postAv.textContent = initial;
-        if (networkAuthStatus) {
-          networkAuthStatus.textContent = 'Çevrimiçi';
-          networkAuthStatus.className = 'status-ok';
-        }
-
-        await loadFollowing();
-        await loadBlocked();
-        await loadSaves();
-        await refreshProfileStats();
-        listenToPosts();
-        listenToStories();
-      } else {
-        // Aura X yerel oturumu varsa modalı kapat VE akışı yükle
-        try {
-          const aurax = JSON.parse(localStorage.getItem('forever_aurax_user') || 'null');
-          if (aurax && aurax.username) {
-            authModal.classList.add('hidden');
-            const name = aurax.username;
-            const initial = name.charAt(0).toUpperCase();
-            // Sentetik kullanıcı — okuma için yeterli; yazma işlemleri Firebase oturumu ister
-            currentUser = {
-              uid: 'aurax_' + (aurax.auraxUid || aurax.username),
-              displayName: name,
-              email: name + '@aurax.local',
-              photoURL: null,
-              isAuraX: true
-            };
-            const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-            set('userHeaderAvatar', initial);
-            set('userHeaderName', name);
-            set('userHeaderEmail', name + ' (Aura X)');
-            set('sideUserAvatar', initial);
-            set('sideUserName', name);
-            set('sideUserHandle', '@' + name.toLowerCase());
-            set('postCreatorAvatar', initial);
-            if (networkAuthStatus) {
-              networkAuthStatus.textContent = 'Aura X ile bağlı';
-              networkAuthStatus.className = 'status-ok';
-            }
-            // Akışı başlat (Firestore okuma herkese açık)
-            try { listenToPosts(); } catch (e) { console.warn('listenToPosts', e); }
-            try { listenToStories(); } catch (e) { console.warn('listenToStories', e); }
-            return;
-          }
-        } catch (_) {}
-        authModal.classList.remove('hidden');
-        if (networkAuthStatus) {
-          networkAuthStatus.textContent = 'Giriş gerekli';
-          networkAuthStatus.className = 'status-warn';
-        }
+        const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+        set('userHeaderAvatar', initial);
+        const headerName = document.getElementById('userHeaderName');
+        if (headerName) headerName.innerHTML = escapeHTML(name) + foreverBadges(currentUser.isPlus);
+        set('userHeaderEmail', currentUser.isPlus ? 'Forever Plus' : 'Forever üyesi');
+        set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('postCreatorAvatar', initial);
+        if (networkAuthStatus) { networkAuthStatus.textContent = currentUser.isPlus ? 'Forever Plus' : 'Çevrimiçi'; networkAuthStatus.className = 'status-ok'; networkAuthStatus.style.display = 'inline'; }
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
+        listenToPosts(); listenToStories();
+        window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: user.uid, username: currentUser.username, isPlus: currentUser.isPlus } }));
+      } catch (error) {
+        console.error('Forever oturumu hazırlanamadı:', error);
+        showAlert('Profil verileri yüklenemedi: ' + (error.message || error), 'error');
       }
-    });
-  </script>
+    });  </script>
 
-  <script type="module" src="./aurax-baglanti.js"></script>
+  <script type="module" src="./rooms.js"></script>
 </body>
 </html>
 
