@@ -2567,10 +2567,12 @@
           networkAuthStatus.className = 'status-ok';
         }
 
-        await loadFollowing();
-        await loadBlocked();
-        await loadSaves();
-        await refreshProfileStats();
+        await Promise.all([
+          loadFollowing(),
+          loadBlocked(),
+          loadSaves(),
+          refreshProfileStats()
+        ]);
         listenToPosts();
         listenToStories();
       } else {
