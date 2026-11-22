@@ -122,14 +122,14 @@ create policy forever_documents_update on public.forever_documents
 for update to authenticated
 using (
   public.is_forever_admin()
-  or owner_id = auth.uid()
+  or (owner_id = auth.uid() and collection_name not in ('room_members','usernames','room_bans','modlogs'))
   or collection_name in ('posts','users')
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
   or (collection_name = 'room_messages' and public.is_forever_plus() and public.is_forever_room_member(data ->> 'roomId'))
 )
 with check (
   public.is_forever_admin()
-  or owner_id = auth.uid()
+  or (owner_id = auth.uid() and collection_name not in ('room_members','usernames','room_bans','modlogs'))
   or collection_name in ('posts','users')
   or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
   or (collection_name = 'room_messages' and public.is_forever_plus() and public.is_forever_room_member(data ->> 'roomId'))
@@ -295,9 +295,46 @@ declare
   v_count integer;
   v_room_id text;
   v_user_id text;
+  v_username text;
   v_new_media boolean := false;
 begin
+  if not public.is_forever_admin() and tg_op in ('INSERT','UPDATE') then
+    if new.collection_name='users' then
+      new.data := new.data - 'email' - 'firstName' - 'lastName' - 'birthDate' - 'dateOfBirth'
+        - 'ipAddress' - 'ip_address' - 'kvkkAcceptedAt' - 'termsAcceptedAt';
+    elsif new.collection_name in ('posts','stories','room_messages','comments') then
+      new.data := new.data - 'email' - 'authorEmail';
+    end if;
+  end if;
+
   if tg_op='INSERT' and not public.is_forever_admin() then
+    if new.collection_name in ('posts','stories','room_messages') then
+      if new.data ->> 'userId' is distinct from auth.uid()::text then
+        raise exception 'İçerik yalnızca kendi hesabın adına oluşturulabilir.';
+      end if;
+      select data ->> 'username' into v_username
+      from public.forever_documents
+      where collection_name='users' and id=auth.uid()::text
+      limit 1;
+      if v_username is null then
+        raise exception 'Önce Forever profilini tamamlamalısın.';
+      end if;
+      if new.collection_name='room_messages'
+         and new.data ->> 'username' is distinct from v_username then
+        raise exception 'Oda mesajı kullanıcı adı profilinle eşleşmiyor.';
+      elsif new.collection_name in ('posts','stories')
+         and (
+           new.data ->> 'authorUsername' is distinct from v_username
+           or new.data ->> 'authorName' is distinct from v_username
+         ) then
+        raise exception 'Gönderi kullanıcı adı profilinle eşleşmiyor.';
+      end if;
+    elsif new.collection_name='blocks' and new.data ->> 'blockerId' is distinct from auth.uid()::text then
+      raise exception 'Engelleme işlemi yalnızca kendi hesabın adına yapılabilir.';
+    elsif new.collection_name='notifications' and new.data ->> 'fromUid' is distinct from auth.uid()::text then
+      raise exception 'Bildirim yalnızca kendi hesabın adına gönderilebilir.';
+    end if;
+
     if new.collection_name='users' then
       if new.id is distinct from auth.uid()::text
          or new.owner_id is distinct from auth.uid()
@@ -363,6 +400,22 @@ begin
           end if;
         end if;
       end loop;
+    end if;
+
+    if tg_op='UPDATE' and new.collection_name in ('posts','stories','room_messages') then
+      if (new.data ->> 'userId') is distinct from (old.data ->> 'userId')
+         or (new.data ->> 'authorUsername') is distinct from (old.data ->> 'authorUsername')
+         or (new.data ->> 'authorName') is distinct from (old.data ->> 'authorName')
+         or (new.data ->> 'username') is distinct from (old.data ->> 'username')
+         or (new.data ->> 'roomId') is distinct from (old.data ->> 'roomId') then
+        raise exception 'İçeriğin sahibi ve oda kimliği değiştirilemez.';
+      end if;
+    end if;
+
+    if new.collection_name='posts' and tg_op='UPDATE'
+       and (new.data ->> 'imageUrl') is null
+       and not v_is_plus then
+      raise exception 'Sadece metin gönderisi paylaşımı Plus özelliğidir.';
     end if;
 
     if new.collection_name='posts' and tg_op='UPDATE' and old.owner_id is distinct from auth.uid() then
