@@ -1325,6 +1325,8 @@
         set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('postCreatorAvatar', initial);
         await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
         listenToPosts(); listenToStories();
+        const savedIcon = localStorage.getItem('forever_app_icon');
+        if (currentUser.isPlus && savedIcon && typeof window.changeAppIcon === 'function') window.changeAppIcon(savedIcon);
         window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: currentUser.uid, username, isPlus: false } }));
         fxToast('Forever hesabın oluşturuldu! ✨');
       } catch (err) {
