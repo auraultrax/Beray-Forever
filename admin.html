@@ -3,411 +3,430 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#047857">
 <meta name="robots" content="noindex,nofollow">
-<title>Forever Plus · Yönetim Paneli</title>
+<title>Forever · Yönetim</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#06120c;--card:#0d2017;--line:#234a36;--fg:#e8fff1;--muted:#9ab8a6;--acc:#34d399;--ok:#6ee7b7;--bad:#f28b8b;--warn:#e7c16f}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
-  header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
-  h1{font-size:18px;margin:0} h2{font-size:16px;margin:0 0 10px}
-  main{max-width:900px;margin:0 auto;padding:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-  input,textarea,select{width:100%;background:#0c0e12;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
-  textarea{min-height:80px;resize:vertical}
-  button{background:linear-gradient(120deg,#087f55,#34d399);color:#052417;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:800;cursor:pointer}
-  button.sec{background:#222735;color:var(--fg)} button.bad{background:var(--bad)} button.ok{background:var(--ok)} button.warn{background:var(--warn)}
-  button:disabled{opacity:.5;cursor:default}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .row>*{flex:1 1 auto}
-  .tabs{display:flex;gap:8px;margin-bottom:12px} .tabs button{flex:1}
-  .tabs button.on{background:var(--acc);color:#000}
-  .muted{color:var(--muted);font-size:13px}
-  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
-  .tag.bad{background:#3a2020;color:var(--bad)} .tag.ok{background:#1d3324;color:var(--ok)} .tag.warn{background:#3a3020;color:var(--warn)}
-  .hidden{display:none} #msg{padding:10px;border-radius:10px;margin-bottom:12px;background:#222735}
-  label{display:block;margin:8px 0 4px;font-size:13px;color:var(--muted)}
-  pre{white-space:pre-wrap;word-break:break-word;margin:6px 0}
+:root{color-scheme:dark;--bg:#04110c;--surface:rgba(8,31,22,.84);--surface2:rgba(10,42,29,.9);--glass:rgba(255,255,255,.055);--line:rgba(52,211,153,.2);--text:#ecfdf5;--muted:#9bb8aa;--mint:#a7f3d0;--green:#059669;--neon:#34d399;--danger:#fb7185;--warn:#fbbf24;--shadow:0 12px 36px rgba(0,0,0,.28)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:14px/1.55 'Plus Jakarta Sans',system-ui,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 90% 55% at 50% -15%,rgba(16,185,129,.23),transparent 55%),radial-gradient(ellipse 45% 40% at 100% 80%,rgba(52,211,153,.08),transparent 55%);animation:aurora 18s ease-in-out infinite alternate}
+@keyframes aurora{to{filter:hue-rotate(18deg);opacity:.82}}
+header{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px max(18px,calc((100vw - 1080px)/2));border-bottom:1px solid var(--line);background:rgba(4,17,12,.84);backdrop-filter:blur(22px)}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}.logo{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#047857,#34d399);color:#052417;font-weight:900;box-shadow:0 0 22px rgba(52,211,153,.22)}h1{font-size:16px;margin:0;font-weight:800;letter-spacing:-.02em}.subtitle{font-size:11px;color:var(--muted)}
+main{position:relative;z-index:1;width:min(1080px,100%);margin:0 auto;padding:20px 16px 60px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px;backdrop-filter:blur(18px);box-shadow:var(--shadow)}
+h2{font-size:15px;margin:0 0 8px}p{color:var(--muted)}.muted{color:var(--muted);font-size:12px}.small{font-size:11px;color:var(--muted)}
+input,textarea,select{width:100%;background:rgba(0,0,0,.23);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font:inherit;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(52,211,153,.1)}textarea{min-height:76px;resize:vertical}
+label{display:block;font-size:12px;font-weight:700;color:var(--mint);margin:10px 0 5px}
+button,a.action{border:1px solid transparent;border-radius:12px;padding:9px 13px;background:linear-gradient(120deg,#047857,#34d399);color:#052417;font:inherit;font-weight:800;cursor:pointer;text-decoration:none}
+button.secondary{background:rgba(255,255,255,.06);border-color:var(--line);color:var(--text)}button.good{background:rgba(52,211,153,.16);border-color:rgba(52,211,153,.3);color:var(--mint)}button.warning{background:rgba(251,191,36,.14);border-color:rgba(251,191,36,.25);color:#fcd34d}button.danger{background:rgba(251,113,133,.13);border-color:rgba(251,113,133,.25);color:#fda4af}
+button:disabled{opacity:.5;cursor:wait}.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.row>*{flex:1 1 auto}.row .fixed{flex:0 0 auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}.tabs button{flex:1 1 135px;background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--muted)}.tabs button.active{background:linear-gradient(120deg,#087f55,#34d399);color:#052417;border-color:transparent}
+.hidden{display:none!important}.notice{padding:12px 14px;margin-bottom:14px;border-radius:13px;border:1px solid var(--line);background:var(--glass)}.notice.error{border-color:rgba(251,113,133,.35);color:#fda4af}.notice.success{border-color:rgba(52,211,153,.35);color:var(--mint)}
+.tag{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid var(--line);border-radius:99px;color:var(--mint);font-size:10px;font-weight:800}.tag.warn{color:#fcd34d;border-color:rgba(251,191,36,.3)}.tag.bad{color:#fda4af;border-color:rgba(251,113,133,.3)}
+.user-card,.item-card{padding:14px;border-radius:15px;border:1px solid var(--line);background:var(--glass);margin-bottom:10px}.user-head{display:flex;align-items:flex-start;gap:12px}.avatar{width:37px;height:37px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(135deg,#087f55,#34d399);color:#052417;font-weight:900}
+.user-meta{flex:1;min-width:0}.uid{overflow-wrap:anywhere}.detail-panel{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:13px;background:rgba(0,0,0,.17)}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);font:12px/1.5 ui-monospace,monospace}
+footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:22px}
+@media(max-width:560px){header{padding:12px}main{padding:14px 10px 45px}.card{padding:13px}.tabs button{flex:1 1 calc(50% - 8px)}}
 </style>
 </head>
 <body>
-<script src="./plus-config.js"></script>
 <header>
-  <h1>Forever Plus · Yönetim</h1>
-  <div class="row" style="flex:0 0 auto"><span id="who" class="muted"></span><button class="sec hidden" id="outBtn">Çıkış</button></div>
+  <div class="brand"><div class="logo">F</div><div><h1>Forever Yönetim</h1><div class="subtitle">Tek hesap · Güvenli yönetim merkezi</div></div></div>
+  <div class="row" style="flex:0 0 auto"><span class="small" id="who"></span><button id="outBtn" class="secondary hidden">Çıkış</button></div>
 </header>
 <main>
-<script>
-  // Modül yüklenemezse sessiz kalmasın.
-  window.addEventListener('error', e => { var m=document.getElementById('msg'); m.textContent='Sayfa hatası: '+(e.message||'bilinmiyor'); m.classList.remove('hidden'); });
-  setTimeout(function(){ if(!window.__adminReady){ var m=document.getElementById('msg'); m.textContent='Sayfa kodu yüklenemedi. İnternetini kontrol et ve sayfayı Ctrl+Shift+R ile yenile.'; m.classList.remove('hidden'); } }, 5000);
-</script>
-  <div id="msg" class="hidden"></div>
-
+  <div id="msg" class="notice hidden" role="status" aria-live="polite"></div>
   <section id="loginBox" class="card">
-    <h2>Yönetici girişi</h2>
-    <label>E-posta</label><input id="email" type="email" autocomplete="username">
-    <label>Şifre</label><input id="pass" type="password" autocomplete="current-password">
-    <div style="margin-top:12px"><button id="loginBtn">Giriş yap</button> <button id="recheckBtn" class="sec hidden">Doğruladım, devam et</button></div>
-    <p class="muted">Yalnızca yönetici hesabı girebilir (denetim sunucuda yapılır).</p>
+    <div class="tag">NORMAL FOREVER HESABI</div>
+    <h2 style="font-size:22px;margin-top:9px">Yönetim paneline giriş</h2>
+    <p class="muted">Forever'da kullandığın aynı e-posta ve şifreyle giriş yap. Yönetici rolün varsa panel otomatik açılır.</p>
+    <form id="loginForm">
+      <label for="email">E-posta</label><input id="email" type="email" autocomplete="username" required>
+      <label for="pass">Şifre</label><input id="pass" type="password" autocomplete="current-password" required>
+      <button id="loginBtn" type="submit" style="margin-top:14px">Giriş yap</button>
+    </form>
+    <p class="small" style="margin-bottom:0">Bu sayfa ayrı bir admin hesabı veya ikinci şifre oluşturmaz.</p>
+  </section>
+
+  <section id="deniedBox" class="card hidden">
+    <div class="tag bad">YÖNETİCİ YETKİSİ YOK</div>
+    <h2 style="margin-top:9px">Bu hesap yönetici olarak tanımlanmamış.</h2>
+    <p class="muted">Normal Forever hesabın açık kalır. Yönetici erişimi yalnızca Supabase'deki user_roles tablosunda admin rolü olan hesaba verilir.</p>
+    <a href="./index.html" class="action">Forever'a dön</a>
   </section>
 
   <section id="app" class="hidden">
-    <div class="tabs">
-      <button id="tabUsers" class="on">Kullanıcılar</button>
-      <button id="tabPlus" class="sec">Plus başvuruları</button>
-      <button id="tabReports" class="sec">Şikayetler</button>
-      <button id="tabLogs" class="sec">Kayıtlar</button>
-      <button id="tabSecurity" class="sec">IP güvenliği</button>
+    <div class="card">
+      <div class="row">
+        <div><div class="tag">YÖNETİCİ OTURUMU</div><h2 style="font-size:20px;margin-top:8px">Kontrol merkezi</h2><div class="muted">Plus, kullanıcı güvenliği ve topluluk yönetimi.</div></div>
+        <div class="fixed"><button id="refreshCurrent" class="secondary">↻ Yenile</button></div>
+      </div>
     </div>
+    <nav class="tabs" aria-label="Yönetim bölümleri">
+      <button class="active" data-tab="users">Kullanıcılar</button>
+      <button data-tab="plus">Plus başvuruları</button>
+      <button data-tab="reports">Şikayetler</button>
+      <button data-tab="logs">Yönetim kayıtları</button>
+      <button data-tab="security">IP güvenliği</button>
+    </nav>
 
-    <div id="usersPane">
+    <section id="usersPane">
       <div class="card">
-        <div class="row">
-          <input id="q" placeholder="Kullanıcı adı, ad veya e-posta ara…">
-          <button id="searchBtn" style="flex:0 0 auto">Ara</button>
-        </div>
+        <h2>Kullanıcılar</h2>
+        <p class="muted">Kullanıcıların herkese açık profil bilgileri. E-posta ve doğum tarihi bu listede gösterilmez.</p>
+        <div class="row"><input id="userSearch" placeholder="Kullanıcı adı, görünen ad veya UID ara"><button id="userSearchBtn" class="fixed">Ara</button></div>
       </div>
       <div id="userList"></div>
-    </div>
+    </section>
 
-    <div id="plusPane" class="hidden">
-      <div class="card"><h2>Bekleyen Plus başvuruları</h2><p class="muted">Başvuruyu incele; onayladığında kullanıcının Plus yetkileri açılır.</p><button id="refreshPlusBtn" class="sec">Yenile</button></div>
+    <section id="plusPane" class="hidden">
+      <div class="card"><h2>Forever Plus başvuruları</h2><p class="muted">Başvuruyu inceledikten sonra onayla veya reddet. Onay, kullanıcı profilindeki Plus yetkisini veritabanında açar.</p><button id="refreshPlusBtn" class="secondary">Başvuruları yenile</button></div>
       <div id="plusList"></div>
-    </div>
-    <div id="reportsPane" class="hidden">
+    </section>
+
+    <section id="reportsPane" class="hidden">
+      <div class="card"><h2>Topluluk şikayetleri</h2><p class="muted">Açık şikayetleri incele, gerektiğinde çözüldü olarak işaretle.</p><button id="refreshReportsBtn" class="secondary">Şikayetleri yenile</button></div>
       <div id="reportList"></div>
-    </div>
-    <div id="logsPane" class="hidden">
+    </section>
+
+    <section id="logsPane" class="hidden">
+      <div class="card"><h2>Yönetim işlem kayıtları</h2><p class="muted">Plus kararları ve hesap kısıtlama işlemleri burada denetim izi olarak saklanır.</p><button id="refreshLogsBtn" class="secondary">Kayıtları yenile</button></div>
       <div id="logList"></div>
-    </div>
-    <div id="securityPane" class="hidden">
-      <div class="card"><h2>IP ve oturum güvenlik kayıtları</h2><p class="muted">Yalnızca yetkili yönetici görebilir. IP adresleri sunucuda şifreli saklanır ve 30 gün sonra temizlenir.</p><button id="refreshSecurityBtn" class="sec">Kayıtları yükle</button></div>
+    </section>
+
+    <section id="securityPane" class="hidden">
+      <div class="card"><h2>IP ve oturum güvenliği</h2><p class="muted">IP adresleri Edge Function tarafında şifrelenir. Bu bölüm yalnızca admin rolü doğrulandıktan sonra sunucudan kayıt ister.</p><div class="row"><button id="refreshSecurityBtn" class="secondary">Güvenlik kayıtlarını yükle</button><span class="small">Saklama süresi: 30 gün</span></div></div>
       <div id="securityList"></div>
-    </div>
+    </section>
   </section>
+  <footer><span>Forever · Yönetim Merkezi</span><a href="./index.html" style="color:var(--mint);text-decoration:none">Ana uygulamaya dön</a></footer>
 </main>
-
+<script src="./supabase-config.js"></script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendEmailVerification }
-  from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, limit, serverTimestamp, deleteField, increment }
-  from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { supabase } from './supabase-client.js';
 
-// Forever ile aynı Firebase projesi (herkese açık istemci yapılandırması; güvenlik Firestore kurallarındadır).
-const app = initializeApp({
-  apiKey: "AIzaSyDIrNvNpe6Y_51JMI5ZwIbjRKrzXoWQxsA",
-  authDomain: "project-c443f992-d19d-4d35-a16.firebaseapp.com",
-  projectId: "project-c443f992-d19d-4d35-a16",
-  storageBucket: "project-c443f992-d19d-4d35-a16.firebasestorage.app",
-  messagingSenderId: "509248282221",
-  appId: "1:509248282221:web:84b49536d26d7d755ba964"
-});
-const auth = getAuth(app);
-const db = getFirestore(app);
+const $=id=>document.getElementById(id);
+let me=null;
+let users=[];
+let currentTab='users';
+let entering=false;
 
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const SUSP_MSG = 'Hesabınız askıya alındı';
-const BAN_MSG = 'Hesabınız kalıcı olarak yasaklandı';
-const DAY = 86400000;
-let me = null, users = [];
+function esc(value){
+  return String(value??'').replace(/[&<>"']/g,function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+function showMessage(message,type){
+  const el=$('msg');
+  el.textContent=message;
+  el.className='notice'+(type?' '+type:'');
+  el.classList.remove('hidden');
+}
+function clearMessage(){$('msg').classList.add('hidden');}
+function formatDate(value){
+  if(!value)return '—';
+  const d=new Date(value);
+  return Number.isNaN(d.getTime())?'—':d.toLocaleString('tr-TR');
+}
+function shortId(value){return value?String(value).slice(0,8)+'…':'—';}
 
-function say(text, kind) {
-  const m = $('msg'); m.textContent = text; m.classList.remove('hidden');
-  m.style.color = kind === 'bad' ? 'var(--bad)' : kind === 'ok' ? 'var(--ok)' : 'var(--fg)';
-}
-function clearMsg() { $('msg').classList.add('hidden'); }
-
-window.__adminReady = true;
-$('loginBtn').onclick = async () => {
-  say('Giriş yapılıyor…');
-  try { await signInWithEmailAndPassword(auth, $('email').value.trim(), $('pass').value); }
-  catch (e) { say('Giriş başarısız: ' + (e.code || e.message), 'bad'); }
-};
-$('pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
-$('outBtn').onclick = () => signOut(auth);
-
-async function enter(user) {
-  me = null; $('app').classList.add('hidden');
-  if (!user.emailVerified) {
-    try { await sendEmailVerification(user); } catch (e) {}
-    say('E-postan doğrulanmamış. Gelen kutuna (ve spam klasörüne) bir doğrulama bağlantısı gönderdim. Bağlantıya tıkla, sonra aşağıdaki "Doğruladım" düğmesine bas.', 'bad');
-    $('recheckBtn').classList.remove('hidden'); return;
-  }
-  $('recheckBtn').classList.add('hidden');
-  // Yönetici denetimi SUNUCUDA yapılır (Firestore kuralları): yönetici olmayan hesap bu kaydı okuyamaz.
-  try { await getDocs(query(collection(db, 'modlogs'), limit(1))); }
-  catch (e) { say('Bu hesap yönetici değil.', 'bad'); await signOut(auth); return; }
-  me = user; $('app').classList.remove('hidden'); clearMsg();
-  loadUsers();
-}
-$('recheckBtn').onclick = async () => {
-  if (!auth.currentUser) return;
-  try { await auth.currentUser.reload(); await auth.currentUser.getIdToken(true); } catch (e) {}
-  enter(auth.currentUser);
-};
-onAuthStateChanged(auth, async user => {
-  me = null;
-  $('app').classList.add('hidden'); $('loginBox').classList.toggle('hidden', !!user);
-  $('outBtn').classList.toggle('hidden', !user); $('who').textContent = user ? user.email : '';
-  if (!user) return;
-  enter(user);
-});
-
-function showTab(t) {
-  for (const k of ['users','reports','logs']) {
-    $(k + 'Pane').classList.toggle('hidden', k !== t);
-    $('tab' + k[0].toUpperCase() + k.slice(1)).className = k === t ? 'on' : 'sec';
-  }
-  if (t === 'reports') loadReports();
-  if (t === 'logs') loadLogs();
-}
-$('tabUsers').onclick = () => showTab('users');
-$('tabReports').onclick = () => showTab('reports');
-$('tabLogs').onclick = () => showTab('logs');
-
-// ---------- kayıt (denetim izi) ----------
-async function logAction(action, targetUid, detail) {
-  try {
-    await addDoc(collection(db, 'modlogs'), {
-      adminUid: me.uid, adminEmail: me.email || '', action, targetUid: targetUid || '',
-      detail: String(detail || '').slice(0, 500), createdAt: serverTimestamp()
-    });
-  } catch (e) { console.warn('log yazılamadı', e); }
-}
-async function notify(uid, text) {
-  await addDoc(collection(db, 'notifications'), {
-    toUid: uid, fromUid: me.uid, fromName: 'Forever Yönetimi', type: 'moderation',
-    text, read: false, createdAt: serverTimestamp()
-  }).catch(() => {});
-}
-
-// ---------- kullanıcılar ----------
-async function loadUsers() {
-  $('userList').innerHTML = '<p class="muted">Yükleniyor…</p>';
-  try {
-    const s = await getDocs(query(collection(db, 'users'), limit(500)));
-    users = []; s.forEach(d => users.push({ id: d.id, ...d.data() }));
-    renderUsers();
-  } catch (e) { $('userList').innerHTML = ''; say('Kullanıcılar okunamadı: ' + e.message, 'bad'); }
-}
-$('searchBtn').onclick = renderUsers;
-$('q').addEventListener('keydown', e => { if (e.key === 'Enter') renderUsers(); });
-
-async function searchByPostAuthor(name) {
-  try {
-    const s = await getDocs(query(collection(db, 'posts'), where('authorName', '==', name), limit(20)));
-    const seen = new Map(); s.forEach(d => { const x = d.data(); if (x.userId) seen.set(x.userId, x.authorName); });
-    if (!seen.size) { $('userList').innerHTML = '<p class="muted">Sonuç yok. (Tam adı, büyük/küçük harfe dikkat ederek yaz, ya da Şikayetler sekmesinden "Yazarı yönet"e bas.)</p>'; return; }
-    $('userList').innerHTML = [...seen].map(([uid, n]) => `<div class="card"><strong>${esc(n)}</strong> <span class="muted">${esc(uid)}</span>
-      <div style="margin-top:8px"><button data-m="${esc(uid)}" data-n="${esc(n)}">Yönet</button></div></div>`).join('');
-    document.querySelectorAll('#userList [data-m]').forEach(b => b.onclick = () => manageUid(b.dataset.m, b.dataset.n));
-  } catch (e) { say('Arama başarısız: ' + e.message, 'bad'); }
-}
-function stateTag(u) {
-  if (u.banned) return '<span class="tag bad">Yasaklı</span>';
-  if (u.suspended) return '<span class="tag bad">Askıda</span>';
-  if ((u.restrictedUntil || 0) > Date.now()) return '<span class="tag warn">Kısıtlı · ' + new Date(u.restrictedUntil).toLocaleDateString('tr-TR') + '\'e kadar</span>';
-  return '<span class="tag ok">Aktif</span>';
-}
-function isLimited(u) { return u.banned || u.suspended || (u.restrictedUntil || 0) > Date.now(); }
-
-function renderUsers() {
-  const q = $('q').value.trim().toLowerCase();
-  const list = users.filter(u => !q ||
-    [u.username, u.displayName, u.name, u.email, u.id].some(v => String(v || '').toLowerCase().includes(q))).slice(0, 60);
-  if (!list.length) {
-    $('userList').innerHTML = '<p class="muted">Kullanıcı listesinde yok. Gönderilerdeki yazar adından aranıyor…</p>';
-    if (q) searchByPostAuthor($('q').value.trim());
-    return;
-  }
-  $('userList').innerHTML = list.map(u => `
-    <div class="card" data-uid="${esc(u.id)}">
-      <div class="row">
-        <div style="flex:1 1 200px">
-          <strong>@${esc(u.username || '—')}</strong> ${stateTag(u)}
-          ${u.warnCount ? `<span class="tag warn">${esc(u.warnCount)} uyarı</span>` : ''}
-          <div class="muted">${esc(u.displayName || u.name || '')} ${u.email ? '· ' + esc(u.email) : ''}</div>
-          <div class="muted">uid: ${esc(u.id)}</div>
-          ${u.suspendedReason ? `<div class="muted">Sebep: ${esc(u.suspendedReason)}</div>` : ''}
-          ${u.restrictedReason ? `<div class="muted">Kısıtlama sebebi: ${esc(u.restrictedReason)}</div>` : ''}
-        </div>
-        <button data-act="open" class="sec" style="flex:0 0 auto">Yönet</button>
-      </div>
-      <div class="panel hidden"></div>
-    </div>`).join('');
-  document.querySelectorAll('#userList [data-act=open]').forEach(b => b.onclick = () => openPanel(b.closest('.card')));
-}
-
-function openPanel(card) {
-  const u = users.find(x => x.id === card.dataset.uid), p = card.querySelector('.panel');
-  if (!p.classList.contains('hidden')) { p.classList.add('hidden'); return; }
-  p.classList.remove('hidden');
-  p.innerHTML = `
-    <label>Sebep (yalnızca yönetim görür)</label>
-    <input data-f="reason" placeholder="ör. hakaret / tehdit">
-    <label>Kullanıcıya gösterilecek mesaj (boşsa varsayılan)</label>
-    <textarea data-f="message" placeholder="Boş bırakırsan hazır mesaj kullanılır"></textarea>
-    <label>Kısıtlama süresi (gün)</label>
-    <input data-f="days" type="number" min="1" max="365" value="7">
-    <div class="row" style="margin-top:10px">
-      <button class="sec" data-do="warn">Uyar</button>
-      <button class="warn" data-do="restrict">Kısıtla</button>
-      <button class="bad" data-do="suspend">Askıya al</button>
-      <button class="bad" data-do="ban">Kalıcı yasakla</button>
-      ${isLimited(u) ? '<button class="ok" data-do="lift">Tüm kısıtları kaldır</button>' : ''}
-    </div>
-    <div style="margin-top:10px"><button class="sec" data-do="posts">Gönderilerini göster / sil</button></div>
-    <div data-posts class="hidden" style="margin-top:10px"></div>`;
-  const val = f => p.querySelector(`[data-f=${f}]`).value.trim();
-  const need = () => { const r = val('reason'); if (!r) { say('Önce bir sebep yaz (kayıt için gerekli).', 'bad'); return null; } return r; };
-  const act = n => p.querySelector(`[data-do=${n}]`);
-  act('warn').onclick = () => { const r = need(); if (r) warn(u, r, val('message')); };
-  act('restrict').onclick = () => { const r = need(); if (r) restrict(u, r, val('message'), parseInt(val('days'), 10)); };
-  act('suspend').onclick = () => { const r = need(); if (r) suspend(u, r, val('message'), false); };
-  act('ban').onclick = () => { const r = need(); if (r) suspend(u, r, val('message'), true); };
-  const l = act('lift'); if (l) l.onclick = () => lift(u);
-  act('posts').onclick = () => showPosts(u, p.querySelector('[data-posts]'));
-}
-
-async function run(fn, okMsg) {
-  try { await fn(); say(okMsg, 'ok'); await loadUsers(); }
-  catch (e) { say('İşlem başarısız: ' + e.message, 'bad'); }
-}
-const label = u => '@' + (u.username || u.id);
-
-async function warn(u, reason, message) {
-  if (!confirm(label(u) + ' uyarılsın mı?')) return;
-  const text = message || 'Topluluk kurallarını ihlal ettiniz. Tekrarı hâlinde hesabınız kısıtlanabilir.';
-  await run(async () => {
-    await setDoc(doc(db, 'users', u.id), { warnCount: increment(1), lastWarning: text }, { merge: true });
-    await notify(u.id, text); await logAction('warn', u.id, reason);
-  }, 'Kullanıcı uyarıldı.');
-}
-async function restrict(u, reason, message, days) {
-  if (!(days >= 1 && days <= 365)) { say('Gün sayısı 1-365 arasında olmalı.', 'bad'); return; }
-  if (!confirm(`${label(u)} ${days} gün kısıtlansın mı? (okuyabilir, yazamaz)`)) return;
-  const text = message || `Hesabınız ${days} gün boyunca kısıtlandı: gönderi, yorum ve beğeni yapamazsınız.`;
-  await run(async () => {
-    await setDoc(doc(db, 'users', u.id), { restrictedUntil: Date.now() + days * DAY, restrictedReason: reason }, { merge: true });
-    await notify(u.id, text); await logAction('restrict', u.id, `${days} gün · ${reason}`);
-  }, 'Kullanıcı kısıtlandı.');
-}
-async function suspend(u, reason, message, permanent) {
-  if (!confirm(`${label(u)} ${permanent ? 'KALICI OLARAK YASAKLANSIN' : 'askıya alınsın'} mı?`)) return;
-  const text = message || (permanent ? BAN_MSG : SUSP_MSG);
-  await run(async () => {
-    await setDoc(doc(db, 'users', u.id), {
-      suspended: true, banned: !!permanent, suspendedReason: reason, suspendedMessage: text,
-      suspendedAt: serverTimestamp(), suspendedBy: me.uid
-    }, { merge: true });
-    await notify(u.id, text); await logAction(permanent ? 'ban' : 'suspend', u.id, reason);
-  }, permanent ? 'Kullanıcı kalıcı olarak yasaklandı.' : 'Hesap askıya alındı.');
-}
-async function lift(u) {
-  if (!confirm(label(u) + ' için tüm kısıtlar kaldırılsın mı?')) return;
-  await run(async () => {
-    await setDoc(doc(db, 'users', u.id), {
-      suspended: false, banned: false, suspendedReason: deleteField(), suspendedMessage: deleteField(),
-      suspendedAt: deleteField(), suspendedBy: deleteField(),
-      restrictedUntil: deleteField(), restrictedReason: deleteField()
-    }, { merge: true });
-    await logAction('lift', u.id, '');
-  }, 'Kısıtlar kaldırıldı.');
-}
-
-async function showPosts(u, box) {
-  box.classList.remove('hidden'); box.innerHTML = '<p class="muted">Yükleniyor…</p>';
-  try {
-    const s = await getDocs(query(collection(db, 'posts'), where('userId', '==', u.id), limit(50)));
-    const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
-    if (!rows.length) { box.innerHTML = '<p class="muted">Gönderi yok.</p>'; return; }
-    box.innerHTML = rows.map(r => `
-      <div class="card"><pre>${esc(String(r.content || '').slice(0, 400))}</pre>
-        <button class="bad" data-del="${esc(r.id)}">Gönderiyi sil</button></div>`).join('');
-    box.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-      if (!confirm('Bu gönderi silinsin mi?')) return;
-      try { await deleteDoc(doc(db, 'posts', b.dataset.del)); await logAction('delete_post', u.id, b.dataset.del); b.closest('.card').remove(); }
-      catch (e) { say('Silinemedi: ' + e.message, 'bad'); }
-    });
-  } catch (e) { box.innerHTML = ''; say('Gönderiler okunamadı: ' + e.message, 'bad'); }
-}
-
-// Kullanıcı belgesi olmasa bile (yalnızca gönderisi varsa) yönetilebilsin.
-async function manageUid(uid, nameHint) {
-  let u = users.find(x => x.id === uid);
-  if (!u) {
-    let data = null;
-    try { const d = await getDoc(doc(db, 'users', uid)); if (d.exists()) data = d.data(); } catch (e) {}
-    u = { id: uid, ...(data || { username: nameHint || '', _stub: true }) };
-    users.unshift(u);
-  }
-  showTab('users'); $('q').value = uid; renderUsers();
-  const card = document.querySelector(`#userList [data-uid="${CSS.escape(uid)}"]`);
-  if (card) openPanel(card);
-}
-
-// ---------- şikayetler ----------
-async function loadReports() {
-  $('reportList').innerHTML = '<p class="muted">Yükleniyor…</p>';
-  try {
-    const s = await getDocs(query(collection(db, 'reports'), limit(200)));
-    const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
-    rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-    if (!rows.length) { $('reportList').innerHTML = '<p class="muted">Şikayet yok.</p>'; return; }
-    // Gönderi şikayetlerinde yazarı bul
-    for (const r of rows) {
-      if (r.type === 'post' && r.targetId) {
-        try { const ps = await getDoc(doc(db, 'posts', r.targetId));
-          if (ps.exists()) { const d = ps.data(); r._author = d.userId || ''; r._name = d.authorName || ''; r._text = String(d.content || '').slice(0, 300); }
-          else r._gone = true; } catch (e) {}
-      }
+async function enter(user){
+  if(entering)return;
+  entering=true;
+  me=user||null;
+  $('app').classList.add('hidden');
+  $('deniedBox').classList.add('hidden');
+  $('loginBox').classList.toggle('hidden',!!user);
+  $('outBtn').classList.toggle('hidden',!user);
+  $('who').textContent=user?(user.email||'Oturum açık'):'';
+  if(!user){entering=false;return;}
+  try{
+    const {data:roles,error}=await supabase.from('user_roles').select('role').eq('user_id',user.id);
+    if(error)throw error;
+    const allowed=(roles||[]).some(r=>r.role==='admin');
+    if(!allowed){
+      $('deniedBox').classList.remove('hidden');
+      $('loginBox').classList.add('hidden');
+      showMessage('Bu hesapta yönetici rolü bulunamadı. Ana uygulamayı kullanmaya devam edebilirsin.','error');
+      entering=false;
+      return;
     }
-    $('reportList').innerHTML = rows.map(r => `
-      <div class="card">
-        <span class="tag ${r.status === 'open' ? 'warn' : 'ok'}">${esc(r.status || 'open')}</span>
-        <strong> ${esc(r.type || '')}</strong> <span class="muted">hedef: ${esc(r.targetId || '')}</span>
-        <pre>${esc(r.reason || '')}</pre>
-        ${r._text ? `<div class="muted">Gönderi: <em>${esc(r._text)}</em></div>` : ''}
-        ${r._name ? `<div class="muted">Yazar: <strong>${esc(r._name)}</strong> (${esc(r._author)})</div>` : ''}
-        ${r._gone ? '<div class="muted">Gönderi artık yok.</div>' : ''}
-        <div class="muted">bildiren: ${esc(r.reporterId || '')} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div>
-        <div class="row" style="margin-top:8px">
-          ${r._author ? `<button data-manage="${esc(r._author)}" data-name="${esc(r._name)}">Yazarı yönet</button>` : ''}
-          ${r.type === 'post' ? `<button class="sec" data-delpost="${esc(r.targetId)}" data-rid="${esc(r.id)}">Gönderiyi sil</button>` : ''}
-          ${r.status === 'open' ? `<button class="sec" data-rid="${esc(r.id)}" data-resolve="1">Çözüldü say</button>` : ''}
-        </div>
-      </div>`).join('');
-    document.querySelectorAll('#reportList [data-manage]').forEach(b => b.onclick = () => manageUid(b.dataset.manage, b.dataset.name));
-    document.querySelectorAll('#reportList [data-resolve]').forEach(b => b.onclick = async () => {
-      try { await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' }); await logAction('resolve_report', '', b.dataset.rid); loadReports(); }
-      catch (e) { say('Güncellenemedi: ' + e.message, 'bad'); }
-    });
-    document.querySelectorAll('#reportList [data-delpost]').forEach(b => b.onclick = async () => {
-      if (!confirm('Şikayet edilen gönderi silinsin mi?')) return;
-      try {
-        await deleteDoc(doc(db, 'posts', b.dataset.delpost));
-        await updateDoc(doc(db, 'reports', b.dataset.rid), { status: 'resolved' });
-        await logAction('delete_post', '', b.dataset.delpost); loadReports();
-      } catch (e) { say('Silinemedi: ' + e.message, 'bad'); }
-    });
-  } catch (e) { $('reportList').innerHTML = ''; say('Şikayetler okunamadı: ' + e.message, 'bad'); }
+    $('loginBox').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    clearMessage();
+    await loadUsers();
+  }catch(error){
+    showMessage('Yönetici yetkisi doğrulanamadı: '+(error.message||'Supabase bağlantısı başarısız.'),'error');
+    $('loginBox').classList.remove('hidden');
+  }finally{entering=false;}
 }
 
-// ---------- kayıtlar ----------
-async function loadLogs() {
-  $('logList').innerHTML = '<p class="muted">Yükleniyor…</p>';
-  try {
-    const s = await getDocs(query(collection(db, 'modlogs'), limit(300)));
-    const rows = []; s.forEach(d => rows.push({ id: d.id, ...d.data() }));
-    rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-    if (!rows.length) { $('logList').innerHTML = '<p class="muted">Henüz kayıt yok.</p>'; return; }
-    $('logList').innerHTML = rows.map(r => `
-      <div class="card"><strong>${esc(r.action)}</strong> <span class="muted">${esc(r.targetUid)}</span>
-        <pre>${esc(r.detail)}</pre>
-        <div class="muted">${esc(r.adminEmail)} · ${r.createdAt?.seconds ? new Date(r.createdAt.seconds * 1000).toLocaleString('tr-TR') : ''}</div></div>`).join('');
-  } catch (e) { $('logList').innerHTML = ''; say('Kayıtlar okunamadı: ' + e.message, 'bad'); }
+$('loginForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button=$('loginBtn');
+  button.disabled=true;button.textContent='Giriş yapılıyor…';
+  try{
+    const {data,error}=await supabase.auth.signInWithPassword({
+      email:$('email').value.trim(),password:$('pass').value
+    });
+    if(error)throw error;
+    await enter(data.user);
+  }catch(error){
+    showMessage('Giriş yapılamadı: '+(error.message||'E-posta veya şifre hatalı.'),'error');
+  }finally{button.disabled=false;button.textContent='Giriş yap';}
+});
+$('outBtn').onclick=async()=>{
+  const {error}=await supabase.auth.signOut();
+  if(error)showMessage(error.message,'error');
+  else location.href='./index.html';
+};
+
+supabase.auth.onAuthStateChange((_event,session)=>{
+  queueMicrotask(()=>enter(session?.user||null));
+});
+
+function setTab(tab){
+  currentTab=tab;
+  ['users','plus','reports','logs','security'].forEach(name=>{
+    $(name+'Pane').classList.toggle('hidden',name!==tab);
+    document.querySelectorAll('[data-tab]').forEach(button=>{
+      button.classList.toggle('active',button.dataset.tab===tab);
+    });
+  });
+  clearMessage();
+  if(tab==='users')loadUsers();
+  if(tab==='plus')loadPlus();
+  if(tab==='reports')loadReports();
+  if(tab==='logs')loadLogs();
+  if(tab==='security')loadSecurity();
+}
+document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.tab)));
+$('refreshCurrent').onclick=()=>setTab(currentTab);
+$('refreshPlusBtn').onclick=loadPlus;
+$('refreshReportsBtn').onclick=loadReports;
+$('refreshLogsBtn').onclick=loadLogs;
+$('refreshSecurityBtn').onclick=loadSecurity;
+$('userSearchBtn').onclick=renderUsers;
+$('userSearch').addEventListener('keydown',event=>{if(event.key==='Enter')renderUsers();});
+
+async function logAction(action,targetUid,detail){
+  const {error}=await supabase.from('admin_activity_logs').insert({
+    admin_id:me.id,action,target_user_id:targetUid||null,
+    detail:detail||{}
+  });
+  if(error)console.warn('Yönetim işlem kaydı yazılamadı:',error.message);
+}
+
+async function loadUsers(){
+  $('userList').innerHTML='<div class="card muted">Kullanıcılar yükleniyor…</div>';
+  try{
+    const [profilesResult,restrictionsResult]=await Promise.all([
+      supabase.from('profiles').select('id,username,display_name,plus_member,created_at').order('created_at',{ascending:false}).limit(500),
+      supabase.from('account_restrictions').select('user_id,suspended,banned,restricted_until,reason,message')
+    ]);
+    if(profilesResult.error)throw profilesResult.error;
+    if(restrictionsResult.error)throw restrictionsResult.error;
+    const restrictionMap=new Map((restrictionsResult.data||[]).map(r=>[r.user_id,r]));
+    users=(profilesResult.data||[]).map(p=>({...p,restriction:restrictionMap.get(p.id)||null}));
+    renderUsers();
+  }catch(error){
+    $('userList').innerHTML='';
+    showMessage('Kullanıcılar yüklenemedi: '+error.message,'error');
+  }
+}
+
+function userStatus(user){
+  const r=user.restriction||{};
+  if(r.banned)return '<span class="tag bad">Kalıcı yasaklı</span>';
+  if(r.suspended)return '<span class="tag bad">Askıda</span>';
+  if(r.restricted_until&&new Date(r.restricted_until)>new Date())return '<span class="tag warn">Kısıtlı</span>';
+  return '<span class="tag">Aktif</span>';
+}
+function renderUsers(){
+  const query=$('userSearch').value.trim().toLowerCase();
+  const rows=users.filter(u=>!query||
+    [u.username,u.display_name,u.id].some(v=>String(v||'').toLowerCase().includes(query)));
+  if(!rows.length){$('userList').innerHTML='<div class="card muted">Aramana uygun kullanıcı yok.</div>';return;}
+  $('userList').innerHTML=rows.slice(0,100).map(u=>{
+    const name=u.display_name||u.username||'Forever üyesi';
+    return '<article class="user-card" data-user="'+esc(u.id)+'">'+
+      '<div class="user-head"><div class="avatar">'+esc(name.charAt(0).toUpperCase())+'</div>'+
+      '<div class="user-meta"><strong>'+esc(name)+'</strong> '+userStatus(u)+' '+
+      (u.plus_member?'<span class="tag">✦ PLUS</span>':'')+
+      '<div class="muted">@'+esc(u.username||'—')+'</div><div class="small uid">UID: '+esc(u.id)+'</div>'+
+      '<div class="small">Kayıt: '+esc(formatDate(u.created_at))+'</div></div>'+
+      '<button class="secondary fixed" data-open="'+esc(u.id)+'">Yönet</button></div>'+
+      '<div class="detail-panel hidden" data-panel="'+esc(u.id)+'"></div></article>';
+  }).join('');
+  document.querySelectorAll('[data-open]').forEach(button=>button.onclick=()=>openUserPanel(button.dataset.open));
+}
+
+function openUserPanel(uid){
+  const user=users.find(x=>x.id===uid);
+  const card=document.querySelector('[data-user="'+CSS.escape(uid)+'"]');
+  if(!user||!card)return;
+  const panel=card.querySelector('[data-panel]');
+  panel.classList.toggle('hidden');
+  if(panel.classList.contains('hidden'))return;
+  panel.innerHTML=
+    '<label>Yönetim notu / sebep</label><textarea data-reason placeholder="İşlemin sebebini yaz…"></textarea>'+
+    '<label>Kısıtlama süresi (gün)</label><input type="number" data-days min="1" max="365" value="7">'+
+    '<div class="row" style="margin-top:12px">'+
+      '<button class="warning" data-action="restrict">Süreli kısıtla</button>'+
+      '<button class="danger" data-action="suspend">Askıya al</button>'+
+      '<button class="danger" data-action="ban">Kalıcı yasakla</button>'+
+      '<button class="good" data-action="lift">Kısıtlamaları kaldır</button>'+
+    '</div><div class="small" style="margin-top:9px">E-posta ve doğum tarihi burada gösterilmez.</div>';
+  panel.querySelectorAll('[data-action]').forEach(button=>{
+    button.onclick=()=>applyUserAction(user,panel,button.dataset.action);
+  });
+}
+
+async function applyUserAction(user,panel,action){
+  const reason=(panel.querySelector('[data-reason]').value||'').trim().slice(0,500);
+  const days=Number(panel.querySelector('[data-days]').value);
+  if(action!=='lift'&&!reason){showMessage('Önce işlem sebebini yaz.','error');return;}
+  if(action==='restrict'&&(!Number.isInteger(days)||days<1||days>365)){showMessage('Kısıtlama süresi 1-365 gün olmalı.','error');return;}
+  const label='@'+(user.username||shortId(user.id));
+  if(!confirm(label+' hesabında bu işlemi gerçekleştirmek istiyor musun?'))return;
+  try{
+    if(action==='lift'){
+      const {error}=await supabase.from('account_restrictions').delete().eq('user_id',user.id);
+      if(error)throw error;
+      await logAction('lift_restrictions',user.id,{});
+    }else{
+      const row={
+        user_id:user.id,
+        suspended:action!=='restrict',
+        banned:action==='ban',
+        restricted_until:action==='restrict'?new Date(Date.now()+days*86400000).toISOString():null,
+        reason:reason,
+        message:action==='restrict'?'Hesabın geçici olarak kısıtlandı.':(action==='ban'?'Hesabın kalıcı olarak yasaklandı.':'Hesabın yönetim tarafından askıya alındı.'),
+        updated_by:me.id,
+        updated_at:new Date().toISOString()
+      };
+      const {error}=await supabase.from('account_restrictions').upsert(row,{onConflict:'user_id'});
+      if(error)throw error;
+      await logAction(action,user.id,{reason:reason,days:action==='restrict'?days:null});
+    }
+    showMessage('Kullanıcı işlemi tamamlandı.','success');
+    await loadUsers();
+  }catch(error){showMessage('İşlem tamamlanamadı: '+error.message,'error');}
+}
+
+async function loadPlus(){
+  $('plusList').innerHTML='<div class="card muted">Başvurular yükleniyor…</div>';
+  try{
+    const {data:apps,error}=await supabase.from('plus_applications')
+      .select('id,user_id,reason,status,created_at')
+      .eq('status','pending').order('created_at',{ascending:true}).limit(200);
+    if(error)throw error;
+    if(!apps?.length){$('plusList').innerHTML='<div class="card muted">Bekleyen Plus başvurusu yok.</div>';return;}
+    const ids=[...new Set(apps.map(x=>x.user_id))];
+    const {data:profiles,error:profileError}=await supabase.from('profiles')
+      .select('id,username,display_name,plus_member').in('id',ids);
+    if(profileError)throw profileError;
+    const profileMap=new Map((profiles||[]).map(p=>[p.id,p]));
+    $('plusList').innerHTML=apps.map(app=>{
+      const p=profileMap.get(app.user_id)||{};
+      return '<article class="item-card" data-application="'+esc(app.id)+'">'+
+        '<div class="row"><div><strong>'+esc(p.display_name||p.username||'Forever üyesi')+'</strong>'+
+        '<div class="muted">@'+esc(p.username||'—')+'</div><div class="small uid">'+esc(app.user_id)+'</div></div>'+
+        '<span class="tag warn">Bekliyor</span></div>'+
+        '<p>'+esc(app.reason||'Başvuru notu yok.')+'</p><div class="small">Tarih: '+esc(formatDate(app.created_at))+'</div>'+
+        '<label>Yönetim notu (isteğe bağlı)</label><input data-note maxlength="500" placeholder="İç not">'+
+        '<div class="row" style="margin-top:10px"><button class="good" data-decision="approved">Plus ver ve onayla</button>'+
+        '<button class="danger" data-decision="rejected">Reddet</button></div></article>';
+    }).join('');
+    document.querySelectorAll('[data-application]').forEach(card=>{
+      card.querySelectorAll('[data-decision]').forEach(button=>{
+        button.onclick=()=>reviewApplication(card.dataset.application,button.dataset.decision,card);
+      });
+    });
+  }catch(error){$('plusList').innerHTML='';showMessage('Plus başvuruları okunamadı: '+error.message,'error');}
+}
+async function reviewApplication(id,decision,card){
+  const note=(card.querySelector('[data-note]').value||'').trim().slice(0,500);
+  if(!confirm(decision==='approved'?'Bu başvuruyu onaylayıp Plus yetkisini açayım mı?':'Bu başvuruyu reddedeyim mi?'))return;
+  const buttons=card.querySelectorAll('button');
+  buttons.forEach(b=>b.disabled=true);
+  try{
+    const {error}=await supabase.rpc('admin_review_plus_application',{
+      p_application_id:id,p_decision:decision,p_admin_note:note
+    });
+    if(error)throw error;
+    await logAction('plus_'+decision,null,{application_id:id,note:note});
+    showMessage(decision==='approved'?'Başvuru onaylandı. Plus yetkileri açıldı.':'Başvuru reddedildi.','success');
+    await loadPlus();
+  }catch(error){buttons.forEach(b=>b.disabled=false);showMessage('Başvuru işlenemedi: '+error.message,'error');}
+}
+
+async function loadReports(){
+  $('reportList').innerHTML='<div class="card muted">Şikayetler yükleniyor…</div>';
+  try{
+    const {data,error}=await supabase.from('reports').select('id,reporter_id,content_type,target_id,reason,status,created_at')
+      .order('created_at',{ascending:false}).limit(200);
+    if(error)throw error;
+    if(!data?.length){$('reportList').innerHTML='<div class="card muted">Şikayet yok.</div>';return;}
+    $('reportList').innerHTML=data.map(r=>
+      '<article class="item-card"><div class="row"><strong>'+esc(r.content_type)+' · '+esc(r.target_id)+'</strong>'+
+      '<span class="tag '+(r.status==='open'?'warn':'')+'">'+esc(r.status)+'</span></div>'+
+      '<p>'+esc(r.reason)+'</p><div class="small">Bildiren UID: '+esc(r.reporter_id)+' · '+esc(formatDate(r.created_at))+'</div>'+
+      (r.status==='open'?'<div class="row" style="margin-top:9px"><button class="secondary" data-report="'+esc(r.id)+'" data-status="reviewing">İncelemede</button><button class="good" data-report="'+esc(r.id)+'" data-status="resolved">Çözüldü</button></div>':'')+
+      '</article>'
+    ).join('');
+    document.querySelectorAll('[data-report]').forEach(button=>button.onclick=()=>updateReport(button.dataset.report,button.dataset.status));
+  }catch(error){$('reportList').innerHTML='';showMessage('Şikayetler yüklenemedi: '+error.message,'error');}
+}
+async function updateReport(id,status){
+  try{
+    const {error}=await supabase.from('reports').update({
+      status,reviewed_by:me.id,reviewed_at:new Date().toISOString()
+    }).eq('id',id);
+    if(error)throw error;
+    await logAction('report_'+status,null,{report_id:id});
+    showMessage('Şikayet durumu güncellendi.','success');
+    await loadReports();
+  }catch(error){showMessage('Şikayet güncellenemedi: '+error.message,'error');}
+}
+
+async function loadLogs(){
+  $('logList').innerHTML='<div class="card muted">Kayıtlar yükleniyor…</div>';
+  try{
+    const {data,error}=await supabase.from('admin_activity_logs')
+      .select('id,admin_id,action,target_user_id,detail,created_at')
+      .order('created_at',{ascending:false}).limit(300);
+    if(error)throw error;
+    if(!data?.length){$('logList').innerHTML='<div class="card muted">Henüz yönetim kaydı yok.</div>';return;}
+    $('logList').innerHTML=data.map(r=>
+      '<article class="item-card"><div class="row"><strong>'+esc(r.action)+'</strong><span class="small">'+esc(formatDate(r.created_at))+'</span></div>'+
+      '<div class="small">Hedef UID: '+esc(r.target_user_id||'—')+'</div><pre>'+esc(JSON.stringify(r.detail||{},null,2))+'</pre></article>'
+    ).join('');
+  }catch(error){$('logList').innerHTML='';showMessage('Yönetim kayıtları okunamadı: '+error.message,'error');}
+}
+
+async function loadSecurity(){
+  $('securityList').innerHTML='<div class="card muted">IP kayıtları güvenli sunucu fonksiyonundan isteniyor…</div>';
+  try{
+    const {data,error}=await supabase.functions.invoke('security-logs',{body:{limit:100}});
+    if(error)throw error;
+    const rows=data?.logs||[];
+    if(!rows.length){$('securityList').innerHTML='<div class="card muted">Henüz güvenlik kaydı yok. IP kayıt anahtarları ve security-event fonksiyonu yapılandırılmış olmalı.</div>';return;}
+    $('securityList').innerHTML=rows.map(row=>
+      '<article class="item-card"><div class="row"><strong>'+esc(row.event_type||row.event||'oturum')+'</strong>'+
+      '<span class="small">'+esc(formatDate(row.created_at||row.at))+'</span></div>'+
+      '<div class="small uid">UID: '+esc(row.user_id||row.uid||'—')+'</div>'+
+      '<div>IP: <strong>'+esc(row.ip||'Kayıt çözülemedi')+'</strong></div>'+
+      '<div class="small">Tarayıcı: '+esc(row.user_agent||'—')+'</div></article>'
+    ).join('');
+  }catch(error){
+    $('securityList').innerHTML='';
+    showMessage('IP kayıtları alınamadı: '+(error.message||'security-logs Edge Function yapılandırmasını kontrol et.'),'error');
+  }
 }
 </script>
 </body>
