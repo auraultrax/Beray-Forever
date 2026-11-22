@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'forever-shell-v3';
+const CACHE_VERSION = 'forever-shell-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -36,7 +36,8 @@ self.addEventListener('fetch', event => {
       try {
         const fresh = await fetch(request);
         const cache = await caches.open(CACHE_VERSION);
-        cache.put('./index.html', fresh.clone());
+        // Yalnızca ana sayfayı önbelleğe al (admin.html gibi diğer sayfalar index.html'in yerine geçmesin).
+        if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) cache.put('./index.html', fresh.clone());
         return fresh;
       } catch (_) {
         return (await caches.match(request)) || (await caches.match('./index.html')) || Response.error();

@@ -35,6 +35,11 @@
   <div class="row" style="flex:0 0 auto"><span id="who" class="muted"></span><button class="sec hidden" id="outBtn">Çıkış</button></div>
 </header>
 <main>
+<script>
+  // Modül yüklenemezse sessiz kalmasın.
+  window.addEventListener('error', e => { var m=document.getElementById('msg'); m.textContent='Sayfa hatası: '+(e.message||'bilinmiyor'); m.classList.remove('hidden'); });
+  setTimeout(function(){ if(!window.__adminReady){ var m=document.getElementById('msg'); m.textContent='Sayfa kodu yüklenemedi. İnternetini kontrol et ve sayfayı Ctrl+Shift+R ile yenile.'; m.classList.remove('hidden'); } }, 5000);
+</script>
   <div id="msg" class="hidden"></div>
 
   <section id="loginBox" class="card">
@@ -95,11 +100,13 @@ function say(text, kind) {
 }
 function clearMsg() { $('msg').classList.add('hidden'); }
 
+window.__adminReady = true;
 $('loginBtn').onclick = async () => {
-  clearMsg();
+  say('Giriş yapılıyor…');
   try { await signInWithEmailAndPassword(auth, $('email').value.trim(), $('pass').value); }
   catch (e) { say('Giriş başarısız: ' + (e.code || e.message), 'bad'); }
 };
+$('pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
 $('outBtn').onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, async user => {
