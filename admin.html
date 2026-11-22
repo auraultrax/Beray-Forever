@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Forever · Yönetim Paneli</title>
+<title>Forever Plus · Yönetim Paneli</title>
 <style>
-  :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--fg:#e8eaf0;--muted:#8b93a7;--acc:#7c9cff;--ok:#6ec882;--bad:#e67878;--warn:#e6b450}
+  :root{--bg:#06120c;--card:#0d2017;--line:#234a36;--fg:#e8fff1;--muted:#9ab8a6;--acc:#34d399;--ok:#6ee7b7;--bad:#f28b8b;--warn:#e7c16f}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
   header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
@@ -15,7 +15,7 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
   input,textarea,select{width:100%;background:#0c0e12;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
   textarea{min-height:80px;resize:vertical}
-  button{background:var(--acc);color:#000;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+  button{background:linear-gradient(120deg,#087f55,#34d399);color:#052417;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:800;cursor:pointer}
   button.sec{background:#222735;color:var(--fg)} button.bad{background:var(--bad)} button.ok{background:var(--ok)} button.warn{background:var(--warn)}
   button:disabled{opacity:.5;cursor:default}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .row>*{flex:1 1 auto}
@@ -30,8 +30,9 @@
 </style>
 </head>
 <body>
+<script src="./plus-config.js"></script>
 <header>
-  <h1>Forever · Yönetim</h1>
+  <h1>Forever Plus · Yönetim</h1>
   <div class="row" style="flex:0 0 auto"><span id="who" class="muted"></span><button class="sec hidden" id="outBtn">Çıkış</button></div>
 </header>
 <main>
@@ -53,8 +54,10 @@
   <section id="app" class="hidden">
     <div class="tabs">
       <button id="tabUsers" class="on">Kullanıcılar</button>
+      <button id="tabPlus" class="sec">Plus başvuruları</button>
       <button id="tabReports" class="sec">Şikayetler</button>
       <button id="tabLogs" class="sec">Kayıtlar</button>
+      <button id="tabSecurity" class="sec">IP güvenliği</button>
     </div>
 
     <div id="usersPane">
@@ -67,11 +70,19 @@
       <div id="userList"></div>
     </div>
 
+    <div id="plusPane" class="hidden">
+      <div class="card"><h2>Bekleyen Plus başvuruları</h2><p class="muted">Başvuruyu incele; onayladığında kullanıcının Plus yetkileri açılır.</p><button id="refreshPlusBtn" class="sec">Yenile</button></div>
+      <div id="plusList"></div>
+    </div>
     <div id="reportsPane" class="hidden">
       <div id="reportList"></div>
     </div>
     <div id="logsPane" class="hidden">
       <div id="logList"></div>
+    </div>
+    <div id="securityPane" class="hidden">
+      <div class="card"><h2>IP ve oturum güvenlik kayıtları</h2><p class="muted">Yalnızca yetkili yönetici görebilir. IP adresleri sunucuda şifreli saklanır ve 30 gün sonra temizlenir.</p><button id="refreshSecurityBtn" class="sec">Kayıtları yükle</button></div>
+      <div id="securityList"></div>
     </div>
   </section>
 </main>
