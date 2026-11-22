@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#8b5cf6">
-  <meta name="description" content="Forever by Beray — yakın hisset, ışık yak, kendi topluluğunu kur. Telif kopyası değil, özgün sosyal alan.">
+  <meta name="theme-color" content="#047857">
+  <meta name="description" content="Forever Plus — zümrüt temalı topluluk ve paylaşım platformu.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Forever">
-  <title>Forever · Beray</title>
+  <title>Forever Plus · Beray</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
@@ -16,22 +16,22 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg: #06060f;
-      --surface: rgba(22, 18, 40, 0.55);
-      --surface2: rgba(30, 24, 55, 0.65);
+      --bg: #04110c;
+      --surface: rgba(8, 31, 22, 0.72);
+      --surface2: rgba(10, 42, 29, 0.82);
       --glass: rgba(255, 255, 255, 0.06);
-      --glass-border: rgba(167, 139, 250, 0.22);
-      --line: rgba(167, 139, 250, 0.12);
-      --text: #f4f0ff;
-      --muted: #a39bb8;
-      --primary: #8b5cf6;
-      --primary2: #c4b5fd;
-      --neon: #d946ef;
-      --neon2: #22d3ee;
+      --glass-border: rgba(52, 211, 153, 0.22);
+      --line: rgba(52, 211, 153, 0.14);
+      --text: #ecfdf5;
+      --muted: #9bb8aa;
+      --primary: #059669;
+      --primary2: #a7f3d0;
+      --neon: #34d399;
+      --neon2: #6ee7b7;
       --danger: #fb7185;
       --ok: #34d399;
       --radius: 18px;
-      --shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(167,139,250,.08);
+      --shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 0 1px rgba(52,211,153,.08);
       --glow: 0 0 20px rgba(139, 92, 246, 0.35), 0 0 40px rgba(217, 70, 239, 0.15);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,9 +48,9 @@
       content: "";
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background:
-        radial-gradient(ellipse 90% 60% at 50% -15%, rgba(139,92,246,.28), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 100% 20%, rgba(217,70,239,.12), transparent 45%),
-        radial-gradient(ellipse 40% 35% at 0% 80%, rgba(34,211,238,.08), transparent 40%);
+        radial-gradient(ellipse 90% 60% at 50% -15%, rgba(16,185,129,.28), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 100% 20%, rgba(52,211,153,.12), transparent 45%),
+        radial-gradient(ellipse 40% 35% at 0% 80%, rgba(110,231,183,.08), transparent 40%);
       animation: aurora 18s ease-in-out infinite alternate;
     }
     @keyframes aurora {
@@ -62,16 +62,16 @@
       50% { transform: translateY(-6px); }
     }
     @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 12px rgba(139,92,246,.4), 0 0 24px rgba(217,70,239,.15); }
-      50% { box-shadow: 0 0 20px rgba(139,92,246,.65), 0 0 40px rgba(217,70,239,.3); }
+      0%, 100% { box-shadow: 0 0 12px rgba(16,185,129,.4), 0 0 24px rgba(52,211,153,.15); }
+      50% { box-shadow: 0 0 20px rgba(16,185,129,.65), 0 0 40px rgba(52,211,153,.3); }
     }
     @keyframes fadeSlideUp {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
     @keyframes neonBorder {
-      0%, 100% { border-color: rgba(139,92,246,.35); }
-      50% { border-color: rgba(217,70,239,.55); }
+      0%, 100% { border-color: rgba(16,185,129,.35); }
+      50% { border-color: rgba(52,211,153,.55); }
     }
     @keyframes shimmer {
       0% { background-position: -200% 0; }
@@ -93,10 +93,10 @@
       position: sticky; top: 0; z-index: 40;
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       padding: 12px 0; margin-bottom: 10px;
-      background: rgba(6,6,15,.72);
+      background: rgba(4,17,12,.84);
       backdrop-filter: blur(20px) saturate(1.5);
       -webkit-backdrop-filter: blur(20px) saturate(1.5);
-      border-bottom: 1px solid rgba(167,139,250,.18);
+      border-bottom: 1px solid rgba(52,211,153,.18);
       box-shadow: 0 4px 24px rgba(0,0,0,.25);
     }
     .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -109,7 +109,7 @@
     .brand-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .brand-text strong {
       display: block; font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em;
-      background: linear-gradient(90deg, #c4b5fd, #f0abfc, #22d3ee);
+      background: linear-gradient(90deg, #a7f3d0, #6ee7b7, #6ee7b7);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .brand-text span { font-size: .7rem; color: var(--muted); font-weight: 600; }
@@ -119,12 +119,12 @@
       display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px;
       border-radius: 999px; transition: .2s ease;
     }
-    .user-chip:hover { border-color: rgba(217,70,239,.4); box-shadow: 0 0 16px rgba(139,92,246,.2); }
+    .user-chip:hover { border-color: rgba(52,211,153,.4); box-shadow: 0 0 16px rgba(16,185,129,.2); }
     .avatar {
       width: 34px; height: 34px; border-radius: 50%;
       background: linear-gradient(135deg, var(--primary), var(--neon));
       display: grid; place-items: center; font-weight: 800; font-size: .85rem; flex-shrink: 0;
-      box-shadow: 0 0 12px rgba(139,92,246,.45);
+      box-shadow: 0 0 12px rgba(16,185,129,.45);
     }
     .user-chip .meta { display: none; }
     @media (min-width: 520px) {
@@ -136,13 +136,13 @@
       border: 0; cursor: pointer; font-family: inherit; font-weight: 700; font-size: .82rem;
       border-radius: 14px; padding: 10px 16px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       transition: .22s cubic-bezier(.2,.8,.2,1);
-      background: linear-gradient(135deg, #7c3aed, #c026d3);
+      background: linear-gradient(135deg, #047857, #059669);
       color: #fff;
-      box-shadow: 0 4px 18px rgba(124,58,237,.4), 0 0 0 1px rgba(255,255,255,.08) inset;
+      box-shadow: 0 4px 18px rgba(16,185,129,.4), 0 0 0 1px rgba(255,255,255,.08) inset;
     }
     .btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(192,38,211,.5), 0 0 20px rgba(139,92,246,.35);
+      box-shadow: 0 8px 28px rgba(16,185,129,.5), 0 0 20px rgba(16,185,129,.35);
       filter: brightness(1.08);
     }
     .btn:active { transform: translateY(0); }
@@ -153,14 +153,14 @@
     }
     .btn-ghost:hover {
       color: var(--text);
-      border-color: rgba(167,139,250,.45);
-      box-shadow: 0 0 14px rgba(139,92,246,.2);
+      border-color: rgba(52,211,153,.45);
+      box-shadow: 0 0 14px rgba(16,185,129,.2);
     }
     .btn-icon {
       width: 40px; height: 40px; padding: 0; border-radius: 14px; color: var(--text);
       transition: .2s ease;
     }
-    .btn-icon:hover { box-shadow: 0 0 16px rgba(139,92,246,.3); color: var(--primary2); }
+    .btn-icon:hover { box-shadow: 0 0 16px rgba(16,185,129,.3); color: var(--primary2); }
 
     /* Cards — glass */
     .card {
@@ -171,8 +171,8 @@
       transition: border-color .25s, box-shadow .25s, transform .25s;
     }
     .card:hover {
-      border-color: rgba(167,139,250,.35);
-      box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 24px rgba(139,92,246,.12);
+      border-color: rgba(52,211,153,.35);
+      box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 24px rgba(16,185,129,.12);
     }
     .card.post:hover { transform: translateY(-2px); }
     .card h3 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
@@ -184,10 +184,10 @@
     .story-item:hover { transform: scale(1.06); }
     .story-ring {
       width: 66px; height: 66px; margin: 0 auto 6px; border-radius: 50%; padding: 2.5px;
-      background: linear-gradient(135deg, #8b5cf6, #d946ef, #22d3ee, #8b5cf6);
+      background: linear-gradient(135deg, #059669, #34d399, #6ee7b7, #059669);
       background-size: 200% 200%;
       animation: shimmer 4s linear infinite;
-      box-shadow: 0 0 16px rgba(217,70,239,.35);
+      box-shadow: 0 0 16px rgba(52,211,153,.35);
     }
     .story-ring > div, .story-ring img {
       width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
@@ -205,18 +205,18 @@
       transition: border-color .2s, box-shadow .2s;
     }
     .composer textarea:focus {
-      border-color: rgba(192,38,211,.5);
-      box-shadow: 0 0 0 3px rgba(139,92,246,.15), 0 0 20px rgba(139,92,246,.1);
+      border-color: rgba(16,185,129,.5);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.15), 0 0 20px rgba(16,185,129,.1);
     }
     .composer-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
     .composer-tools { display: flex; align-items: center; gap: 8px; }
     .file-btn {
       cursor: pointer; color: var(--primary2); font-size: .8rem; font-weight: 700;
       display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px;
-      border: 1px solid var(--glass-border); background: rgba(139,92,246,.08);
+      border: 1px solid var(--glass-border); background: rgba(16,185,129,.08);
       transition: .2s ease;
     }
-    .file-btn:hover { background: rgba(139,92,246,.18); box-shadow: 0 0 14px rgba(139,92,246,.25); }
+    .file-btn:hover { background: rgba(16,185,129,.18); box-shadow: 0 0 14px rgba(16,185,129,.25); }
     .file-btn input { display: none; }
     #postImagePreview, #storyImagePreview {
       display: none; margin-top: 10px; width: 100%; max-height: 220px; object-fit: cover;
@@ -243,16 +243,16 @@
       transition: .2s ease;
     }
     .post-actions button:hover {
-      color: var(--text); border-color: rgba(167,139,250,.5);
-      box-shadow: 0 0 14px rgba(139,92,246,.25);
+      color: var(--text); border-color: rgba(52,211,153,.5);
+      box-shadow: 0 0 14px rgba(16,185,129,.25);
     }
     .post-actions button.spark-btn {
-      color: #f0abfc;
-      border-color: rgba(217,70,239,.4);
+      color: #6ee7b7;
+      border-color: rgba(52,211,153,.4);
     }
     .post-actions button.spark-btn:hover {
-      box-shadow: 0 0 18px rgba(217,70,239,.4);
-      background: rgba(217,70,239,.12);
+      box-shadow: 0 0 18px rgba(52,211,153,.4);
+      background: rgba(52,211,153,.12);
     }
     .comments { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
     .comment { font-size: .8rem; margin-bottom: 6px; color: var(--muted); }
@@ -262,14 +262,14 @@
       flex: 1; border: 1px solid var(--glass-border); background: rgba(0,0,0,.25); color: var(--text);
       border-radius: 12px; padding: 9px 12px; font: inherit; font-size: .8rem; outline: none;
     }
-    .comment-row input:focus { border-color: rgba(192,38,211,.45); box-shadow: 0 0 0 2px rgba(139,92,246,.12); }
+    .comment-row input:focus { border-color: rgba(16,185,129,.45); box-shadow: 0 0 0 2px rgba(16,185,129,.12); }
 
     /* Footer */
     .foot {
       text-align: center; padding: 32px 8px; color: var(--muted); font-size: .75rem;
     }
     .foot strong {
-      background: linear-gradient(90deg, #c4b5fd, #f0abfc);
+      background: linear-gradient(90deg, #a7f3d0, #6ee7b7);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
 
@@ -281,7 +281,7 @@
     .modal-card {
       width: min(420px, 100%);
       border-radius: 22px; padding: 26px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 40px rgba(139,92,246,.12);
+      box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 40px rgba(16,185,129,.12);
       animation: fadeSlideUp .35s ease both;
     }
     .modal-card h2 {
@@ -298,8 +298,8 @@
       transition: .2s ease;
     }
     .field input:focus {
-      border-color: rgba(192,38,211,.55);
-      box-shadow: 0 0 0 3px rgba(139,92,246,.15);
+      border-color: rgba(16,185,129,.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.15);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -339,7 +339,7 @@
     .bg-slate-900 { background: var(--surface); }
     .bg-slate-950 { background: var(--surface2); }
     .bg-brand-600 { background: var(--primary); }
-    .bg-brand-500, .hover\:bg-brand-500:hover { background: #8b5cf6; }
+    .bg-brand-500, .hover\:bg-brand-500:hover { background: #059669; }
     .border { border-width: 1px; border-style: solid; }
     .border-slate-800, .border-slate-800\/50, .border-slate-800\/60 { border-color: var(--line); }
     .rounded-2xl { border-radius: 16px; }
@@ -415,14 +415,14 @@
       flex: 1; border: 1px solid var(--line); background: var(--surface);
       color: var(--text); border-radius: 12px; padding: 11px 14px; font: inherit; font-size: .85rem; outline: none;
     }
-    .search-bar input:focus { border-color: rgba(124,58,237,.5); }
+    .search-bar input:focus { border-color: rgba(16,185,129,.5); }
     .tag-chip {
       display: inline-block; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 999px;
-      background: rgba(124,58,237,.18); color: var(--primary2); font-size: .7rem; font-weight: 700; cursor: pointer;
+      background: rgba(16,185,129,.18); color: var(--primary2); font-size: .7rem; font-weight: 700; cursor: pointer;
     }
-    .tag-chip:hover { background: rgba(124,58,237,.3); }
+    .tag-chip:hover { background: rgba(16,185,129,.3); }
     .btn-follow {
-      border: 1px solid rgba(124,58,237,.45); background: transparent; color: var(--primary2);
+      border: 1px solid rgba(16,185,129,.45); background: transparent; color: var(--primary2);
       border-radius: 999px; padding: 4px 10px; font: inherit; font-size: .7rem; font-weight: 700; cursor: pointer;
     }
     .btn-follow.on { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -443,57 +443,45 @@
       border: 0; background: #ef4444; color: #fff; font-size: 10px; cursor: pointer; z-index: 2;
       display: grid; place-items: center;
     }
+    .room-create{display:grid;gap:8px;padding:12px;border:1px solid var(--glass-border);border-radius:16px;background:rgba(16,185,129,.06);margin-bottom:14px}
+    .room-create input,.room-send input{width:100%;min-width:0;border:1px solid var(--glass-border);background:rgba(0,0,0,.22);color:var(--text);border-radius:11px;padding:10px 12px;font:inherit;outline:none}
+    .room-create input:focus,.room-send input:focus{border-color:var(--primary2);box-shadow:0 0 0 3px rgba(16,185,129,.14)}
+    .room-card{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+    .room-card:last-child{border-bottom:0}
+    .room-mark{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;flex-shrink:0;background:linear-gradient(135deg,#047857,#34d399);color:#ecfdf5}
+    .room-messages{height:min(42vh,360px);overflow:auto;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.18);display:flex;flex-direction:column;gap:8px}
+    .room-message{max-width:88%;padding:9px 11px;border-radius:13px;background:var(--surface2);border:1px solid var(--line);font-size:.82rem;overflow-wrap:anywhere}
+    .room-message.mine{align-self:flex-end;background:rgba(16,185,129,.15);border-color:rgba(52,211,153,.28)}
+    .room-message small{display:block;color:var(--muted);font-size:.62rem;margin-bottom:3px}
+    .room-send{display:flex;gap:8px;margin-top:10px}.room-send input{flex:1}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
 </head>
 <body>
 
-  <!-- Auth -->
+  <!-- Forever Plus kimlik doğrulama -->
   <div id="authModal" class="modal">
     <div class="modal-card">
       <div class="auth-logo">
-        <img src="./icons/icon-192.png" alt="Forever">
-        <div>
-          <strong style="font-size:1.2rem;">Forever</strong>
-          <div style="font-size:.72rem;color:var(--muted);">from <b style="color:var(--primary2);">Beray</b></div>
-        </div>
+        <img src="./icons/icon-192.png" alt="Forever Plus">
+        <div><strong style="font-size:1.2rem;">Forever <span style="color:var(--primary2);">Plus</span></strong><div style="font-size:.72rem;color:var(--muted);">from <b style="color:var(--primary2);">Beray</b></div></div>
       </div>
-      <p class="sub" style="text-align:center;">Anılarını paylaş, topluluğa bağlan.</p>
+      <p class="sub" style="text-align:center;">Zümrüt tonlarında, sana ait bir topluluk alanı.</p>
       <div id="authAlert" class="alert hidden"></div>
-      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google ile devam et</button>
-      <button type="button" class="btn" id="auraxLoginBtn" style="background:linear-gradient(135deg,#7c3aed,#c026d3);margin-top:8px;"><i class="fa-solid fa-link"></i> Aura X ile Giriş Yap</button>
-      <form id="auraxForm" class="hidden" style="margin-top:12px;">
-        <div class="field">
-          <label>Aura X kullanıcı adı</label>
-          <input type="text" id="auraxUser" autocomplete="username" placeholder="kullaniciadi" required>
-        </div>
-        <div class="field">
-          <label>Aura X şifresi</label>
-          <input type="password" id="auraxPass" autocomplete="current-password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn btn-block">Aura X hesabımı doğrula →</button>
-      </form>
-      <div class="divider">veya e-posta</div>
+      <button type="button" class="btn google-btn" onclick="handleGoogleSignIn()"><i class="fa-brands fa-google"></i> Google hesabını seç</button>
+      <div class="divider">veya e-posta ve şifre</div>
       <form onsubmit="handleAuthSubmit(event)">
-        <div id="nameField" class="field hidden">
-          <label>Ad Soyad</label>
-          <input type="text" id="authName" autocomplete="name" placeholder="Adın">
-        </div>
-        <div class="field">
-          <label>E-posta</label>
-          <input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com">
-        </div>
-        <div class="field">
-          <label>Şifre</label>
-          <input type="password" id="authPassword" required autocomplete="current-password" placeholder="••••••••" minlength="6">
-        </div>
+        <div id="nameField" class="field hidden"><label>Ad Soyad</label><input type="text" id="authName" autocomplete="name" placeholder="Adın ve soyadın" maxlength="40"></div>
+        <div id="birthDateField" class="field hidden"><label>Doğum tarihi</label><input type="date" id="authBirthDate" autocomplete="bday"></div>
+        <div id="regionField" class="field hidden"><label>Bölge</label><select id="authRegion"><option value="">Bölgeni seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
+        <div id="usernameField" class="field hidden"><label>Kullanıcı adı</label><input type="text" id="authUsername" autocomplete="username" placeholder="kullaniciadi" maxlength="24"></div>
+        <div class="field" id="authEmailField"><label>E-posta</label><input type="email" id="authEmail" required autocomplete="email" placeholder="ornek@mail.com"></div>
+        <div class="field"><label>Şifre</label><input type="password" id="authPassword" required autocomplete="current-password" placeholder="En az 8 karakter" minlength="8"></div>
         <button type="submit" id="authSubmitBtn" class="btn btn-block">Giriş Yap</button>
       </form>
-      <p class="toggle-line">
-        <button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button>
-      </p>
-      <p class="toggle-line" id="authToggleText">
-        Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button>
-      </p>
+      <p class="toggle-line" id="forgotPasswordLine"><button type="button" onclick="openForgotPasswordModal()" style="color:var(--muted);font-weight:600;">Şifremi unuttum</button></p>
+      <p class="toggle-line" id="authToggleText">Hesabın yok mu? <button type="button" onclick="toggleAuthMode()">Kayıt Ol</button></p>
+      <p class="sub" style="text-align:center;font-size:.68rem;margin-top:8px;">Doğum tarihi yalnızca hesap sahibinin özel profil kaydında saklanır.</p>
     </div>
   </div>
 
@@ -512,11 +500,15 @@
 
   <div id="usernameModal" class="modal hidden">
     <div class="modal-card">
-      <h2>Kullanıcı adı</h2>
-      <p class="sub">Forever’da görünecek adın.</p>
+      <h2>Forever Plus hesabını tamamla</h2>
+      <p class="sub">Google hesabın seçildi. Profil bilgilerini tamamlayarak devam et.</p>
       <form onsubmit="handleUsernameSubmit(event)">
-        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24"></div>
-        <button type="submit" class="btn btn-block">Kaydet</button>
+        <div class="field"><label>Ad Soyad</label><input type="text" id="newDisplayName" required maxlength="40" autocomplete="name"></div>
+        <div class="field"><label>Doğum tarihi</label><input type="date" id="newBirthDate" required autocomplete="bday"></div>
+        <div class="field"><label>Bölge</label><select id="newRegion" required><option value="">Bölgeni seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
+        <div class="field"><label>Kullanıcı adı</label><input type="text" id="newUsername" required placeholder="kullaniciadi" maxlength="24" autocomplete="username"></div>
+        <div class="field"><label>Şifre oluştur</label><input type="password" id="newPassword" required minlength="8" autocomplete="new-password" placeholder="En az 8 karakter"></div>
+        <button type="submit" class="btn btn-block">Forever Plus'a katıl</button>
       </form>
     </div>
   </div>
@@ -570,6 +562,7 @@
         </div>
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
+      <p id="profileRegion" style="margin-top:4px;font-size:.72rem;color:var(--muted);"></p>
       <div class="profile-stats">
         <button type="button" onclick="openFollowList('followers')"><strong id="statFollowers">0</strong><span>Takipçi</span></button>
         <button type="button" onclick="openFollowList('following')"><strong id="statFollowing">0</strong><span>Takip</span></button>
@@ -577,7 +570,8 @@
       </div>
       <div id="profileEditBox" class="hidden" style="margin-top:8px;">
         <div class="field"><label>Görünen ad</label><input type="text" id="editDisplayName" maxlength="40"></div>
-        <div class="field"><label>Bio</label><input type="text" id="editBio" maxlength="120" placeholder="Kendinden bahset..."></div>
+        <div class="field"><label>Bio</label><input type="text" id="editBio" maxlength="160" placeholder="Kendinden bahset..."></div>
+        <div class="field"><label>Bölge</label><select id="editRegion"><option value="">Bölge seç</option><option>Marmara</option><option>Ege</option><option>Akdeniz</option><option>İç Anadolu</option><option>Karadeniz</option><option>Doğu Anadolu</option><option>Güneydoğu Anadolu</option><option>Türkiye dışı</option></select></div>
         <button type="button" class="btn btn-block" onclick="saveProfile()">Kaydet</button>
       </div>
       <button type="button" id="profileEditBtn" class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="toggleProfileEdit()">Profili düzenle</button>
@@ -639,6 +633,7 @@
       </div>
       <div class="top-actions">
         <span id="networkAuthStatus" class="status-warn" style="display:none;"></span>
+        <button type="button" class="btn-icon" title="Odalar" aria-label="Odalar" onclick="openRoomsPanel()"><i class="fa-solid fa-comments"></i></button>
         <button type="button" class="btn-icon" title="Bildirimler" onclick="openNotifPanel()" style="position:relative;">
           <i class="fa-regular fa-bell"></i>
           <span id="notifBadge" class="hidden" style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);"></span>
@@ -734,6 +729,31 @@
       <div class="card empty"><i class="fa-solid fa-circle-notch fa-spin"></i><br><br>Akış yükleniyor…</div>
     </div>
 
+    <!-- Forever Plus Odalar -->
+    <div id="roomsModal" class="modal hidden" onclick="if(event.target===this)closeRoomsPanel()">
+      <div class="modal-card" style="max-height:86vh;overflow:auto;width:min(560px,100%);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
+          <div><h2 style="margin:0;">Forever Odaları</h2><p class="sub" style="margin:4px 0 0;">Bir topluluğa katıl veya kendi odanı kur.</p></div>
+          <button type="button" class="btn-icon" aria-label="Kapat" onclick="closeRoomsPanel()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="roomCreateForm" onsubmit="createForeverRoom(event)" class="room-create">
+          <strong style="font-size:.86rem;">Yeni oda oluştur</strong>
+          <input id="roomNameInput" type="text" maxlength="40" required placeholder="Oda adı">
+          <input id="roomDescriptionInput" type="text" maxlength="160" placeholder="Kısa açıklama (isteğe bağlı)">
+          <button type="submit" class="btn">+ Oda oluştur</button>
+        </form>
+        <div id="roomsList" aria-live="polite"><p class="sub">Odalar yükleniyor…</p></div>
+        <section id="roomChatView" class="hidden">
+          <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+            <button type="button" class="btn-ghost" onclick="backToRoomsList()">← Odalara dön</button>
+            <div style="min-width:0;flex:1;"><strong id="roomChatTitle"></strong><div id="roomChatDescription" class="sub"></div></div>
+          </div>
+          <div id="roomMessages" class="room-messages" aria-live="polite"></div>
+          <form onsubmit="sendRoomMessage(event)" class="room-send"><input id="roomMessageInput" type="text" maxlength="1000" required placeholder="Odaya mesaj yaz…"><button type="submit" class="btn">Gönder</button></form>
+        </section>
+      </div>
+    </div>
+
     <!-- Bildirim paneli -->
     <div id="notifPanel" class="modal hidden" onclick="if(event.target===this)closeNotifPanel()">
       <div class="modal-card" style="max-height:70vh;overflow:auto;">
@@ -758,6 +778,7 @@
   </div>
 
   <script>
+    window.FOREVER_FEATURE_FLAGS = Object.freeze({ bottleGame: false });
     // PWA minimal
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
@@ -1311,7 +1332,7 @@
       if (!el) {
         el = document.createElement('div');
         el.id = 'fxToastEl';
-        el.style.cssText = 'position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(22,18,40,.92);backdrop-filter:blur(12px);border:1px solid rgba(167,139,250,.35);color:#f4f0ff;padding:12px 18px;border-radius:14px;font-size:.85rem;font-weight:600;z-index:300;opacity:0;transition:.3s ease;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 20px rgba(139,92,246,.2);max-width:90vw;text-align:center;';
+        el.style.cssText = 'position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(22,18,40,.92);backdrop-filter:blur(12px);border:1px solid rgba(52,211,153,.35);color:#ecfdf5;padding:12px 18px;border-radius:14px;font-size:.85rem;font-weight:600;z-index:300;opacity:0;transition:.3s ease;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.4),0 0 20px rgba(16,185,129,.2);max-width:90vw;text-align:center;';
         document.body.appendChild(el);
       }
       el.textContent = msg;
@@ -1562,7 +1583,7 @@
             : `<img src="${story.imageUrl}" class="w-full h-full rounded-full object-cover">`;
           const canDel = currentUser && story.userId === currentUser.uid;
           const delBtn = canDel ? `<button type="button" class="story-del" title="Sil" onclick="deleteStory('${story.id}', event)" style="right:18px;"><i class="fa-solid fa-xmark"></i></button>
-            <button type="button" class="story-del" title="Düzenle" onclick="openEditStory('${story.id}', event)" style="background:#7c3aed;right:-4px;"><i class="fa-solid fa-pen" style="font-size:8px;"></i></button>` : '';
+            <button type="button" class="story-del" title="Düzenle" onclick="openEditStory('${story.id}', event)" style="background:#047857;right:-4px;"><i class="fa-solid fa-pen" style="font-size:8px;"></i></button>` : '';
           storyElem.innerHTML = `
             <div class="w-14 h-14 rounded-full p-0.5 story-ring group-hover:scale-105 transition-transform" style="position:relative;">
               ${delBtn}
@@ -1957,15 +1978,15 @@
         if (post.poll && post.poll.options) {
           const total = (post.poll.counts || []).reduce((a,b) => a+b, 0) || 0;
           const myVote = currentUser && post.poll.voters ? post.poll.voters[currentUser.uid] : undefined;
-          pollHtml = '<div class="poll-box" style="margin:10px 0;padding:12px;border-radius:14px;border:1px solid var(--glass-border);background:rgba(139,92,246,.06);">' +
+          pollHtml = '<div class="poll-box" style="margin:10px 0;padding:12px;border-radius:14px;border:1px solid var(--glass-border);background:rgba(16,185,129,.06);">' +
             '<div style="font-weight:700;margin-bottom:8px;font-size:.9rem;">' + escapeHTML(post.poll.question || '') + '</div>' +
             post.poll.options.map((opt, i) => {
               const cnt = (post.poll.counts && post.poll.counts[i]) || 0;
               const pct = total ? Math.round((cnt / total) * 100) : 0;
               const voted = myVote === i;
-              return '<button type="button" onclick="votePoll(\'' + post.id + '\',' + i + ')" style="display:block;width:100%;text-align:left;margin:4px 0;padding:10px 12px;border-radius:12px;border:1px solid ' + (voted ? 'var(--primary2)' : 'var(--line)') + ';background:' + (voted ? 'rgba(139,92,246,.2)' : 'rgba(0,0,0,.2)') + ';color:var(--text);font:inherit;cursor:pointer;position:relative;overflow:hidden;">' +
+              return '<button type="button" onclick="votePoll(\'' + post.id + '\',' + i + ')" style="display:block;width:100%;text-align:left;margin:4px 0;padding:10px 12px;border-radius:12px;border:1px solid ' + (voted ? 'var(--primary2)' : 'var(--line)') + ';background:' + (voted ? 'rgba(16,185,129,.2)' : 'rgba(0,0,0,.2)') + ';color:var(--text);font:inherit;cursor:pointer;position:relative;overflow:hidden;">' +
                 '<span style="position:relative;z-index:1;">' + escapeHTML(opt) + (total ? ' · ' + pct + '%' : '') + '</span>' +
-                '<span style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;background:rgba(139,92,246,.25);z-index:0;"></span></button>';
+                '<span style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;background:rgba(16,185,129,.25);z-index:0;"></span></button>';
             }).join('') +
             '<div style="font-size:.7rem;color:var(--muted);margin-top:6px;">' + total + ' oy</div></div>';
         }
