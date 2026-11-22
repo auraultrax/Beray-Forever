@@ -201,8 +201,13 @@ async function upsertDocument(ref, data, merge) {
     updated_at: new Date().toISOString()
   };
   if (!current) row.created_at = new Date().toISOString();
-  const { data: saved, error } = await supabaseClient.from("forever_documents")
-    .upsert(row, { onConflict: "collection_name,id" }).select("id,data,owner_id,created_at").single();
+  const request = current
+    ? supabaseClient.from("forever_documents").update({
+        data: clean,
+        updated_at: row.updated_at
+      }).eq("collection_name", ref.collection).eq("id", ref.id)
+    : supabaseClient.from("forever_documents").insert(row);
+  const { data: saved, error } = await request.select("id,data,owner_id,created_at").single();
   if (error) throw error;
   return snap(saved);
 }
