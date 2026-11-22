@@ -632,7 +632,14 @@ drop policy if exists forever_media_owner_update on storage.objects;
 create policy forever_media_owner_update on storage.objects
 for update to authenticated
 using (bucket_id='forever-media' and (storage.foldername(name))[1]=auth.uid()::text)
-with check (bucket_id='forever-media' and (storage.foldername(name))[1]=auth.uid()::text);
+with check (
+  bucket_id='forever-media'
+  and (storage.foldername(name))[1]=auth.uid()::text
+  and (
+    (storage.foldername(name))[2] not in ('posts','stories')
+    or public.can_upload_forever_media()
+  )
+);
 
 drop policy if exists forever_media_owner_delete on storage.objects;
 create policy forever_media_owner_delete on storage.objects
