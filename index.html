@@ -930,6 +930,7 @@
     window.auraXCurrentView='discover';
     window.auraXReturnView='discover';
     window.setAuraXView=function(target){
+      if(target!=='rooms')window.closeAuraRoomView?.();
       const viewMap={discover:'view-kesfet',rooms:'view-odalar',leaderboard:'view-liderlik'};
       const targetId=viewMap[target]||viewMap.discover;
       document.querySelectorAll('.view-section').forEach(section=>section.classList.toggle('active',section.id===targetId));
