@@ -430,7 +430,7 @@ begin
       where collection_name='users' and id=auth.uid()::text
       limit 1;
       if exists (
-        select 1 from jsonb_array_elements(coalesce(old.data -> 'likes','[]'::jsonb)) old_like(value)
+        select 1 from jsonb_array_elements_text(coalesce(old.data -> 'likes','[]'::jsonb)) old_like(value)
         where not (coalesce(new.data -> 'likes','[]'::jsonb) @> jsonb_build_array(old_like.value))
            and old_like.value <> auth.uid()::text
       ) or exists (
