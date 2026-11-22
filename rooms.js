@@ -663,49 +663,40 @@ function bindRoomUi(){
   setupCanvas();
 }
 async function initForUser(){
-  const result=await supabaseClient.auth.getSession();session=result.data.session;
-  if(!session?.user){isAppAdmin=false;return;}
+  const result=await supabaseClient.auth.getSession();
+  session=result.data.session;
+  if(!session?.user){
+    isAppAdmin=false;
+    window.foreverIsAdmin=false;
+    document.querySelectorAll('.admin-nav').forEach(node=>node.classList.add('hidden'));
+    return;
+  }
   userId=session.user.id;
   const [profile,plus,admin]=await Promise.all([
     supabaseClient.from('forever_documents').select('data').eq('collection_name','users').eq('id',userId).maybeSingle(),
     supabaseClient.rpc('is_forever_plus'),
     supabaseClient.rpc('is_forever_admin')
   ]);
-  if(profile.error)return;
+  if(profile.error)throw profile.error;
   username=profile.data?.data?.username||session.user.user_metadata?.name||'Kullanıcı';
   isPlus=Boolean(plus.data);
   isAppAdmin=!admin.error&&admin.data===true;
   window.foreverIsAdmin=isAppAdmin;
   document.querySelectorAll('.admin-nav').forEach(node=>node.classList.toggle('hidden',!isAppAdmin));
-  await refreshKnownPlusUsers();watchRoomPlusUsers();syncPlusControls();bindRoomUi();await loadRoomList();
-}
-window.addEventListener('forever-user-ready',event=>{
-  userId=event.detail.uid;username=event.detail.username||'Kullanıcı';isPlus=Boolean(event.detail.isPlus);
-  initForUser().catch(error=>console.error('Rooms init',error));
-});
-initForUser().catch(error=>console.error('Rooms init',error));
-async function initForUser() {
-  const r = await supabaseClient.auth.getSession();
-  session = r.data.session;
-  if (!session?.user) return;
-  userId = session.user.id;
-  const [profile, plus] = await Promise.all([
-    supabaseClient.from('forever_documents').select('data').eq('collection_name','users').eq('id',userId).maybeSingle(),
-    supabaseClient.rpc('is_forever_plus')
-  ]);
-  if (profile.error) return;
-  username = profile.data?.data?.username || session.user.user_metadata?.name || 'Kullanıcı';
-  isPlus = Boolean(plus.data);
   await refreshKnownPlusUsers();
   watchRoomPlusUsers();
   syncPlusControls();
   bindRoomUi();
   await loadRoomList();
 }
-window.addEventListener('forever-user-ready', event => {
-  userId = event.detail.uid;
-  username = event.detail.username || 'Kullanıcı';
-  isPlus = Boolean(event.detail.isPlus);
-  initForUser().catch(e => console.error('Rooms init',e));
+
+window.addEventListener('forever-user-ready',()=>{
+  initForUser().catch(error=>console.error('Aura X oda başlangıcı başarısız:',error));
 });
-initForUser().catch(e => console.error('Rooms init',e));
+window.addEventListener('forever-user-signed-out',()=>{
+  if(roomChannel){supabaseClient.removeChannel(roomChannel);roomChannel=null;}
+  activeRoom=null;userId=null;username='';isPlus=false;isAppAdmin=false;
+  window.foreverIsAdmin=false;
+  document.querySelectorAll('.admin-nav').forEach(node=>node.classList.add('hidden'));
+});
+initForUser().catch(error=>console.error('Aura X oda başlangıcı başarısız:',error));
