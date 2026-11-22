@@ -98,6 +98,7 @@ using (
   or (collection_name = 'blocks' and (
     data ->> 'blockerId' = auth.uid()::text or data ->> 'blockedId' = auth.uid()::text
   ))
+  or (collection_name = 'room_bans' and public.is_forever_admin())
 );
 
 drop policy if exists forever_documents_insert on public.forever_documents;
@@ -109,7 +110,7 @@ with check (
     owner_id = auth.uid()
     and collection_name in (
       'users','usernames','posts','stories','comments','notifications',
-      'reports','blocks','rooms','room_members','room_messages','stickers',
+      'reports','blocks','rooms','room_members','room_messages','room_bans','stickers',
       'modlogs'
     )
     and (collection_name <> 'room_members' or data ->> 'userId' = auth.uid()::text)
@@ -306,26 +307,34 @@ begin
     end if;
   end if;
 
-  if new.collection_name='posts' and tg_op='INSERT' then
-    if (new.data ->> 'imageUrl') is null and not v_is_plus and not public.is_forever_admin() then
+  if new.collection_name in ('posts','stories') and tg_op='INSERT' then
+    if new.collection_name='posts' and (new.data ->> 'imageUrl') is null
+       and not v_is_plus and not public.is_forever_admin() then
       raise exception 'Yalnızca Plus üyeleri sadece metin gönderisi paylaşabilir.';
     end if;
     if (new.data ->> 'imageUrl') is not null then
       select count(*) into v_count
       from public.forever_documents d
-      where d.collection_name='posts' and d.owner_id=new.owner_id
-        and d.created_at >= date_trunc('day', now())
-        and (tg_op <> 'UPDATE' or d.id <> new.id);
+      where d.collection_name in ('posts','stories') and d.owner_id=new.owner_id
+        and d.created_at >= date_trunc('day', now());
       if v_count >= case when v_is_plus then 10 else 5 end and not public.is_forever_admin() then
-        raise exception 'Günlük medya yükleme sınırına ulaştın.';
+        raise exception 'Günlük toplam medya yükleme sınırına ulaştın.';
       end if;
     end if;
   end if;
 
   if new.collection_name='room_members' and tg_op='INSERT' then
     v_user_id := new.data ->> 'userId';
+    v_room_id := new.data ->> 'roomId';
     if v_user_id is distinct from auth.uid()::text and not public.is_forever_admin() then
       raise exception 'Yalnızca kendi hesabını odaya ekleyebilirsin.';
+    end if;
+    if exists (
+      select 1 from public.forever_documents b
+      where b.collection_name='room_bans'
+        and b.data ->> 'roomId'=v_room_id and b.data ->> 'userId'=v_user_id
+    ) and not public.is_forever_admin() then
+      raise exception 'Bu odaya katılman yönetim tarafından engellenmiş.';
     end if;
     if not v_is_plus and not public.is_forever_admin() then
       select count(*) into v_count
