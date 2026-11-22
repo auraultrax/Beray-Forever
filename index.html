@@ -2328,6 +2328,180 @@
       }, () => {});
     }
 
+    // Forever Plus Odalar — keşfedilebilir topluluklar ve üyelik kontrollü canlı sohbet.
+    let roomsCache = [];
+    let activeRoomId = null;
+    let unsubscribeRoomMessages = null;
+
+    window.openRoomsPanel = async function() {
+      if (!currentUser) return fxToast('Önce giriş yapmalısın.');
+      document.getElementById('roomsModal')?.classList.remove('hidden');
+      document.getElementById('roomChatView')?.classList.add('hidden');
+      document.getElementById('roomsList')?.classList.remove('hidden');
+      document.getElementById('roomCreateForm')?.classList.remove('hidden');
+      await loadForeverRooms();
+    };
+
+    window.closeRoomsPanel = function() {
+      if (unsubscribeRoomMessages) { unsubscribeRoomMessages(); unsubscribeRoomMessages = null; }
+      activeRoomId = null;
+      document.getElementById('roomsModal')?.classList.add('hidden');
+    };
+
+    async function loadForeverRooms() {
+      const list = document.getElementById('roomsList');
+      if (!list || !currentUser) return;
+      list.innerHTML = '<p class="sub">Odalar yükleniyor…</p>';
+      try {
+        const results = await Promise.all([
+          getDocs(query(collection(db, 'rooms'), where('visibility', '==', 'public'), limit(30))),
+          getDocs(query(collection(db, 'rooms'), where('memberUids', 'array-contains', currentUser.uid), limit(30)))
+        ]);
+        const map = new Map();
+        results[0].forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+        results[1].forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+        roomsCache = [...map.values()].sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        renderForeverRooms();
+      } catch (error) {
+        list.innerHTML = '<p class="sub">Odalar yüklenemedi. Firestore kurallarını ve bağlantıyı kontrol et.</p>';
+        console.warn('Forever rooms load', error);
+      }
+    }
+
+    function renderForeverRooms() {
+      const list = document.getElementById('roomsList');
+      if (!list) return;
+      if (!roomsCache.length) {
+        list.innerHTML = '<div class="card empty">Henüz oda yok. İlk odayı sen oluştur 💚</div>';
+        return;
+      }
+      list.innerHTML = roomsCache.map(room => {
+        const members = Array.isArray(room.memberUids) ? room.memberUids : [];
+        const isMember = members.includes(currentUser.uid);
+        const isOwner = room.ownerUid === currentUser.uid;
+        const roomId = String(room.id).replace(/[^A-Za-z0-9_-]/g, '');
+        const action = isMember
+          ? '<button type="button" class="btn" onclick="openForeverRoom(\'' + roomId + '\')">Aç</button>'
+          : '<button type="button" class="btn" onclick="joinForeverRoom(\'' + roomId + '\')">Katıl</button>';
+        return '<div class="room-card"><div class="room-mark"><i class="fa-solid fa-comments"></i></div><div style="flex:1;min-width:0;"><strong>' +
+          escapeHTML(room.name || 'İsimsiz oda') + '</strong><div class="sub">' +
+          escapeHTML(room.description || 'Forever topluluğu') + ' · ' + members.length + ' üye' +
+          (isOwner ? ' · Oda sahibi sensin' : '') + '</div></div>' + action + '</div>';
+      }).join('');
+    }
+
+    window.createForeverRoom = async function(e) {
+      e.preventDefault();
+      if (!currentUser) return;
+      const name = sanitizeText(document.getElementById('roomNameInput')?.value || '', 40);
+      const description = sanitizeText(document.getElementById('roomDescriptionInput')?.value || '', 160);
+      if (name.length < 3) return fxToast('Oda adı en az 3 karakter olmalı.');
+      const button = document.querySelector('#roomCreateForm button[type="submit"]');
+      if (button) { button.disabled = true; button.textContent = 'Oluşturuluyor…'; }
+      try {
+        const result = await addDoc(collection(db, 'rooms'), {
+          ownerUid: currentUser.uid,
+          ownerName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Forever üyesi',
+          name,
+          description,
+          visibility: 'public',
+          memberUids: [currentUser.uid],
+          createdAt: serverTimestamp()
+        });
+        document.getElementById('roomCreateForm').reset();
+        await loadForeverRooms();
+        await openForeverRoom(result.id);
+      } catch (error) {
+        fxToast('Oda oluşturulamadı: ' + (error.message || 'bağlantı hatası'));
+      } finally {
+        if (button) { button.disabled = false; button.textContent = '+ Oda oluştur'; }
+      }
+    };
+
+    window.joinForeverRoom = async function(roomId) {
+      if (!currentUser || !roomId) return;
+      try {
+        const roomRef = doc(db, 'rooms', roomId);
+        const snap = await getDoc(roomRef);
+        if (!snap.exists()) throw new Error('Oda bulunamadı.');
+        const members = snap.data().memberUids || [];
+        if (members.length >= 100) throw new Error('Bu oda dolu (100 üye).');
+        await updateDoc(roomRef, { memberUids: arrayUnion(currentUser.uid) });
+        await loadForeverRooms();
+        await openForeverRoom(roomId);
+      } catch (error) {
+        fxToast(error.message || 'Odaya katılınamadı.');
+      }
+    };
+
+    window.openForeverRoom = async function(roomId) {
+      if (!currentUser || !roomId) return;
+      try {
+        const snap = await getDoc(doc(db, 'rooms', roomId));
+        if (!snap.exists()) throw new Error('Oda bulunamadı.');
+        const room = snap.data();
+        if (!(room.memberUids || []).includes(currentUser.uid)) throw new Error('Önce bu odaya katılmalısın.');
+        activeRoomId = roomId;
+        document.getElementById('roomsList')?.classList.add('hidden');
+        document.getElementById('roomCreateForm')?.classList.add('hidden');
+        document.getElementById('roomChatView')?.classList.remove('hidden');
+        document.getElementById('roomChatTitle').textContent = room.name || 'Forever Odası';
+        document.getElementById('roomChatDescription').textContent = room.description || '';
+        if (unsubscribeRoomMessages) unsubscribeRoomMessages();
+        const messageQuery = query(collection(db, 'rooms', roomId, 'messages'), orderBy('createdAt', 'desc'), limit(60));
+        unsubscribeRoomMessages = onSnapshot(messageQuery, snapshot => {
+          const messages = [];
+          snapshot.forEach(d => messages.push({ id: d.id, ...d.data() }));
+          messages.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+          const box = document.getElementById('roomMessages');
+          if (!box) return;
+          box.innerHTML = messages.length ? messages.map(message => {
+            const mine = message.senderUid === currentUser.uid;
+            const time = message.createdAt?.seconds
+              ? new Date(message.createdAt.seconds * 1000).toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'})
+              : 'Az önce';
+            return '<div class="room-message' + (mine ? ' mine' : '') + '"><small>' +
+              escapeHTML(message.senderName || 'Üye') + ' · ' + time + '</small>' +
+              escapeHTML(message.text || '') + '</div>';
+          }).join('') : '<p class="sub">Bu odada henüz mesaj yok. İlk mesajı sen yaz.</p>';
+          box.scrollTop = box.scrollHeight;
+        }, error => {
+          console.warn('Forever room messages', error);
+          fxToast('Oda mesajları yüklenemedi.');
+        });
+      } catch (error) {
+        fxToast(error.message || 'Oda açılamadı.');
+      }
+    };
+
+    window.backToRoomsList = function() {
+      if (unsubscribeRoomMessages) { unsubscribeRoomMessages(); unsubscribeRoomMessages = null; }
+      activeRoomId = null;
+      document.getElementById('roomChatView')?.classList.add('hidden');
+      document.getElementById('roomCreateForm')?.classList.remove('hidden');
+      document.getElementById('roomsList')?.classList.remove('hidden');
+    };
+
+    window.sendRoomMessage = async function(e) {
+      e.preventDefault();
+      if (!currentUser || !activeRoomId) return;
+      const input = document.getElementById('roomMessageInput');
+      const message = sanitizeText(input?.value || '', 1000);
+      if (!message) return;
+      try {
+        rateLimit('room-message:' + currentUser.uid, 20, 60000);
+        await addDoc(collection(db, 'rooms', activeRoomId, 'messages'), {
+          senderUid: currentUser.uid,
+          senderName: currentUser.displayName || currentUser.email?.split('@')[0] || 'Üye',
+          text: message,
+          createdAt: serverTimestamp()
+        });
+        input.value = '';
+      } catch (error) {
+        fxToast(error.message || 'Mesaj gönderilemedi.');
+      }
+    };
+
     // ---- Hesap askıya alma uyarısı ----
     function showSuspension(message) {
       let el = document.getElementById('suspensionOverlay');
