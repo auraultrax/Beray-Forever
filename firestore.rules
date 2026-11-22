@@ -5,13 +5,12 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
 
-    // Yönetici: admins/{uid} belgesi olan hesap (belge yalnızca Firebase Console'dan eklenir)
-    // 1) users/{uid} belgesinde role == "admin" (Console'dan elle eklenir) ya da 2) admins/{uid} belgesi
+    // Yönetici: yalnızca doğrulanmış bu e-posta. Gerçek e-postayı SADECE Firebase Console'daki kurala yaz
+    // (bu depo herkese açık; gerçek adresi buraya/GitHub'a yazma).
     function isAdmin() {
-      return isSignedIn() && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin'
-        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'ADMIN_EMAIL_BURAYA';
     }
 
     // Askıda / yasaklı / kısıtlı hesap hiçbir şey yazamaz
@@ -37,11 +36,6 @@ service cloud.firestore {
         && name.matches('^[a-z0-9_]+$');
     }
     function isValidPostContent(c) { return c is string && c.size() <= 2000; }
-
-    match /admins/{uid} {
-      allow read: if isOwner(uid);
-      allow write: if false;
-    }
 
     // Yönetici işlem kayıtları (değiştirilemez, silinemez)
     match /modlogs/{id} {

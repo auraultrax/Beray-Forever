@@ -46,8 +46,8 @@
     <h2>Yönetici girişi</h2>
     <label>E-posta</label><input id="email" type="email" autocomplete="username">
     <label>Şifre</label><input id="pass" type="password" autocomplete="current-password">
-    <div style="margin-top:12px"><button id="loginBtn">Giriş yap</button></div>
-    <p class="muted">Yalnızca Firestore'da <code>users</code> belgesinde <code>role = admin</code> olan hesaplar girebilir.</p>
+    <div style="margin-top:12px"><button id="loginBtn">Giriş yap</button> <button id="recheckBtn" class="sec hidden">Doğruladım, devam et</button></div>
+    <p class="muted">Yalnızca yönetici hesabı girebilir (denetim sunucuda yapılır).</p>
   </section>
 
   <section id="app" class="hidden">
@@ -78,7 +78,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendEmailVerification }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, getDocs, updateDoc, deleteDoc, addDoc, collection, query, where, limit, serverTimestamp, deleteField, increment }
   from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -117,24 +117,31 @@ $('loginBtn').onclick = async () => {
 $('pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
 $('outBtn').onclick = () => signOut(auth);
 
+async function enter(user) {
+  me = null; $('app').classList.add('hidden');
+  if (!user.emailVerified) {
+    try { await sendEmailVerification(user); } catch (e) {}
+    say('E-postan doğrulanmamış. Gelen kutuna (ve spam klasörüne) bir doğrulama bağlantısı gönderdim. Bağlantıya tıkla, sonra aşağıdaki "Doğruladım" düğmesine bas.', 'bad');
+    $('recheckBtn').classList.remove('hidden'); return;
+  }
+  $('recheckBtn').classList.add('hidden');
+  // Yönetici denetimi SUNUCUDA yapılır (Firestore kuralları): yönetici olmayan hesap bu kaydı okuyamaz.
+  try { await getDocs(query(collection(db, 'modlogs'), limit(1))); }
+  catch (e) { say('Bu hesap yönetici değil.', 'bad'); await signOut(auth); return; }
+  me = user; $('app').classList.remove('hidden'); clearMsg();
+  loadUsers();
+}
+$('recheckBtn').onclick = async () => {
+  if (!auth.currentUser) return;
+  try { await auth.currentUser.reload(); await auth.currentUser.getIdToken(true); } catch (e) {}
+  enter(auth.currentUser);
+};
 onAuthStateChanged(auth, async user => {
   me = null;
   $('app').classList.add('hidden'); $('loginBox').classList.toggle('hidden', !!user);
   $('outBtn').classList.toggle('hidden', !user); $('who').textContent = user ? user.email : '';
   if (!user) return;
-  try {
-    const [u, a] = await Promise.all([
-      getDoc(doc(db, 'users', user.uid)).catch(() => null),
-      getDoc(doc(db, 'admins', user.uid)).catch(() => null)
-    ]);
-    const ok = (u && u.exists() && u.data().role === 'admin') || (a && a.exists());
-    if (!ok) {
-      say('Bu hesap yönetici değil. Giriş yaptığın UID: ' + user.uid + ' — "users" içindeki belge adı bununla aynı olmalı ve içinde role = admin alanı bulunmalı.', 'bad');
-      await signOut(auth); return;
-    }
-  } catch (e) { say('Yönetici denetimi yapılamadı: ' + e.message, 'bad'); await signOut(auth); return; }
-  me = user; $('app').classList.remove('hidden'); clearMsg();
-  loadUsers();
+  enter(user);
 });
 
 function showTab(t) {
