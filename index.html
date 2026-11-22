@@ -640,10 +640,11 @@
     </div>
     <div class="sidebar-bottom">
       <div class="user-profile-btn" onclick="openProfile()" role="button" tabindex="0" aria-label="Profili aç">
-        <div class="user-avatar-mini" id="sideUserAvatar">?</div>
+        <div class="user-avatar-mini" id="sidebarAvatar">?</div>
         <div class="user-info-mini">
-          <h4 id="sideUserName">Kullanıcı</h4>
-          <p id="sideUserHandle">@kullanici</p>
+          <h4 id="sidebarUsername">Kullanıcı</h4>
+          <span id="sidebarUsernameTag" class="username-tag">@kullanici</span>
+          <p id="sidebarRole">Forever üyesi</p>
         </div>
       </div>
       <button type="button" class="btn btn-outline sidebar-logout" onclick="handleSignOut()"><i class="fa-solid fa-right-from-bracket"></i> Çıkış Yap</button>
@@ -667,6 +668,7 @@
     <div class="hidden" aria-hidden="true">
       <span id="pageTitle">Akış</span><span id="networkAuthStatus"></span>
       <span id="userHeaderAvatar">?</span><span id="userHeaderName">—</span><span id="userHeaderEmail"></span><span id="notifBadge"></span>
+      <span id="sideUserAvatar"></span><span id="sideUserName"></span><span id="sideUserHandle"></span>
     </div>
     <section class="card" id="profileStrip" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <div id="stripAvatar" class="avatar" style="width:48px;height:48px;">?</div>
@@ -1431,7 +1433,7 @@
         const initial = username.charAt(0).toUpperCase();
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
-        set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('postCreatorAvatar', initial);
+        set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('sidebarAvatar', initial); set('sidebarUsername', username); set('sidebarUsernameTag', '@' + username); set('sidebarRole', 'Forever üyesi'); set('postCreatorAvatar', initial);
         await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers(); watchPlusProfiles();
         listenToPosts(); listenToStories();
         const savedIcon = localStorage.getItem('forever_app_icon');
@@ -2401,7 +2403,7 @@
         const headerName = document.getElementById('userHeaderName');
         if (headerName) headerName.innerHTML = escapeHTML(name) + foreverBadges(currentUser.isPlus);
         set('userHeaderEmail', currentUser.isPlus ? 'Forever Plus' : 'Forever üyesi');
-        set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('postCreatorAvatar', initial);
+        set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('sidebarAvatar', initial); set('sidebarUsername', name); set('sidebarUsernameTag', '@' + currentUser.username); set('sidebarRole', currentUser.isPlus ? 'Forever Plus' : 'Forever üyesi'); set('postCreatorAvatar', initial);
         if (networkAuthStatus) { networkAuthStatus.textContent = currentUser.isPlus ? 'Forever Plus' : 'Çevrimiçi'; networkAuthStatus.className = 'status-ok'; networkAuthStatus.style.display = 'inline'; }
         await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers(); watchPlusProfiles();
         listenToPosts(); listenToStories();
