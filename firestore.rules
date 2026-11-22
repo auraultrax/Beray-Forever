@@ -6,9 +6,12 @@ service cloud.firestore {
     function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
 
     // Yönetici: admins/{uid} belgesi olan hesap (belge yalnızca Firebase Console'dan eklenir)
+    // 1) users/{uid} belgesinde role == "admin" (Console'dan elle eklenir) ya da 2) admins/{uid} belgesi
     function isAdmin() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin'
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
     }
 
     // Askıda / yasaklı / kısıtlı hesap hiçbir şey yazamaz
@@ -20,10 +23,10 @@ service cloud.firestore {
       );
     }
 
-    // Moderasyon alanları: sahibi dokunamaz
+    // Moderasyon + yetki alanları: sahibi dokunamaz (role dahil: kimse kendini yönetici yapamaz)
     function modFields() {
       return ['suspended','suspendedReason','suspendedMessage','suspendedAt','suspendedBy',
-              'banned','restrictedUntil','restrictedReason','warnCount','lastWarning'];
+              'banned','restrictedUntil','restrictedReason','warnCount','lastWarning','role'];
     }
     function touchesMod() {
       return request.resource.data.diff(resource.data).affectedKeys().hasAny(modFields());

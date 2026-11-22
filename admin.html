@@ -42,7 +42,7 @@
     <label>E-posta</label><input id="email" type="email" autocomplete="username">
     <label>Şifre</label><input id="pass" type="password" autocomplete="current-password">
     <div style="margin-top:12px"><button id="loginBtn">Giriş yap</button></div>
-    <p class="muted">Yalnızca Firestore'da <code>admins</code> koleksiyonuna eklenmiş hesaplar girebilir.</p>
+    <p class="muted">Yalnızca Firestore'da <code>users</code> belgesinde <code>role = admin</code> olan hesaplar girebilir.</p>
   </section>
 
   <section id="app" class="hidden">
@@ -108,9 +108,13 @@ onAuthStateChanged(auth, async user => {
   $('outBtn').classList.toggle('hidden', !user); $('who').textContent = user ? user.email : '';
   if (!user) return;
   try {
-    const a = await getDoc(doc(db, 'admins', user.uid));
-    if (!a.exists()) {
-      say('Bu hesap yönetici değil. Giriş yaptığın UID: ' + user.uid + ' — "admins" belge adı bununla birebir aynı olmalı.', 'bad');
+    const [u, a] = await Promise.all([
+      getDoc(doc(db, 'users', user.uid)).catch(() => null),
+      getDoc(doc(db, 'admins', user.uid)).catch(() => null)
+    ]);
+    const ok = (u && u.exists() && u.data().role === 'admin') || (a && a.exists());
+    if (!ok) {
+      say('Bu hesap yönetici değil. Giriş yaptığın UID: ' + user.uid + ' — "users" içindeki belge adı bununla aynı olmalı ve içinde role = admin alanı bulunmalı.', 'bad');
       await signOut(auth); return;
     }
   } catch (e) { say('Yönetici denetimi yapılamadı: ' + e.message, 'bad'); await signOut(auth); return; }
