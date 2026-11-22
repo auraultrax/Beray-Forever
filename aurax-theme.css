@@ -265,3 +265,16 @@ body.chat-keyboard-open .mobile-bottom-nav { display:none !important; }
   .mobile-top-bar { display:none; }
   .desktop-top-bar { display:flex; }
 }
+
+/* Original Aura X unread counters (remain hidden until Forever has unread counts). */
+.room-notif-badge,.notif-count-badge {
+  min-width:18px; height:18px; padding:0 4px; border-radius:99px;
+  background:var(--danger); color:#fff; font-size:.65rem; font-weight:800;
+  display:none; align-items:center; justify-content:center;
+  box-shadow:0 0 0 2px var(--bg-surface);
+}
+.room-notif-badge { margin-left:auto; }
+.notif-count-badge { margin-left:6px; }
+.mobile-nav-item .room-notif-badge,.mobile-nav-item .notif-count-badge {
+  position:absolute; top:-6px; right:-5px; margin:0;
+}
