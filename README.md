@@ -1,63 +1,50 @@
-# Forever · Beray — Güvenlik Öncelikli Gelişmiş Sürüm
+# Forever Plus · Beray
 
-Yakın hissettiren, kolay kullanılan sosyal alan. Bu paket orijinal Forever tabanını alır, **güvenliği en üste** koyar ve eksik özelliklerle güçlendirir.
+Forever Plus, Forever'ın sosyal özelliklerini koruyarak zümrüt/orman yeşili görsel kimlikle geliştirilen sürümüdür. Geliştirme dalı: forever-plus-development.
 
-## Bu sürümde neler var?
+## Özellikler
+- Google hesabı seçerek kayıt olma; ad-soyad, doğum tarihi, bölge, kullanıcı adı ve şifre ile profil oluşturma
+- Mevcut e-posta/şifre ve Google girişleri
+- Benzersiz kullanıcı adı
+- Profil düzenleme, biyografi ve bölge
+- Metin, görsel ve kısa video gönderileri
+- Hikâyeler, beğeni, yorum, takip, anket, kaydetme, arama ve bildirim merkezi
+- Herkese açık odalar, odaya katılım ve üyeler için gerçek zamanlı sohbet
+- Şikâyet, engelleme, oran sınırlama ve moderasyon araçları
+- PWA kabuğu ve hareket azaltma tercihi
 
-### Güvenlik (öncelik)
-- Firestore Security Rules şablonu (`SECURITY.md`) — **canlıya almadan önce uygula**
-- Kullanıcı adı format + **benzersizlik** kontrolü (`usernames` koleksiyonu)
-- Gönderi / yorum karakter limitleri + sanitization
-- İstemci tarafı rate-limit (spam engeli)
-- Şikayet (report) sistemi
-- Kullanıcı engelleme (block) — engellenenlerin gönderileri akışta görünmez
-- Yükleme sunucusu: boyut/MIME sınırı, rate-limit, opsiyonel token, path traversal koruması
-- XSS koruması (`escapeHTML`) tüm kullanıcı içeriklerinde
-
-### Özellikler
-- E-posta + Google ile giriş / kayıt / şifre sıfırlama
-- Benzersiz `@kullaniciadi`
-- Gönderi (metin + fotoğraf + kısa video)
-- Hikâyeler
-- Beğeni, yorum
-- Takip sistemi
-- Profil düzenleme
-- Kaydedilen gönderiler (bookmark)
-- Arama (içerik, isim, #etiket)
-- PWA (ikon, manifest, service worker)
-- Yerel / kendi sunucuna fotoğraf yükleme (Firebase Storage zorunlu değil)
+## Veri ve gizlilik
+- Bu dal mevcut Forever uygulamasının Firebase Authentication + Cloud Firestore altyapısını korur; Aura X'in eski istemci köprüsü kaldırılmıştır.
+- Doğum tarihi privateProfiles/{uid} belgesinde saklanır. Güncel firestore.rules dosyasında bu belgeyi yalnızca hesap sahibi okuyabilir/değiştirebilir.
+- Görünen ad, kullanıcı adı, biyografi ve seçilen genel bölge users/{uid} profiline yazılır. Bölge herkese açık profil bilgisidir.
+- Şifre hiçbir zaman Firestore profiline yazılmaz; Google hesabına Firebase Authentication e-posta/şifre sağlayıcısı olarak bağlanır.
+- Google sağlayıcısı Firebase Console → Authentication → Sign-in method altında etkin olmalıdır.
 
 ## Yerelde çalıştırma
-
 ```bash
-# Ana uygulama
 python3 -m http.server 8080
-# → http://localhost:8080
-
-# İsteğe bağlı güvenli yükleme sunucusu
-cd upload-server
-UPLOAD_TOKEN="gizli-anahtar" node server.mjs
-# Forever sağ panelde: http://localhost:8787/upload
-# Token kullanıyorsan tarayıcı konsolunda:
-# localStorage.setItem('FOREVER_UPLOAD_TOKEN', 'gizli-anahtar')
+# http://localhost:8080
 ```
 
-**Önemli:** `file://` ile açma. PWA ve bazı API’ler için `http://localhost` veya HTTPS gerekir.
+file:// ile açma. Google giriş ve Firebase servisleri için HTTPS veya localhost kullan.
 
-## Canlıya almadan önce
+### İsteğe bağlı medya yükleme sunucusu
+```bash
+cd upload-server
+UPLOAD_TOKEN="uzun-rastgele-bir-anahtar" node server.mjs
+```
+Forever ayarlarında yükleme sunucusu adresini tanımla. Sunucu varsayılan olarak 8 MB istek sınırı uygular. Üretimde UPLOAD_TOKEN, CORS_ORIGIN ve herkese açık HTTPS adresi güvenli şekilde ayarlanmalıdır. Yükleme sunucusunu token olmadan internete açma.
 
-1. `SECURITY.md` içindeki **Firestore Rules**’ı Firebase Console’a yapıştır.
-2. Authentication → Authorized domains ayarla.
-3. Mümkünse App Check etkinleştir.
-4. Yükleme sunucusunu token + CORS_ORIGIN ile koru veya Firebase Storage’a geç.
-5. Küçük bir test grubuyla dene.
+## Firebase kurulumu — canlı testten önce
+1. Firebase Authentication içinde Google ve Email/Password sağlayıcılarını aç.
+2. Uygulamanın yayınlandığı alan adını Authorized domains listesine ekle.
+3. firestore.rules dosyasının tamamını Firebase Console → Firestore Database → Rules alanına yayınla.
+4. Google kayıt, özel profil yazımı, oda oluşturma/katılma/mesaj gönderme ve eski kullanıcı girişi senaryolarını test et.
+5. Uygulamayı gerçek kullanıcıya açmadan önce Firebase App Check, kota, gizlilik metni ve hesap silme akışını gözden geçir.
 
-## Yol haritası (devamı)
+## Özellik notları
+- Bottle Game bu Forever deposunda başlangıçta bulunmuyordu. Forever Plus için window.FOREVER_FEATURE_FLAGS.bottleGame değeri false olarak tanımlıdır.
+- Aura X'in eski giriş köprüsü ve sentetik yerel oturum yolu kaldırılmıştır. Bağlı Aura X kaynak deposu bu GitHub bağlantısında bulunmadığından, Aura X kodundan birebir modül taşıma yapılmamış; istenen oda özelliği Forever içinde yeni geliştirilmiştir.
+- Performans düzenlemeleri: akış 60 gönderiyle sınırlandırılır, hikâyeler 30 öğeyle alınır, arama geciktirilir, trend etiketler snapshot başına hesaplanır, görseller tembel yüklenir ve geçici önizleme URL'leri serbest bırakılır.
 
-- Bildirim merkezi
-- Gerçek zamanlı DM
-- Moderasyon paneli
-- Daha gelişmiş Keşfet sıralaması
-- Hesap silme + gizlilik politikası sayfası
-
-Güvenlik bizim için **forever**.
+Geliştirme adımları ve açık kontroller: GELISTIRME-CIZELGESI.md
