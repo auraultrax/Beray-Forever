@@ -2,6 +2,7 @@ import { supabaseClient } from './supabase-compat.js';
 
 const $ = id => document.getElementById(id);
 let session = null, userId = null, username = '', isPlus = false, activeRoom = null, roomChannel = null;
+let knownPlusUserIds = new Set();
 let drawingDirty = false, roomUiBound = false;
 
 function escapeHtml(value) {
@@ -20,6 +21,22 @@ async function fetchDocs(collectionName) {
     .order('created_at', { ascending: false }).limit(500);
   if (error) throw error;
   return data || [];
+}
+async function refreshKnownPlusUsers() {
+  try {
+    const users = await fetchDocs('users');
+    knownPlusUserIds = new Set(users.filter(row => row.data?.isPlus).map(row => row.id));
+  } catch (error) { console.warn('Plus kullanıcı rozetleri yüklenemedi:', error); }
+}
+function syncPlusControls() {
+  const label = $('roomPlanLabel');
+  if (label) label.textContent = isPlus ? '✦ Plus: oda sınırı yok' : 'Ücretsiz: en fazla 3 oda';
+  $('openStickersBtn') && ($('openStickersBtn').disabled = !isPlus);
+  $('toggleDrawingBtn') && ($('toggleDrawingBtn').disabled = !isPlus);
+  $('customStickerFile') && ($('customStickerFile').disabled = !isPlus);
+  if ($('stickerLock')) $('stickerLock').textContent = isPlus ? '' : '🔒 Plus';
+  if ($('drawingLock')) $('drawingLock').textContent = isPlus ? '' : '🔒 Plus';
+  if (!isPlus) $('drawingBox')?.classList.add('hidden');
 }
 async function insertDoc(collectionName, id, data) {
   const { error } = await supabaseClient.from('forever_documents').insert({
@@ -104,7 +121,7 @@ function renderMessage(row) {
   else if (d.kind === 'drawing' && d.drawingUrl) body = '<img src="' + escapeHtml(d.drawingUrl) + '" alt="Oda çizimi" style="width:min(100%,360px);border-radius:12px;background:white;">';
   else body = '<div>' + escapeHtml(d.text || '') + '</div>';
   const time = row.created_at ? new Date(row.created_at).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}) : '';
-  const badges = plusBadge(Boolean(d.isPlus));
+  const badges = plusBadge(Boolean(d.isPlus) || knownPlusUserIds.has(d.userId));
   const tools = '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">' +
     (isPlus ? '<button type="button" class="btn btn-ghost" style="padding:4px 7px;font-size:11px;" data-pin="' + escapeHtml(row.id) + '">' + (d.pinned ? 'Sabitlemeyi kaldır' : 'Sabitle') + '</button>' : '<small>🔒 Sabitleme Plus</small>') +
     (!mine ? '<button type="button" class="btn btn-ghost" style="padding:4px 7px;font-size:11px;" data-report="' + escapeHtml(row.id) + '" data-owner="' + escapeHtml(d.userId || '') + '">Şikâyet</button><button type="button" class="btn btn-ghost" style="padding:4px 7px;font-size:11px;" data-block="' + escapeHtml(d.userId || '') + '">Engelle</button>' : '') +
@@ -118,11 +135,7 @@ async function openRoom(id, name) {
   activeRoom = { id, name };
   $('roomChat').classList.remove('hidden');
   $('roomChatTitle').textContent = name;
-  $('stickerLock').textContent = isPlus ? '' : '🔒 Plus';
-  $('drawingLock').textContent = isPlus ? '' : '🔒 Plus';
-  $('openStickersBtn').disabled = !isPlus;
-  $('toggleDrawingBtn').disabled = !isPlus;
-  $('customStickerFile').disabled = !isPlus;
+  syncPlusControls();
   await loadRoomMessages();
   if (roomChannel) await supabaseClient.removeChannel(roomChannel);
   roomChannel = supabaseClient.channel('forever-room-' + id)
@@ -270,6 +283,8 @@ async function initForUser() {
   if (profile.error) return;
   username = profile.data?.data?.username || session.user.user_metadata?.name || 'Kullanıcı';
   isPlus = Boolean(plus.data);
+  await refreshKnownPlusUsers();
+  syncPlusControls();
   bindRoomUi();
   await loadRoomList();
 }
