@@ -95,25 +95,29 @@ $$;
 
 create or replace function private.is_room_member(p_room_id uuid, p_user_id uuid default auth.uid())
 returns boolean
-language sql stable security definer
+language plpgsql stable security definer
 set search_path = ''
-as $$
-  select exists (
+as $
+begin
+  return exists (
     select 1 from public.room_members m
     where m.room_id = p_room_id and m.user_id = p_user_id
   );
-$$;
+end;
+$;
 
 create or replace function private.is_conversation_member(p_conversation_id uuid, p_user_id uuid default auth.uid())
 returns boolean
-language sql stable security definer
+language plpgsql stable security definer
 set search_path = ''
-as $$
-  select exists (
+as $
+begin
+  return exists (
     select 1 from public.conversation_members m
     where m.conversation_id = p_conversation_id and m.user_id = p_user_id
   );
-$$;
+end;
+$;
 
 grant execute on function private.is_admin() to authenticated;
 grant execute on function private.is_moderator() to authenticated;
@@ -441,6 +445,20 @@ create table if not exists public.drawing_members (
   primary key (drawing_id,user_id)
 );
 create index if not exists drawing_members_user_idx on public.drawing_members(user_id,drawing_id);
+create or replace function private.is_drawing_member(p_drawing_id uuid, p_user_id uuid default auth.uid())
+returns boolean
+language plpgsql stable security definer
+set search_path = ''
+as $
+begin
+  return exists (
+    select 1 from public.drawing_members m
+    where m.drawing_id = p_drawing_id and m.user_id = p_user_id
+  );
+end;
+$;
+grant execute on function private.is_drawing_member(uuid,uuid) to authenticated;
+
 
 create table if not exists public.drawing_strokes (
   id uuid primary key default gen_random_uuid(),
@@ -665,8 +683,8 @@ with check (id=(select auth.uid()) or private.is_admin());
 
 drop policy if exists private_profiles_owner_all on public.private_profiles;
 create policy private_profiles_owner_all on public.private_profiles for all to authenticated
-using (user_id=(select auth.uid()) or private.is_admin())
-with check (user_id=(select auth.uid()) or private.is_admin());
+using (user_id=(select auth.uid()))
+with check (user_id=(select auth.uid()));
 
 drop policy if exists user_roles_read_self_admin on public.user_roles;
 create policy user_roles_read_self_admin on public.user_roles for select to authenticated
@@ -820,17 +838,17 @@ using (owner_id=(select auth.uid()) or private.is_moderator());
 
 drop policy if exists drawings_member_read on public.drawings;
 create policy drawings_member_read on public.drawings for select to authenticated
-using (exists(select 1 from public.drawing_members m where m.drawing_id=id and m.user_id=(select auth.uid())));
+using (private.is_drawing_member(id));
 drop policy if exists drawing_members_member_read on public.drawing_members;
 create policy drawing_members_member_read on public.drawing_members for select to authenticated
-using (exists(select 1 from public.drawing_members m where m.drawing_id=drawing_members.drawing_id and m.user_id=(select auth.uid())));
+using (private.is_drawing_member(drawing_id));
 drop policy if exists drawing_strokes_member_read on public.drawing_strokes;
 create policy drawing_strokes_member_read on public.drawing_strokes for select to authenticated
-using (exists(select 1 from public.drawing_members m where m.drawing_id=drawing_id and m.user_id=(select auth.uid())));
+using (private.is_drawing_member(drawing_id));
 drop policy if exists drawing_strokes_member_insert on public.drawing_strokes;
 create policy drawing_strokes_member_insert on public.drawing_strokes for insert to authenticated
 with check (author_id=(select auth.uid()) and not private.is_blocked()
-  and exists(select 1 from public.drawing_members m where m.drawing_id=drawing_id and m.user_id=(select auth.uid())));
+  and private.is_drawing_member(drawing_id));
 
 drop policy if exists plus_apps_owner_insert on public.plus_applications;
 create policy plus_apps_owner_insert on public.plus_applications for insert to authenticated
