@@ -424,6 +424,41 @@ begin
       raise exception 'Sadece metin gönderisi paylaşımı Plus özelliğidir.';
     end if;
 
+    if new.collection_name='posts' and tg_op='UPDATE' and old.owner_id = auth.uid() then
+      select data ->> 'username' into v_username
+      from public.forever_documents
+      where collection_name='users' and id=auth.uid()::text
+      limit 1;
+      if exists (
+        select 1 from jsonb_array_elements(coalesce(old.data -> 'likes','[]'::jsonb)) old_like(value)
+        where not (coalesce(new.data -> 'likes','[]'::jsonb) @> jsonb_build_array(old_like.value))
+           and old_like.value <> auth.uid()::text
+      ) or exists (
+        select 1 from jsonb_array_elements_text(coalesce(new.data -> 'likes','[]'::jsonb)) new_like(value)
+        where not (coalesce(old.data -> 'likes','[]'::jsonb) @> jsonb_build_array(new_like.value))
+           and new_like.value <> auth.uid()::text
+      ) then
+        raise exception 'Kendi gönderinde yalnızca kendi beğenini ekleyebilir veya kaldırabilirsin.';
+      end if;
+      if exists (
+        select 1 from jsonb_array_elements(coalesce(old.data -> 'comments','[]'::jsonb)) old_comment(value)
+        where not (coalesce(new.data -> 'comments','[]'::jsonb) @> jsonb_build_array(old_comment.value))
+      ) or exists (
+        select 1 from jsonb_array_elements(coalesce(new.data -> 'comments','[]'::jsonb)) new_comment(value)
+        where not (coalesce(old.data -> 'comments','[]'::jsonb) @> jsonb_build_array(new_comment.value))
+          and (
+            (new_comment.value ->> 'userId') is distinct from auth.uid()::text
+            or (new_comment.value ->> 'author') is distinct from v_username
+          )
+      ) then
+        raise exception 'Yorumlar silinemez, değiştirilemez veya başka kullanıcı adına eklenemez.';
+      end if;
+      if ((new.data -> 'poll' -> 'voters') - auth.uid()::text)
+         is distinct from ((old.data -> 'poll' -> 'voters') - auth.uid()::text) then
+        raise exception 'Ankette yalnızca kendi oyunuzu kaydedebilirsiniz.';
+      end if;
+    end if;
+
     if new.collection_name='posts' and tg_op='UPDATE' and old.owner_id is distinct from auth.uid() then
       select data ->> 'username' into v_username
       from public.forever_documents
