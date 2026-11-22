@@ -1298,6 +1298,9 @@
     };
     window.closeNotifPanel = function() {
       document.getElementById('notifPanel')?.classList.add('hidden');
+      document.querySelectorAll('[data-nav]').forEach(item => item.classList.toggle('active', item.dataset.nav === 'discover'));
+      const title=document.getElementById('pageTitle');
+      if(title) title.innerHTML='<i class="fa-solid fa-sparkles"></i> Akış';
     };
 
     // Akış modu: Tümü / Takip
@@ -2269,6 +2272,8 @@
     window.closeAuraXDirectory = function() {
       document.getElementById('auraXDirectoryModal')?.classList.add('hidden');
       document.querySelectorAll('[data-nav]').forEach(item => item.classList.toggle('active', item.dataset.nav === 'discover'));
+      const title=document.getElementById('pageTitle');
+      if(title) title.innerHTML='<i class="fa-solid fa-sparkles"></i> Akış';
     };
     function auraXFollowerCount(row) {
       const followers = row?.data?.followers;
@@ -2338,7 +2343,7 @@
         auraXDirectoryUsers=[];
         snap.forEach(docSnap=>{
           const data=docSnap.data()||{};
-          if(docSnap.id!==currentUser.uid&&data.suspended!==true&&data.banned!==true) auraXDirectoryUsers.push({id:docSnap.id,data});
+          if(data.suspended!==true&&data.banned!==true) auraXDirectoryUsers.push({id:docSnap.id,data});
         });
         renderAuraXDirectory();
       }catch(error){
