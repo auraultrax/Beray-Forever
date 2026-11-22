@@ -1080,6 +1080,7 @@ drop policy if exists forever_public_image_insert on storage.objects;
 create policy forever_public_image_insert on storage.objects for insert to authenticated
 with check (
   bucket_id='forever-public'
+  and split_part(name,'/',3) in ('posts','rooms','avatars','stickers')
   and coalesce(metadata->>'mimetype','') like 'image/%'
   and private.can_upload_public_image(name)
 );
@@ -1095,6 +1096,7 @@ create policy forever_private_insert on storage.objects for insert to authentica
 with check (
   bucket_id='forever-private'
   and (storage.foldername(name))[1]=(select auth.uid())::text
+  and split_part(name,'/',3) in ('stories','dm')
   and private.can_upload_public_image(name)
   and coalesce(metadata->>'mimetype','') like 'image/%'
 );
