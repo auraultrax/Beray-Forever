@@ -5,7 +5,7 @@ const APP_SHELL = [
   './manifest.json',
   './supabase-config.js',
   './supabase-client.js',
-  './supabase-firestore-compat.js',
+  './supabase-data.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',
