@@ -717,10 +717,13 @@ for insert to authenticated
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
-  and (storage.foldername(name))[2] <> 'stories'
+  and (storage.foldername(name))[2] in ('posts','drawings','stickers')
   and (
-    (storage.foldername(name))[2] not in ('posts','stories')
-    or private.can_upload_forever_media()
+    ((storage.foldername(name))[2]='posts' and private.can_upload_forever_media())
+    or (
+      (storage.foldername(name))[2] in ('drawings','stickers')
+      and (private.is_forever_plus() or private.is_forever_admin())
+    )
   )
 );
 
@@ -731,10 +734,13 @@ using (bucket_id='forever-media' and (storage.foldername(name))[1]=auth.uid()::t
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
-  and (storage.foldername(name))[2] <> 'stories'
+  and (storage.foldername(name))[2] in ('posts','drawings','stickers')
   and (
-    (storage.foldername(name))[2] not in ('posts','stories')
-    or private.can_upload_forever_media()
+    ((storage.foldername(name))[2]='posts' and private.can_upload_forever_media())
+    or (
+      (storage.foldername(name))[2] in ('drawings','stickers')
+      and (private.is_forever_plus() or private.is_forever_admin())
+    )
   )
 );
 
@@ -779,10 +785,12 @@ for update to authenticated
 using (
   bucket_id='forever-stories'
   and (storage.foldername(name))[1]=auth.uid()::text
+  and (storage.foldername(name))[2]='stories'
 )
 with check (
   bucket_id='forever-stories'
   and (storage.foldername(name))[1]=auth.uid()::text
+  and (storage.foldername(name))[2]='stories'
   and private.can_upload_forever_media()
 );
 
