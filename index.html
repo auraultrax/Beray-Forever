@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#047857">
   <meta name="description" content="Forever Plus — zümrüt temalı topluluk ve paylaşım platformu.">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Forever">
+  <meta name="apple-mobile-web-app-title" content="Forever Plus">
   <title>Forever Plus · Beray</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png">
@@ -625,7 +625,7 @@
 <div class="wrap">
     <header class="top">
       <div class="brand">
-        <div class="brand-logo"><img src="./icons/icon-192.png" alt="Forever"></div>
+        <div class="brand-logo"><img src="./icons/icon-192.png" alt="Forever Plus"></div>
         <div class="brand-text">
           <strong>Forever</strong>
           <span>from <b>Beray</b></span>
@@ -773,7 +773,7 @@
     </div>
 
     <footer class="foot">
-      <strong>Forever</strong> · from <strong>Beray</strong>
+      <strong>Forever Plus</strong> · from <strong>Beray</strong>
     </footer>
   </div>
 
@@ -848,6 +848,7 @@
       arrayRemove, 
       serverTimestamp,
       getDocs,
+      getCountFromServer,
       query,
       where,
       orderBy,
@@ -1154,7 +1155,7 @@
     window.sharePost = async function(postId) {
       const url = location.origin + location.pathname.replace(/\/$/, '') + '/#post=' + postId;
       try {
-        if (navigator.share) await navigator.share({ title: 'Forever', url });
+        if (navigator.share) await navigator.share({ title: 'Forever Plus', url });
         else {
           await navigator.clipboard.writeText(url);
           if (typeof fxToast === 'function') fxToast('Bağlantı kopyalandı');
@@ -1807,10 +1808,17 @@
           displayName: d.displayName || currentUser.displayName || currentUser.email.split('@')[0]
         };
         followingIds = new Set(profileCache.following);
+        let postsCount = allPostsCache.filter(p => p.userId === currentUser.uid).length;
+        try {
+          const countSnapshot = await getCountFromServer(query(collection(db, 'posts'), where('userId', '==', currentUser.uid)));
+          postsCount = countSnapshot.data().count;
+        } catch (countError) {
+          console.warn('Post count fallback to loaded feed:', countError);
+        }
         const counts = {
           followers: profileCache.followers.length,
           following: profileCache.following.length,
-          posts: allPostsCache.filter(p => p.userId === currentUser.uid).length
+          posts: postsCount
         };
         ['statFollowers','stripFollowers'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = String(counts.followers); });
         ['statFollowing','stripFollowing'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = String(counts.following); });
@@ -2545,8 +2553,10 @@
         watchModeration(user.uid);
 
         if (!docSnap.exists() || !docSnap.data().username) {
-          authModal.classList.add('hidden');
-          document.getElementById('usernameModal').classList.remove('hidden');
+          if (!isSignUpMode) {
+            authModal.classList.add('hidden');
+            document.getElementById('usernameModal').classList.remove('hidden');
+          }
         } else {
           authModal.classList.add('hidden');
         }
