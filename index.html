@@ -1145,8 +1145,9 @@
         rateLimit('post:' + currentUser.uid, 8, 120000);
         await addDoc(collection(db, 'posts'), {
           userId: currentUser.uid,
-          authorName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Kullanıcı'),
-          authorEmail: currentUser.email || null,
+          authorName: currentUser.username || currentUser.displayName || 'Kullanıcı',
+          authorUsername: currentUser.username || '',
+          authorIsPlus: Boolean(currentUser.isPlus),
           content: '📊 ' + q,
           tags: extractTags(q),
           poll: { question: q, options: opts, counts: opts.map(() => 0), voters: {} },
@@ -1333,7 +1334,7 @@
         if (result.error) throw result.error;
         if (result.data?.success !== true) throw new Error('Profil kaydı tamamlanamadı.');
         try { currentUser = await updateProfile(currentUser, { displayName: username }); } catch (_) {}
-        currentUser.username = username; currentUser.displayName = firstName; currentUser.isPlus = false;
+        currentUser.username = username; currentUser.displayName = username; currentUser.isPlus = false;
         document.getElementById('usernameModal').classList.add('hidden');
         document.getElementById('authModal').classList.add('hidden');
         const initial = username.charAt(0).toUpperCase();
@@ -1822,8 +1823,10 @@
       const fileInput = document.getElementById('editPostFile');
       const file = fileInput && fileInput.files && fileInput.files[0];
       const btn = document.getElementById('editPostSaveBtn');
-      if (!file && !currentUser.isPlus) return alert('Metin düzenleme yalnızca Plus üyelerine açıktır.');
-      if (!content && !file) return alert('Yazı veya medya gerekli');
+      const originalPost = allPostsCache.find(post => post.id === postId);
+      const alreadyHasMedia = Boolean(originalPost?.imageUrl);
+      if (!file && !alreadyHasMedia && !currentUser.isPlus) return alert('Metin düzenleme yalnızca Plus üyelerine açıktır.');
+      if (!content && !file && !alreadyHasMedia) return alert('Yazı veya medya gerekli');
       btn.disabled = true; btn.textContent = 'Kaydediliyor...';
       try {
         const data = {
