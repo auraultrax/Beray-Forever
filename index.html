@@ -635,7 +635,7 @@
         <a href="#" class="nav-link" data-nav="rooms" onclick="fxNavigate('rooms');return false;"><i class="fa-solid fa-comments"></i><span>Odalar</span><span class="room-notif-badge" id="roomNotifBadge" aria-label="Okunmamış oda bildirimi">0</span></a>
         <a href="#" class="nav-link" data-nav="notifications" onclick="fxNavigate('notifications');return false;"><i class="fa-solid fa-bell"></i><span>Bildirimler</span><span class="notif-count-badge" id="navNotifBadge" aria-label="Okunmamış bildirim">0</span></a>
         <a href="#" class="nav-link" data-nav="leaderboard" onclick="fxNavigate('leaderboard');return false;"><i class="fa-solid fa-trophy"></i><span>Liderlik</span></a>
-        <a href="./admin.html" class="nav-link admin-nav hidden" id="auraXAdminNav" data-nav="admin"><i class="fa-solid fa-shield-halved"></i><span>Yönetim</span></a>
+        <a href="#" onclick="fxNavigate('admin');return false;" class="nav-link admin-nav hidden" id="auraXAdminNav" data-nav="admin"><i class="fa-solid fa-shield-halved"></i><span>Yönetim</span></a>
       </nav>
     </div>
     <div class="sidebar-bottom">
@@ -754,127 +754,88 @@
     </section>
 
     <section id="view-odalar" class="view-section aura-rooms-view">
-  <div id="roomSelectionArea" class="room-selection-area">
-    <div class="room-browser-heading">
-      <div>
-        <h1>Odalar</h1>
-        <p>Bir odaya katıl veya kendi odanı oluştur.</p>
-      </div>
-      <span id="roomPlanLabel" class="room-plan-label">Ücretsiz: en fazla 3 oda</span>
-    </div>
-
-    <div class="room-tabs" role="tablist" aria-label="Oda işlemleri">
-      <button type="button" class="room-tab-btn active" data-room-tab="join" role="tab" aria-selected="true">
-        <i class="fa-solid fa-door-open"></i><span>Odaya Gir</span>
-      </button>
-      <button type="button" class="room-tab-btn" data-room-tab="create" role="tab" aria-selected="false">
-        <i class="fa-solid fa-circle-plus"></i><span>Oda Ekle</span>
-      </button>
-    </div>
-
-    <div id="tab-join" class="room-tab-content active" role="tabpanel">
-      <div class="room-section-intro">
-        <div><h2>Katılabileceğin odalar</h2><p>Bir odayı seçerek sohbete katılabilirsin.</p></div>
-        <button type="button" class="btn btn-ghost room-refresh-btn" id="refreshRoomListBtn" title="Odaları yenile" aria-label="Odaları yenile">
-          <i class="fa-solid fa-rotate"></i>
-        </button>
-      </div>
-      <div id="roomList" class="room-list" aria-live="polite">
-        <div class="empty">Odalar yükleniyor…</div>
-      </div>
-    </div>
-
-    <div id="tab-create" class="room-tab-content" role="tabpanel">
-      <form id="createRoomForm" class="room-create-form">
-        <div class="room-create-icon"><i class="fa-solid fa-comments"></i></div>
-        <h2>Yeni bir oda oluştur</h2>
-        <p>Arkadaşlarını davet edebileceğin kendi sohbet alanını kur.</p>
-        <label class="room-field-label" for="newRoomName">Oda adı</label>
-        <input id="newRoomName" maxlength="40" placeholder="Örn. m" autocomplete="off" required>
-        <div class="room-feature-settings">
-          <label class="room-feature-option">
-            <input type="checkbox" id="newRoomDrawingEnabled" checked>
-            <span class="room-feature-icon"><i class="fa-solid fa-palette"></i></span>
-            <span><strong>Çizim alanı</strong><small>Oda içinde çizim gönder</small></span>
-          </label>
-          <label class="room-feature-option">
-            <input type="checkbox" id="newRoomStickersEnabled" checked>
-            <span class="room-feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-            <span><strong>Çıkartmalar</strong><small>Animasyonlu çıkartma gönder</small></span>
-          </label>
-        </div>
-        <button class="btn room-create-submit" type="submit"><i class="fa-solid fa-plus"></i> Odayı Oluştur</button>
-      </form>
-    </div>
-  </div>
-
-  <section id="roomChat" class="room-chat hidden" aria-label="Oda sohbeti">
-    <header class="room-chat-header">
-      <div class="room-chat-title">
-        <span class="room-chat-hash">#</span>
-        <strong id="roomChatTitle">Oda</strong>
-        <small id="roomChatMemberCount"></small>
-      </div>
-      <div class="room-chat-actions">
-        <button type="button" class="room-tool-btn" id="roomThemeBtn" title="Oda rengini değiştir" aria-label="Oda rengini değiştir"><i class="fa-solid fa-palette"></i></button>
-        <button type="button" class="room-tool-btn" id="roomInviteBtn" title="Üye davet et" aria-label="Üye davet et"><i class="fa-solid fa-user-plus"></i></button>
-        <button type="button" class="room-tool-btn" id="roomPrivateBtn" title="Oda gizliliğini değiştir" aria-label="Oda gizliliğini değiştir"><i class="fa-solid fa-lock-open"></i></button>
-        <button type="button" class="room-tool-btn" id="roomSendLockBtn" title="Mesaj gönderme iznini değiştir" aria-label="Mesaj gönderme iznini değiştir"><i class="fa-solid fa-lock"></i></button>
-        <button type="button" class="room-tool-btn" id="openStickersBtn" title="Çıkartmalar" aria-label="Çıkartmaları aç"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
-        <button type="button" class="room-tool-btn" id="roomMembersBtn" title="Oda üyeleri" aria-label="Oda üyeleri"><i class="fa-solid fa-users"></i></button>
-        <button type="button" class="room-delete-btn" id="roomDeleteBtn">Odayı Sil</button>
-        <button type="button" class="room-exit-btn" id="leaveRoomBtn">Çık</button>
-      </div>
-    </header>
-
-    <div id="roomStatusLine" class="room-status-line">Oda sohbeti</div>
-    <div id="roomMessages" class="room-messages" aria-live="polite">
-      <div class="empty">Mesajlar yükleniyor…</div>
-    </div>
-
-    <div id="stickerTray" class="room-sticker-tray hidden">
-      <button type="button" class="sticker-choice sticker-motion-0" data-sticker="💜">💜</button>
-      <button type="button" class="sticker-choice sticker-motion-1" data-sticker="✨">✨</button>
-      <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🌈">🌈</button>
-      <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🦋">🦋</button>
-      <button type="button" class="sticker-choice sticker-motion-0" data-sticker="🐸">🐸</button>
-      <button type="button" class="sticker-choice sticker-motion-1" data-sticker="🌸">🌸</button>
-      <button type="button" class="sticker-choice sticker-motion-2" data-sticker="🚀">🚀</button>
-      <button type="button" class="sticker-choice sticker-motion-3" data-sticker="🎉">🎉</button>
-    </div>
-
-    <div id="drawingBox" class="room-drawing-box hidden">
-      <canvas id="roomDrawingCanvas" width="720" height="360"></canvas>
-      <div class="room-drawing-actions">
-        <button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button>
-        <button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button>
-      </div>
-    </div>
-
-    <div class="room-compose-shell">
-      <div id="roomComposerMenu" class="room-composer-menu hidden">
-        <button type="button" id="toggleDrawingBtn"><i class="fa-solid fa-palette"></i> Çizim alanı <span id="drawingLock">🔒 Plus</span></button>
-        <button type="button" id="roomUploadStickerBtn"><i class="fa-solid fa-image"></i> GIF çıkartması yükle <span id="stickerLock">🔒 Plus</span></button>
-      </div>
-      <form id="roomMessageForm" class="room-message-form">
-        <button type="button" class="room-compose-plus" id="roomComposerPlusBtn" title="Oda araçları" aria-label="Oda araçlarını aç"><i class="fa-solid fa-plus"></i><i class="fa-solid fa-user-group"></i></button>
-        <input id="customStickerFile" type="file" accept="image/gif" hidden>
-        <textarea id="roomMessageText" maxlength="500" rows="1" placeholder="Mesaj yazın..." autocomplete="off"></textarea>
-        <button class="room-send-btn" id="sendRoomMessageBtn" type="submit" aria-label="Mesajı gönder"><i class="fa-solid fa-paper-plane"></i></button>
-      </form>
-    </div>
-  </section>
-</section>
-
-<div id="roomMembersModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomMembersModal()">
-  <div class="modal-card room-members-dialog" role="dialog" aria-modal="true" aria-labelledby="roomMembersTitle">
-    <div class="room-members-dialog-head">
-      <div><h2 id="roomMembersTitle">Oda üyeleri</h2><p id="roomMembersSubtitle" class="sub">Bu odadaki kişiler</p></div>
-      <button type="button" class="btn-icon" onclick="window.closeRoomMembersModal()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="roomMembersList" class="room-members-list"><div class="empty">Üyeler yükleniyor…</div></div>
-  </div>
+<div id="roomSelectionArea" class="room-selection-area">
+<div class="room-browser-heading"><div><h1>Odalar</h1><p>Oda adı ve şifresiyle katıl; kendi odanı oluştur.</p></div><span id="roomPlanLabel" class="room-plan-label">Ücretsiz: en fazla 3 oda</span></div>
+<div class="room-tabs" role="tablist" aria-label="Oda işlemleri">
+<button type="button" class="room-tab-btn active" data-room-tab="join" role="tab" aria-selected="true"><i class="fa-solid fa-door-open"></i><span>Odaya Gir</span></button>
+<button type="button" class="room-tab-btn" data-room-tab="create" role="tab" aria-selected="false"><i class="fa-solid fa-circle-plus"></i><span>Oda Ekle</span></button></div>
+<div id="tab-join" class="room-tab-content active" role="tabpanel">
+<form id="joinRoomForm" class="room-join-form">
+<div class="room-section-title"><i class="fa-solid fa-key"></i><div><strong>Odaya katıl</strong><small>Oda sahibinden aldığın adı ve şifreyi gir.</small></div></div>
+<label class="room-field-label" for="joinRoomName">Oda Adı</label><input id="joinRoomName" maxlength="40" placeholder="Oda adını yaz..." autocomplete="off" required>
+<label class="room-field-label" for="joinRoomPass">Şifre</label><div class="room-password-field"><input id="joinRoomPass" type="password" maxlength="128" placeholder="Oda şifresini yaz..." autocomplete="off" required><button type="button" class="room-password-toggle" data-password-toggle="joinRoomPass" aria-label="Şifreyi göster"><i class="fa-regular fa-eye"></i></button></div>
+<button class="btn room-join-submit" type="submit"><i class="fa-solid fa-arrow-right-to-bracket"></i> Odaya Gir</button>
+</form>
+<div class="room-section-intro saved-rooms-heading"><div><h2>Kayıtlı Odalarım</h2><p>Şifresini doğrulayıp katıldığın odalar burada görünür.</p></div><button type="button" class="btn btn-ghost room-refresh-btn" id="refreshRoomListBtn" title="Yenile" aria-label="Kayıtlı odaları yenile"><i class="fa-solid fa-rotate"></i></button></div>
+<div id="roomList" class="room-list" aria-live="polite"><div class="empty">Kayıtlı odaların yükleniyor…</div></div>
 </div>
+<div id="tab-create" class="room-tab-content" role="tabpanel">
+<form id="createRoomForm" class="room-create-form">
+<div class="room-create-icon"><i class="fa-solid fa-comments"></i></div><h2>Yeni oda oluştur</h2><p>Oda adını ve yalnızca davet ettiğin kişilerin bileceği şifreyi belirle.</p>
+<label class="room-field-label" for="newRoomName">Oda Adı</label><input id="newRoomName" maxlength="40" placeholder="Örn. m" autocomplete="off" required>
+<label class="room-field-label" for="newRoomPass">Şifre</label><div class="room-password-field"><input id="newRoomPass" type="password" maxlength="128" placeholder="En az 4 karakter" autocomplete="new-password" required><button type="button" class="room-password-toggle" data-password-toggle="newRoomPass" aria-label="Şifreyi göster"><i class="fa-regular fa-eye"></i></button></div>
+<div class="room-feature-settings">
+<label class="room-feature-option"><input type="checkbox" id="newRoomDrawingEnabled" checked><span class="room-feature-icon"><i class="fa-solid fa-palette"></i></span><span><strong>Çizim alanı</strong><small>Oda içinde çizim paylaş</small></span></label>
+<label class="room-feature-option"><input type="checkbox" id="newRoomStickersEnabled" checked><span class="room-feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span><span><strong>Animasyonlu çıkartmalar</strong><small>Plus üyeleri kullanabilir</small></span></label></div>
+<button class="btn room-create-submit" type="submit"><i class="fa-solid fa-plus"></i> Odayı Oluştur</button>
+</form></div></div>
+<section id="roomChat" class="room-chat hidden" aria-label="Oda sohbeti">
+<header class="room-chat-header"><div class="room-chat-title"><span class="room-chat-hash">#</span><strong id="roomChatTitle">Oda</strong><small id="roomChatMemberCount"></small></div>
+<div class="room-chat-actions">
+<button type="button" class="room-tool-btn" id="roomThemeBtn" title="Oda teması"><i class="fa-solid fa-palette"></i></button>
+<button type="button" class="room-tool-btn" id="roomInviteBtn" title="Üye davet et"><i class="fa-solid fa-user-plus"></i></button>
+<button type="button" class="room-tool-btn" id="roomPrivateBtn" title="Oda gizliliği"><i class="fa-solid fa-lock-open"></i></button>
+<button type="button" class="room-tool-btn" id="roomSendLockBtn" title="Mesaj izni"><i class="fa-solid fa-lock-open"></i></button>
+<button type="button" class="room-tool-btn" id="openStickersBtn" title="Animasyonlu çıkartmalar"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+<button type="button" class="room-tool-btn" id="roomMembersBtn" title="Oda üyeleri"><i class="fa-solid fa-users"></i></button>
+<button type="button" class="room-delete-btn" id="roomDeleteBtn">Odayı Sil</button><button type="button" class="room-exit-btn" id="leaveRoomBtn">Çık</button></div></header>
+<div id="roomStatusLine" class="room-status-line">Oda sohbeti</div>
+<div id="roomPinnedBar" class="room-pinned-bar hidden"><i class="fa-solid fa-thumbtack"></i><span id="roomPinnedText"></span><button type="button" id="roomUnpinBtn" aria-label="Sabitlemeyi kaldır"><i class="fa-solid fa-xmark"></i></button></div>
+<div id="roomMessages" class="room-messages" aria-live="polite"><div class="empty">Mesajlar yükleniyor…</div></div>
+<div id="stickerTray" class="room-sticker-tray hidden" aria-label="Yeni animasyonlu çıkartmalar">
+<button type="button" class="animated-sticker-button sticker-sparkle" data-animated-sticker="sparkle" data-emoji="✨"><span>✨</span></button>
+<button type="button" class="animated-sticker-button sticker-heart" data-animated-sticker="heart" data-emoji="💜"><span>💜</span></button>
+<button type="button" class="animated-sticker-button sticker-rainbow" data-animated-sticker="rainbow" data-emoji="🌈"><span>🌈</span></button>
+<button type="button" class="animated-sticker-button sticker-butterfly" data-animated-sticker="butterfly" data-emoji="🦋"><span>🦋</span></button>
+<button type="button" class="animated-sticker-button sticker-comet" data-animated-sticker="comet" data-emoji="☄️"><span>☄️</span></button>
+<button type="button" class="animated-sticker-button sticker-flower" data-animated-sticker="flower" data-emoji="🌸"><span>🌸</span></button>
+<button type="button" class="animated-sticker-button sticker-rocket" data-animated-sticker="rocket" data-emoji="🚀"><span>🚀</span></button>
+<button type="button" class="animated-sticker-button sticker-star" data-animated-sticker="star" data-emoji="⭐"><span>⭐</span></button><p class="room-sticker-plus-note">Yeni animasyonlu çıkartmalar Plus üyelerine özel</p></div>
+<div id="drawingBox" class="room-drawing-box hidden"><canvas id="roomDrawingCanvas" width="720" height="360"></canvas><div class="room-drawing-actions"><button type="button" class="btn btn-ghost" id="clearDrawingBtn">Temizle</button><button type="button" class="btn" id="sendDrawingBtn">Çizimi gönder</button></div></div>
+<div class="room-compose-shell"><div id="roomComposerMenu" class="room-composer-menu hidden">
+<button type="button" id="toggleDrawingBtn"><i class="fa-solid fa-palette"></i> Çizim alanı <span id="drawingLock">🔒 Plus</span></button>
+<button type="button" id="roomMixerBtn"><i class="fa-solid fa-flask"></i> İki emojiyi birleştir <span>🔒 Plus</span></button>
+<button type="button" id="roomBaiBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> BAI <span>🔒 Plus</span></button></div>
+<form id="roomMessageForm" class="room-message-form"><button type="button" class="room-compose-plus" id="roomComposerPlusBtn" title="Oda araçları" aria-label="Oda araçlarını aç"><i class="fa-solid fa-plus"></i><i class="fa-solid fa-user-group"></i></button>
+<textarea id="roomMessageText" maxlength="500" rows="1" placeholder="Mesaj yazın..." autocomplete="off"></textarea><button class="room-send-btn" id="sendRoomMessageBtn" type="submit" aria-label="Mesajı gönder"><i class="fa-solid fa-paper-plane"></i></button></form></div>
+</section></section>
+
+<div id="roomThemeModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomTheme()"><div class="modal-card room-theme-dialog" role="dialog" aria-modal="true" aria-labelledby="roomThemeTitle">
+<div class="room-modal-heading"><div><h2 id="roomThemeTitle">Oda Görünümü</h2><p class="sub">Bu tema yalnızca senin ekranında değişir.</p></div><button type="button" class="btn-icon" onclick="window.closeRoomTheme()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+<h3>Arka plan teması</h3><div id="roomThemeSpaceGrid" class="room-theme-grid"></div><h3>Konuşma baloncuğu şekli</h3>
+<div class="room-shape-options"><button type="button" data-bubble-shape="rounded">Yuvarlak</button><button type="button" data-bubble-shape="pill">Oval</button><button type="button" data-bubble-shape="sharp">Köşeli</button></div>
+<h3>Baloncuk rengi</h3><div id="roomThemeBubbleColors" class="room-theme-swatches"></div><label class="room-transparent-option"><input id="roomThemeTransparent" type="checkbox"> Şeffaf baloncuk kullan</label><button type="button" class="btn btn-ghost room-theme-reset" id="roomThemeResetBtn">Varsayılana dön</button></div></div>
+<div id="emojiMixerModal" class="modal hidden" onclick="if(event.target===this)window.closeEmojiMixer()"><div class="modal-card emoji-mixer-dialog" role="dialog" aria-modal="true" aria-labelledby="emojiMixerTitle">
+<div class="room-modal-heading"><div><h2 id="emojiMixerTitle">✨ Emoji Birleştirici</h2><p class="sub">İki emojiyi birleştirip yeni sonucu odada paylaş.</p></div><button type="button" class="btn-icon" onclick="window.closeEmojiMixer()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="emoji-mixer-inputs"><label>1. Emoji<input id="emojiMixerOne" maxlength="8" placeholder="😀"></label><span>＋</span><label>2. Emoji<input id="emojiMixerTwo" maxlength="8" placeholder="💜"></label></div>
+<div id="emojiMixerPreview" class="emoji-mixer-preview">✨</div><p class="emoji-mixer-plus-note">Bu özellik ve özel animasyonu Plus üyelerine açıktır.</p><button type="button" class="btn btn-block" id="emojiMixerSendBtn">Birleştir ve odada paylaş</button></div></div>
+<div id="roomMessageActionModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomMessageActions()"><div class="modal-card room-actions-dialog" role="dialog" aria-modal="true" aria-labelledby="roomActionTitle">
+<div class="room-modal-heading"><div><h2 id="roomActionTitle">Mesaj seçenekleri</h2><p class="sub" id="roomActionMessageOwner"></p></div><button type="button" class="btn-icon" onclick="window.closeRoomMessageActions()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+<div class="room-quick-reactions" id="roomQuickReactions"><button type="button" data-quick-reaction="❤️">❤️</button><button type="button" data-quick-reaction="😂">😂</button><button type="button" data-quick-reaction="👍">👍</button><button type="button" data-quick-reaction="🔥">🔥</button><button type="button" data-quick-reaction="🥰">🥰</button><button type="button" data-quick-reaction="😮">😮</button></div>
+<button type="button" class="room-action-option" id="roomActionCopyBtn"><i class="fa-regular fa-copy"></i> Mesajı kopyala</button><button type="button" class="room-action-option" id="roomActionReplyBtn"><i class="fa-solid fa-reply"></i> Yanıtla</button>
+<button type="button" class="room-action-option hidden" id="roomActionPinBtn"><i class="fa-solid fa-thumbtack"></i> Mesajı sabitle</button><button type="button" class="room-action-option hidden" id="roomActionModerateBtn"><i class="fa-solid fa-shield-halved"></i> Yönetici işlemleri</button></div></div>
+<div id="roomModerationModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomModeration()"><div class="modal-card room-actions-dialog" role="dialog" aria-modal="true" aria-labelledby="roomModerationTitle">
+<div class="room-modal-heading"><div><h2 id="roomModerationTitle">Oda yönetimi</h2><p class="sub" id="roomModerationTarget"></p></div><button type="button" class="btn-icon" onclick="window.closeRoomModeration()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+<button type="button" class="room-action-option" id="roomModerationMuteBtn"><i class="fa-solid fa-volume-xmark"></i> Kullanıcıyı sustur</button><button type="button" class="room-action-option danger" id="roomModerationDeleteBtn"><i class="fa-solid fa-trash"></i> Mesajı herkesten sil</button><button type="button" class="room-action-option" id="roomModerationReportBtn"><i class="fa-solid fa-flag"></i> Şikâyet et</button></div></div>
+<div id="roomReportTypeModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomReportTypes()"><div class="modal-card room-actions-dialog" role="dialog" aria-modal="true" aria-labelledby="roomReportTypeTitle">
+<div class="room-modal-heading"><div><h2 id="roomReportTypeTitle">Şikâyet nedeni</h2><p class="sub">Şikâyet oda yönetimine iletilecek.</p></div><button type="button" class="btn-icon" onclick="window.closeRoomReportTypes()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+<button type="button" class="room-action-option" id="roomReportMinorBtn"><i class="fa-solid fa-user-shield"></i> 15 yaşından küçük</button><button type="button" class="room-action-option" id="roomReportGeneralBtn"><i class="fa-solid fa-flag"></i> Sadece şikâyet et</button></div></div>
+<div id="roomMembersModal" class="modal hidden" onclick="if(event.target===this)window.closeRoomMembersModal()"><div class="modal-card room-members-dialog" role="dialog" aria-modal="true" aria-labelledby="roomMembersTitle">
+<div class="room-members-dialog-head"><div><h2 id="roomMembersTitle">Oda üyeleri</h2><p id="roomMembersSubtitle" class="sub">Bu odadaki kişiler</p></div><button type="button" class="btn-icon" onclick="window.closeRoomMembersModal()" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button></div>
+<div id="roomMembersList" class="room-members-list"><div class="empty">Üyeler yükleniyor…</div></div></div></div>
+<section id="view-yonetim" class="view-section admin-panel-view"><div class="header-sticky glass">Yönetim Merkezi <span class="admin-live-label">YETKİLİ ERİŞİMİ</span></div>
+<div class="admin-panel-content"><div class="admin-report-toolbar"><div><h2>Şikâyetler</h2><p>Odalardan ve üyelerden gelen bildirimler</p></div><button type="button" class="btn btn-ghost" id="adminRefreshReports"><i class="fa-solid fa-rotate"></i> Yenile</button></div>
+<div id="adminReportsList" class="admin-reports-list"><div class="empty">Yönetim verileri yükleniyor…</div></div></div></section>
 
 <section id="view-liderlik" class="view-section">
     <section id="leaderboardPanel" class="leaderboard-panel" aria-live="polite">
@@ -923,7 +884,7 @@
     <a href="#" class="mobile-nav-item" data-nav="rooms" onclick="fxNavigate('rooms');return false;" title="Odalar" aria-label="Odalar"><i class="fa-solid fa-comments"></i><span class="room-notif-badge" id="mobileRoomNotifBadge">0</span></a>
     <a href="#" class="mobile-nav-item" data-nav="notifications" onclick="fxNavigate('notifications');return false;" title="Bildirimler" aria-label="Bildirimler"><i class="fa-solid fa-bell"></i><span class="notif-count-badge" id="mobileNavNotifBadge">0</span></a>
     <a href="#" class="mobile-nav-item" data-nav="leaderboard" onclick="fxNavigate('leaderboard');return false;" title="Liderlik" aria-label="Liderlik"><i class="fa-solid fa-trophy"></i></a>
-    <a href="./admin.html" class="mobile-nav-item admin-nav hidden" id="mobileAuraXAdminNav" data-nav="admin" title="Yönetim" aria-label="Yönetim"><i class="fa-solid fa-shield-halved"></i></a>
+    <a href="#" onclick="fxNavigate('admin');return false;" class="mobile-nav-item admin-nav hidden" id="mobileAuraXAdminNav" data-nav="admin" title="Yönetim" aria-label="Yönetim"><i class="fa-solid fa-shield-halved"></i></a>
   </nav>
 
   <script>
@@ -931,12 +892,12 @@
     window.auraXReturnView='discover';
     window.setAuraXView=function(target){
       if(target!=='rooms')window.closeAuraRoomView?.();
-      const viewMap={discover:'view-kesfet',rooms:'view-odalar',leaderboard:'view-liderlik'};
+      const viewMap={discover:'view-kesfet',rooms:'view-odalar',leaderboard:'view-liderlik',admin:'view-yonetim'};
       const targetId=viewMap[target]||viewMap.discover;
       document.querySelectorAll('.view-section').forEach(section=>section.classList.toggle('active',section.id===targetId));
       window.auraXCurrentView=target;
       document.querySelectorAll('.nav-link[data-nav],.mobile-nav-item[data-nav]').forEach(item=>item.classList.toggle('active',item.dataset.nav===target));
-      const titles={discover:'<i class="fa-solid fa-sparkles"></i> Akış',rooms:'<i class="fa-solid fa-comments"></i> Odalar',leaderboard:'<i class="fa-solid fa-trophy"></i> Liderlik'};
+      const titles={discover:'<i class="fa-solid fa-sparkles"></i> Akış',rooms:'<i class="fa-solid fa-comments"></i> Odalar',leaderboard:'<i class="fa-solid fa-trophy"></i> Liderlik',admin:'<i class="fa-solid fa-shield-halved"></i> Yönetim'};
       const title=document.getElementById('pageTitle');
       if(title&&titles[target])title.innerHTML=titles[target];
     };
@@ -2436,7 +2397,8 @@
     window.openAuraXAdmin=()=>{
       const nav=document.getElementById('auraXAdminNav');
       if(!nav||nav.classList.contains('hidden'))return;
-      location.href='./admin.html';
+      window.setAuraXView('admin');
+      window.loadAuraAdminReports?.();
     };
     async function refreshAuraXAdminAccess(user,profile={}) {
       const role=String(user?.raw?.app_metadata?.role||profile?.role||'').toLowerCase();
