@@ -88,6 +88,10 @@ function cleanPublicData(collectionName, source) {
   if (collectionName === "users") {
     for (const key of ["email", "firstName", "lastName", "birthDate", "dateOfBirth", "ipAddress", "ip_address", "kvkkAcceptedAt", "termsAcceptedAt"]) delete data[key];
   }
+  if (["posts", "stories", "room_messages", "comments"].includes(collectionName)) {
+    delete data.email;
+    delete data.authorEmail;
+  }
   return data;
 }
 export function collection(_db, name) { return { _kind: "collection", name: String(name) }; }
