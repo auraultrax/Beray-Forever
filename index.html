@@ -1130,6 +1130,7 @@
 
     window.submitPollPost = async function() {
       if (!currentUser) return;
+      if (!currentUser.isPlus) return fxToast('Anket ve sadece metin paylaşımı Plus özelliğidir. 🔒');
       const q = sanitizeText(document.getElementById('pollQuestion')?.value || '', 200);
       const opts = ['pollOpt1','pollOpt2','pollOpt3','pollOpt4']
         .map(id => sanitizeText(document.getElementById(id)?.value || '', 80))
@@ -1525,7 +1526,7 @@
                 ${thumb}
               </div>
             </div>
-            <span class="text-[11px] text-slate-300 font-medium">${escapeHTML((story.authorName || '?').split(' ')[0])}</span>
+            <span class="text-[11px] text-slate-300 font-medium">${escapeHTML((story.authorName || '?').split(' ')[0])}${foreverBadges(story.authorIsPlus)}</span>
           `;
           storiesContainer.appendChild(storyElem);
         });
@@ -1660,7 +1661,7 @@
         const stripBio = document.getElementById('stripBio');
         if (stripBio) stripBio.textContent = profileCache.bio || 'Profilini düzenle';
         const stripName = document.getElementById('stripName');
-        if (stripName) stripName.textContent = profileCache.displayName;
+        if (stripName) stripName.innerHTML = escapeHTML(currentUser.username || profileCache.displayName) + foreverBadges(Boolean(currentUser.isPlus));
         const stripAv = document.getElementById('stripAvatar');
         if (stripAv) stripAv.textContent = profileCache.displayName.charAt(0).toUpperCase();
       } catch (e) { console.warn(e); }
@@ -1688,7 +1689,9 @@
       const manifest = document.querySelector('link[rel="manifest"]');
       const favicon = document.querySelector('link[rel="icon"]');
       if (manifest) manifest.href = './manifest-' + theme + '.json';
-      if (favicon) favicon.href = './icons/forever-' + theme + '.svg';
+      document.querySelectorAll('link[rel="icon"]').forEach(link => { link.href = './icons/forever-' + theme + '.svg'; });
+      const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+      if (appleIcon) appleIcon.href = './icons/forever-' + theme + '.svg';
       localStorage.setItem('forever_app_icon', theme);
       fxToast('Uygulama simgesi değiştirildi. Ana ekrana eklerken seçtiğin simge kullanılabilir.');
     };
@@ -1803,6 +1806,7 @@
       const fileInput = document.getElementById('editPostFile');
       const file = fileInput && fileInput.files && fileInput.files[0];
       const btn = document.getElementById('editPostSaveBtn');
+      if (!file && !currentUser.isPlus) return alert('Metin düzenleme yalnızca Plus üyelerine açıktır.');
       if (!content && !file) return alert('Yazı veya medya gerekli');
       btn.disabled = true; btn.textContent = 'Kaydediliyor...';
       try {
@@ -1993,7 +1997,7 @@
           <div id="comments-${post.id}" class="comments hidden">
             <div>
               ${(post.comments && post.comments.length) ? post.comments.map(cm =>
-                `<div class="comment"><strong>${escapeHTML(cm.author)}:</strong> ${escapeHTML(cm.text)}</div>`
+                `<div class="comment"><strong>${escapeHTML(cm.author)}${foreverBadges(cm.authorIsPlus)}:</strong> ${escapeHTML(cm.text)}</div>`
               ).join('') : '<p class="comment">Henüz yorum yok.</p>'}
             </div>
             <div class="comment-row">
@@ -2046,7 +2050,7 @@
           imageUrl = await uploadForeverImage(file, 'posts');
         }
 
-        const body = content || (file ? (mediaType === 'video' ? '🎬' : '📷') : '');
+        const body = content;
         await addDoc(collection(db, "posts"), {
           userId: currentUser.uid,
           authorName: currentUser.username || currentUser.displayName || 'Kullanıcı',
@@ -2140,7 +2144,8 @@
         await updateDoc(postRef, {
           comments: arrayUnion({
             userId: currentUser.uid,
-            author: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Kullanıcı'),
+            author: currentUser.username || currentUser.displayName || 'Kullanıcı',
+            authorIsPlus: Boolean(currentUser.isPlus),
             text: text,
             createdAt: new Date().toISOString()
           })
