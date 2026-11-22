@@ -833,18 +833,17 @@
 
   <script type="module">
     import {
-      initializeApp, getAuth, getFirestore, collection, doc, setDoc, getDoc, getDocs,
+      initializeApp, getForeverAuth, getForeverStore, collection, doc, setDoc, getDoc, getDocs,
       addDoc, deleteDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove, serverTimestamp,
-      query, where, orderBy, limit, GoogleAuthProvider, signInWithPopup,
-      createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-      onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteField, increment,
+      query, where, orderBy, limit, signInWithGoogle,
+      signOutForever,
+      onForeverSessionChanged, updateForeverProfile, deleteField, increment,
       supabaseClient
     } from "./supabase-compat.js";
 
     const app = initializeApp();
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const googleProvider = new GoogleAuthProvider();
+    const auth = getForeverAuth(app);
+    const db = getForeverStore(app);
     const birthDateInput = document.getElementById('regBirthDate');
     if (birthDateInput) {
       const today = new Date();
@@ -1306,7 +1305,7 @@
       try {
         const button = document.querySelector('#authModal .google-btn');
         if (button) { button.disabled = true; button.textContent = 'Google hesabına yönlendiriliyor…'; }
-        await signInWithPopup(auth, googleProvider);
+        await signInWithGoogle();
       } catch (error) {
         showAlert(error.message || 'Google ile giriş yapılamadı.', 'error');
         const button = document.querySelector('#authModal .google-btn');
@@ -1343,7 +1342,7 @@
         });
         if (result.error) throw result.error;
         if (result.data?.success !== true) throw new Error('Profil kaydı tamamlanamadı.');
-        try { currentUser = await updateProfile(currentUser, { displayName: username }); } catch (_) {}
+        try { currentUser = await updateForeverProfile(currentUser, { displayName: username }); } catch (_) {}
         currentUser.username = username; currentUser.displayName = username; currentUser.isPlus = false;
         document.getElementById('usernameModal').classList.add('hidden');
         document.getElementById('authModal').classList.add('hidden');
@@ -1362,38 +1361,6 @@
         showRegisterAlert(err.message || 'Profil kaydı tamamlanamadı.','error');
       } finally {
         if (button) { button.disabled = false; button.textContent = 'Hesabımı oluştur'; }
-      }
-    };
-
-    // Şifremi Unuttum Modalleri
-    window.openForgotPasswordModal = function() {
-      document.getElementById('forgotPasswordModal').classList.remove('hidden');
-    };
-    window.closeForgotPasswordModal = function() {
-      document.getElementById('forgotPasswordModal').classList.add('hidden');
-    };
-
-    window.handleForgotPassword = async function(e) {
-      e.preventDefault();
-      const email = document.getElementById('forgotEmail').value.trim();
-      const submitBtn = document.getElementById('forgotSubmitBtn');
-      const forgotAlert = document.getElementById('forgotAlert');
-
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
-
-      try {
-        await sendPasswordResetEmail(auth, email);
-        forgotAlert.className = "mb-3 p-3 rounded-xl text-xs border bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
-        forgotAlert.textContent = "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.";
-        forgotAlert.classList.remove('hidden');
-      } catch (err) {
-        forgotAlert.className = "mb-3 p-3 rounded-xl text-xs border bg-red-500/10 border-red-500/30 text-red-400";
-        forgotAlert.textContent = "Hata: " + err.message;
-        forgotAlert.classList.remove('hidden');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Bağlantı Gönder";
       }
     };
 
@@ -1429,54 +1396,8 @@
     }
 
     // Normal E-Posta ile Giriş / Kayıt
-    window.handleAuthSubmit = async function(e) {
-      e.preventDefault();
-      const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value.trim();
-      const name = document.getElementById('authName').value.trim();
-      const submitBtn = document.getElementById('authSubmitBtn');
-
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> İşleniyor...`;
-
-      try {
-        if (isSignUpMode) {
-          if (!name) throw new Error("Lütfen ad ve soyadınızı girin.");
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-
-          await updateProfile(user, { displayName: name });
-          await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            displayName: name,
-            email: email,
-            following: [],
-            followers: [],
-            bio: '',
-            createdAt: serverTimestamp()
-          });
-
-          showAlert("Hesabınız başarıyla oluşturuldu!", "success");
-        } else {
-          await signInWithEmailAndPassword(auth, email, password);
-          showAlert("Başarıyla giriş yapıldı!", "success");
-        }
-        document.getElementById('authModal').classList.add('hidden');
-      } catch (err) {
-        let errText = err.message;
-        if (errText.includes("user-not-found")) errText = "Kullanıcı bulunamadı.";
-        else if (errText.includes("wrong-password")) errText = "Hatalı şifre girdiniz.";
-        else if (errText.includes("email-already-in-use")) errText = "Bu e-posta adresi zaten kullanımda.";
-        else if (errText.includes("weak-password")) errText = "Şifre en az 6 karakter olmalıdır.";
-        showAlert(errText.replace("AuthApiError: ", ""), 'error');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = isSignUpMode ? 'Kayıt Ol' : 'Giriş Yap';
-      }
-    };
-
     window.handleSignOut = function() {
-      signOut(auth).then(() => {
+      signOutForever().then(() => {
         document.getElementById('authModal').classList.remove('hidden');
       });
     };
@@ -1752,7 +1673,7 @@
       const bio = (document.getElementById('editBio').value || '').trim();
       if (!name) return alert('Ad gerekli');
       try {
-        await updateProfile(currentUser, { displayName: name });
+        await updateForeverProfile(currentUser, { displayName: name });
         await setDoc(doc(db, "users", currentUser.uid), {
           uid: currentUser.uid,
           displayName: name,
@@ -2255,7 +2176,7 @@
     }
 
     // Supabase oturum kontrolü
-    onAuthStateChanged(auth, async (user) => {
+    onForeverSessionChanged(async (user) => {
       currentUser = user;
       const authModal = document.getElementById('authModal');
       const usernameModal = document.getElementById('usernameModal');
