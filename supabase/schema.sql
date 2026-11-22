@@ -568,7 +568,6 @@ begin
       if v_count >= 3 then raise exception 'Ücretsiz üyeler en fazla 3 odaya katılabilir. Plus ile sınırı kaldır.'; end if;
     end if;
   end if;
-  end if;
 
   if new.collection_name='room_messages' then
     v_room_id := new.data ->> 'roomId';
