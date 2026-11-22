@@ -1,1 +1,1 @@
-Forever uygulama kabuğu çevrimdışı açılabilir; giriş, Google oturumu, gönderi akışı, beğeni/yorum ve hikâyeler için internet ve Firebase bağlantısı gerekir. İlk başarılı çevrimiçi açılıştan sonra temel dosyalar önbelleğe alınır.
+Forever uygulama kabuğu çevrimdışı açılabilir. Google ile giriş, Supabase oturumu, gönderi akışı, beğeni/yorum, hikâyeler, odalar, medya yükleme ve yönetim işlemleri için internet bağlantısı gerekir. Supabase Auth ve Realtime çevrimdışı çalışmaz. İlk çevrimiçi açılıştan sonra ana dosyalar PWA önbelleğine alınır.
