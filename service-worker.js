@@ -1,8 +1,13 @@
-const CACHE_VERSION = 'forever-shell-v4';
+const CACHE_VERSION = 'forever-shell-v5';
 const APP_SHELL = [
   './',
   './index.html',
+  './admin.html',
+  './kvkk.html',
+  './kullanim-kosullari.html',
   './manifest.json',
+  './supabase-compat.js',
+  './rooms.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',
@@ -29,15 +34,16 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  // Only cache this app's own static shell; Firebase auth and live data stay network-backed.
+  // Only cache this app's own static shell; Supabase authentication and live data remain network-backed.
   if (url.origin !== self.location.origin) return;
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
         const fresh = await fetch(request);
         const cache = await caches.open(CACHE_VERSION);
-        // Yalnızca ana sayfayı önbelleğe al (admin.html gibi diğer sayfalar index.html'in yerine geçmesin).
-        if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) cache.put('./index.html', fresh.clone());
+        if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) {
+          await cache.put('./index.html', fresh.clone());
+        }
         return fresh;
       } catch (_) {
         return (await caches.match(request)) || (await caches.match('./index.html')) || Response.error();
@@ -50,9 +56,9 @@ self.addEventListener('fetch', event => {
     if (cached) return cached;
     try {
       const fresh = await fetch(request);
-      if (fresh.ok && url.origin === self.location.origin) {
+      if (fresh.ok) {
         const cache = await caches.open(CACHE_VERSION);
-        cache.put(request, fresh.clone());
+        await cache.put(request, fresh.clone());
       }
       return fresh;
     } catch (_) {
