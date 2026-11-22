@@ -696,22 +696,22 @@ drop function if exists public.can_upload_forever_media();
 create or replace function public.is_forever_admin()
 returns boolean language sql stable security invoker
 set search_path = ''
-as $ select private.is_forever_admin(); $;
+as $forever$ select private.is_forever_admin(); $;
 
 create or replace function public.is_forever_plus()
 returns boolean language sql stable security invoker
 set search_path = ''
-as $ select private.is_forever_plus(); $;
+as $forever$ select private.is_forever_plus(); $;
 
 create or replace function public.is_forever_room_member(p_room_id text)
 returns boolean language sql stable security invoker
 set search_path = ''
-as $ select private.is_forever_room_member(p_room_id); $;
+as $forever$ select private.is_forever_room_member(p_room_id); $;
 
 create or replace function public.can_view_forever_story(p_author_id text)
 returns boolean language sql stable security invoker
 set search_path = ''
-as $ select private.can_view_forever_story(p_author_id); $;
+as $forever$ select private.can_view_forever_story(p_author_id); $;
 
 create or replace function public.register_forever_profile(
   p_username text,
@@ -723,7 +723,7 @@ create or replace function public.register_forever_profile(
 )
 returns jsonb language sql security invoker
 set search_path = ''
-as $ select private.register_forever_profile(
+as $forever$ select private.register_forever_profile(
   p_username,p_first_name,p_last_name,p_birth_date,
   p_kvkk_notice_accepted,p_terms_accepted
 ); $;
@@ -731,17 +731,17 @@ as $ select private.register_forever_profile(
 create or replace function public.grant_forever_plus(p_username text)
 returns jsonb language sql security invoker
 set search_path = ''
-as $ select private.grant_forever_plus(p_username); $;
+as $forever$ select private.grant_forever_plus(p_username); $;
 
 create or replace function public.revoke_forever_plus(p_username text)
 returns jsonb language sql security invoker
 set search_path = ''
-as $ select private.revoke_forever_plus(p_username); $;
+as $forever$ select private.revoke_forever_plus(p_username); $;
 
 create or replace function public.can_upload_forever_media()
 returns boolean language sql stable security invoker
 set search_path = ''
-as $ select private.can_upload_forever_media(); $;
+as $forever$ select private.can_upload_forever_media(); $;
 
 revoke all on function public.is_forever_admin() from public, anon;
 revoke all on function public.is_forever_plus() from public, anon;
