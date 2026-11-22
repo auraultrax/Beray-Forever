@@ -273,14 +273,15 @@ function readMp4DurationSeconds(buffer) {
   const i = buffer.indexOf(marker);
   if (i < 0 || i + 20 >= buffer.length) return null;
   const version = buffer[i + 4];
-  const timescale = buffer.readUInt32BE(i + 8);
+  if (i + 24 >= buffer.length) return null;
+  const timescale = buffer.readUInt32BE(i + 16);
   if (!timescale) return null;
   let duration;
   if (version === 1) {
-    if (i + 20 >= buffer.length) return null;
-    duration = Number(buffer.readBigUInt64BE(i + 12));
+    if (i + 28 >= buffer.length) return null;
+    duration = Number(buffer.readBigUInt64BE(i + 20));
   } else {
-    duration = buffer.readUInt32BE(i + 12);
+    duration = buffer.readUInt32BE(i + 20);
   }
   if (!Number.isFinite(duration)) return null;
   return duration / timescale;
@@ -411,7 +412,7 @@ async function reserveDailyUsage(uid, isPlus, mime, videoSeconds) {
         videoSeconds: videos,
         updatedAt: FieldValue.serverTimestamp()
       }, { merge: true });
-      return { ref, kind: 'image', previous: images };
+      return { ref, kind: 'image', amount: 1 };
     }
     if (mime === 'video/mp4') {
       if (!isPlus) {
@@ -434,7 +435,7 @@ async function reserveDailyUsage(uid, isPlus, mime, videoSeconds) {
         videoSeconds: videos + Math.ceil(videoSeconds),
         updatedAt: FieldValue.serverTimestamp()
       }, { merge: true });
-      return { ref, kind: 'video', previous: videos };
+      return { ref, kind: 'video', amount: Math.ceil(videoSeconds) };
     }
     const error = new Error('Desteklenmeyen medya türü.');
     error.status = 415;
@@ -451,7 +452,7 @@ async function rollbackUsage(reservation) {
       const data = snap.data();
       const patch = reservation.kind === 'image'
         ? { imageCount: Math.max(0, Number(data.imageCount || 0) - 1), updatedAt: FieldValue.serverTimestamp() }
-        : { videoSeconds: Math.max(0, Number(data.videoSeconds || 0) - Math.ceil(Number(data.videoSeconds || 0) - reservation.previous)), updatedAt: FieldValue.serverTimestamp() };
+        : { videoSeconds: Math.max(0, Number(data.videoSeconds || 0) - reservation.amount), updatedAt: FieldValue.serverTimestamp() };
       tx.set(reservation.ref, patch, { merge: true });
     });
   } catch (error) {
@@ -464,35 +465,35 @@ function parseMultipartField(parts, name) {
   return part ? part.body.toString('utf8').trim() : '';
 }
 
-async function handleUpload(req, res) {
+async function handleUpload(req, res, cors) {
   const ip = clientIp(req);
   if (!checkRate(ip)) return send(res, 429, { error: 'Çok fazla işlem. Bir dakika bekle.' });
   const user = await requireUser(req);
   const requestBuffer = await readRequest(req, MAX_UPLOAD_BYTES + 256 * 1024);
   const contentType = String(req.headers['content-type'] || '');
   const boundary = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType);
-  if (!boundary) return send(res, 400, { error: 'multipart boundary bulunamadı.' });
+  if (!boundary) return send(res, 400, { error: 'multipart boundary bulunamadı.' }, cors);
   const parts = parseMultipart(requestBuffer, (boundary[1] || boundary[2]).trim());
   const filePart = parts.find(p => p.filename && p.body?.length);
-  if (!filePart) return send(res, 400, { error: 'Dosya seçilmedi.' });
-  if (filePart.body.length > MAX_UPLOAD_BYTES) return send(res, 413, { error: 'Dosya boyutu üst sınırı aşıyor.' });
+  if (!filePart) return send(res, 400, { error: 'Dosya seçilmedi.' }, cors);
+  if (filePart.body.length > MAX_UPLOAD_BYTES) return send(res, 413, { error: 'Dosya boyutu üst sınırı aşıyor.' }, cors);
 
   const mime = sniffMime(filePart.body);
-  if (!mime || filePart.contentType !== mime) return send(res, 415, { error: 'Dosyanın gerçek türü doğrulanamadı.' });
+  if (!mime || filePart.contentType !== mime) return send(res, 415, { error: 'Dosyanın gerçek türü doğrulanamadı.' }, cors);
   const extension = safeExtension(filePart.filename, mime);
-  if (!extension) return send(res, 415, { error: 'Dosya uzantısı ve türü uyumlu değil.' });
+  if (!extension) return send(res, 415, { error: 'Dosya uzantısı ve türü uyumlu değil.' }, cors);
   const folder = parseMultipartField(parts, 'folder') || 'posts';
-  if (!FOLDER_ALLOWLIST.has(folder)) return send(res, 400, { error: 'Geçersiz medya alanı.' });
+  if (!FOLDER_ALLOWLIST.has(folder)) return send(res, 400, { error: 'Geçersiz medya alanı.' }, cors);
   if (folder === 'rooms' && mime.startsWith('video/') && !user.plus) {
-    return send(res, 403, { error: 'Odalara video yüklemek Plus üyelerine açıktır.' });
+    return send(res, 403, { error: 'Odalara video yüklemek Plus üyelerine açıktır.' }, cors);
   }
 
   let videoSeconds = null;
   if (mime === 'video/mp4') {
-    if (!user.plus) return send(res, 403, { error: 'Video yüklemek Plus üyelerine açıktır.' });
+    if (!user.plus) return send(res, 403, { error: 'Video yüklemek Plus üyelerine açıktır.' }, cors);
     videoSeconds = readMp4DurationSeconds(filePart.body);
     if (videoSeconds == null || videoSeconds <= 0 || videoSeconds > 180) {
-      return send(res, 400, { error: 'Video 3 dakikadan kısa olmalı ve süresi sunucuda doğrulanabilmeli.' });
+      return send(res, 400, { error: 'Video 3 dakikadan kısa olmalı ve süresi sunucuda doğrulanabilmeli.' }, cors);
     }
   }
 
@@ -507,14 +508,14 @@ async function handleUpload(req, res) {
       size: filePart.body.length,
       mimeType: mime,
       storedOn: saved.storedOn
-    });
+    }, cors);
   } catch (error) {
     await rollbackUsage(reservation);
     throw error;
   }
 }
 
-async function handleSecurityEvent(req, res) {
+async function handleSecurityEvent(req, res, cors) {
   const user = await requireUser(req);
   const ip = clientIp(req);
   const body = await readRequest(req, 8 * 1024);
@@ -525,15 +526,15 @@ async function handleSecurityEvent(req, res) {
   return send(res, saved ? 200 : 503, {
     ok: saved,
     message: saved ? 'Güvenlik olayı kaydedildi.' : 'IP kayıt anahtarı sunucuda yapılandırılmamış.'
-  });
+  }, cors);
 }
 
-async function handleAdminLogs(req, res) {
+async function handleAdminLogs(req, res, cors) {
   await requireAdmin(req);
-  if (!ipEncryptionKey) return send(res, 503, { error: 'IP_LOG_ENCRYPTION_KEY yapılandırılmamış.' });
+  if (!ipEncryptionKey) return send(res, 503, { error: 'IP_LOG_ENCRYPTION_KEY yapılandırılmamış.' }, cors);
   pruneSecurityLogs();
   const limit = Math.max(1, Math.min(200, Number(new URL(req.url, 'http://localhost').searchParams.get('limit') || 100)));
-  if (!fs.existsSync(SECURITY_LOG)) return send(res, 200, { logs: [] });
+  if (!fs.existsSync(SECURITY_LOG)) return send(res, 200, { logs: [] }, cors);
   const rows = fs.readFileSync(SECURITY_LOG, 'utf8').split('\n').filter(Boolean).slice(-limit);
   const logs = rows.map(line => {
     try {
@@ -541,7 +542,7 @@ async function handleAdminLogs(req, res) {
       return { at: row.at, uid: row.uid, event: row.event, ip: decryptIp(row) };
     } catch { return null; }
   }).filter(Boolean).reverse();
-  return send(res, 200, { logs });
+  return send(res, 200, { logs }, cors);
 }
 
 async function serveLocalFile(req, res) {
