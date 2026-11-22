@@ -117,33 +117,33 @@ drop policy if exists forever_documents_select on public.forever_documents;
 create policy forever_documents_select on public.forever_documents
 for select to authenticated
 using (
-  private.is_forever_admin()
-  or owner_id = auth.uid()
+  (select private.is_forever_admin())
+  or owner_id = (select auth.uid())
   or collection_name in ('users','usernames','posts','rooms','stickers')
   or (collection_name = 'stories' and private.can_view_forever_story(data ->> 'userId'))
-  or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
-  or (collection_name = 'reports' and data ->> 'reporterId' = auth.uid()::text)
+  or (collection_name = 'notifications' and data ->> 'toUid' = (select auth.uid())::text)
+  or (collection_name = 'reports' and data ->> 'reporterId' = (select auth.uid())::text)
   or (collection_name = 'room_members' and private.is_forever_room_member(data ->> 'roomId'))
   or (collection_name = 'room_messages' and private.is_forever_room_member(data ->> 'roomId'))
   or (collection_name = 'blocks' and (
-    data ->> 'blockerId' = auth.uid()::text or data ->> 'blockedId' = auth.uid()::text
+    data ->> 'blockerId' = (select auth.uid())::text or data ->> 'blockedId' = (select auth.uid())::text
   ))
-  or (collection_name = 'room_bans' and private.is_forever_admin())
+  or (collection_name = 'room_bans' and (select private.is_forever_admin()))
 );
 
 drop policy if exists forever_documents_insert on public.forever_documents;
 create policy forever_documents_insert on public.forever_documents
 for insert to authenticated
 with check (
-  private.is_forever_admin()
+  (select private.is_forever_admin())
   or (
-    owner_id = auth.uid()
+    owner_id = (select auth.uid())
     and collection_name in (
       'posts','stories','comments','notifications',
       'reports','blocks','rooms','room_members','room_messages','stickers'
     )
-    and (collection_name <> 'room_members' or data ->> 'userId' = auth.uid()::text)
-    and (collection_name <> 'reports' or data ->> 'reporterId' = auth.uid()::text)
+    and (collection_name <> 'room_members' or data ->> 'userId' = (select auth.uid())::text)
+    and (collection_name <> 'reports' or data ->> 'reporterId' = (select auth.uid())::text)
   )
 );
 
@@ -151,32 +151,32 @@ drop policy if exists forever_documents_update on public.forever_documents;
 create policy forever_documents_update on public.forever_documents
 for update to authenticated
 using (
-  private.is_forever_admin()
-  or (owner_id = auth.uid() and collection_name not in ('room_members','usernames','room_bans','modlogs'))
+  (select private.is_forever_admin())
+  or (owner_id = (select auth.uid()) and collection_name not in ('room_members','usernames','room_bans','modlogs'))
   or collection_name in ('posts','users')
-  or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
-  or (collection_name = 'room_messages' and private.is_forever_plus() and private.is_forever_room_member(data ->> 'roomId'))
+  or (collection_name = 'notifications' and data ->> 'toUid' = (select auth.uid())::text)
+  or (collection_name = 'room_messages' and (select private.is_forever_plus()) and private.is_forever_room_member(data ->> 'roomId'))
 )
 with check (
-  private.is_forever_admin()
-  or (owner_id = auth.uid() and collection_name not in ('room_members','usernames','room_bans','modlogs'))
+  (select private.is_forever_admin())
+  or (owner_id = (select auth.uid()) and collection_name not in ('room_members','usernames','room_bans','modlogs'))
   or collection_name in ('posts','users')
-  or (collection_name = 'notifications' and data ->> 'toUid' = auth.uid()::text)
-  or (collection_name = 'room_messages' and private.is_forever_plus() and private.is_forever_room_member(data ->> 'roomId'))
+  or (collection_name = 'notifications' and data ->> 'toUid' = (select auth.uid())::text)
+  or (collection_name = 'room_messages' and (select private.is_forever_plus()) and private.is_forever_room_member(data ->> 'roomId'))
 );
 
 drop policy if exists forever_documents_delete on public.forever_documents;
 create policy forever_documents_delete on public.forever_documents
 for delete to authenticated
 using (
-  private.is_forever_admin()
-  or (owner_id = auth.uid() and collection_name not in ('users','usernames','room_bans','modlogs'))
+  (select private.is_forever_admin())
+  or (owner_id = (select auth.uid()) and collection_name not in ('users','usernames','room_bans','modlogs'))
 );
 
 drop policy if exists forever_private_user_data_select on public.forever_private_user_data;
 create policy forever_private_user_data_select on public.forever_private_user_data
 for select to authenticated
-using (user_id = auth.uid() or private.is_forever_admin());
+using (user_id = (select auth.uid()) or (select private.is_forever_admin()));
 
 drop policy if exists forever_admins_no_client_access on public.forever_admins;
 create policy forever_admins_no_client_access on public.forever_admins
