@@ -109,9 +109,8 @@ with check (
   or (
     owner_id = auth.uid()
     and collection_name in (
-      'users','usernames','posts','stories','comments','notifications',
-      'reports','blocks','rooms','room_members','room_messages','room_bans','stickers',
-      'modlogs'
+      'posts','stories','comments','notifications',
+      'reports','blocks','rooms','room_members','room_messages','stickers'
     )
     and (collection_name <> 'room_members' or data ->> 'userId' = auth.uid()::text)
     and (collection_name <> 'reports' or data ->> 'reporterId' = auth.uid()::text)
@@ -295,6 +294,23 @@ declare
   v_user_id text;
   v_new_media boolean := false;
 begin
+  if tg_op='INSERT' and not public.is_forever_admin() then
+    if new.collection_name='users' then
+      if new.id is distinct from auth.uid()::text
+         or new.owner_id is distinct from auth.uid()
+         or new.data ->> 'uid' is distinct from auth.uid()::text
+         or coalesce(new.data ->> 'isPlus','false') <> 'false' then
+        raise exception 'Kullanıcı profili yalnızca güvenli kayıt işlemiyle oluşturulabilir.';
+      end if;
+    elsif new.collection_name='usernames' then
+      if new.owner_id is distinct from auth.uid()
+         or new.data ->> 'uid' is distinct from auth.uid()::text
+         or lower(coalesce(new.data ->> 'username','')) is distinct from lower(new.id) then
+        raise exception 'Kullanıcı adı yalnızca hesabına ait güvenli kayıt işlemiyle ayrılabilir.';
+      end if;
+    end if;
+  end if;
+
   if tg_op='UPDATE' and not public.is_forever_admin() then
     if new.collection_name is distinct from old.collection_name
        or new.id is distinct from old.id
