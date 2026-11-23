@@ -18,7 +18,6 @@ function mapUser(user) {
     displayName: meta.full_name || meta.name || meta.display_name || "",
     photoURL: meta.avatar_url || meta.picture || null,
     emailVerified: Boolean(user.email_confirmed_at),
-    isPlus: false,
     raw: user
   };
 }

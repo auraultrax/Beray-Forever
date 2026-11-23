@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'forever-shell-v19';
+const CACHE_VERSION = 'forever-shell-v20';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,15 +6,9 @@ const APP_SHELL = [
   './kvkk.html',
   './kullanim-kosullari.html',
   './manifest.json',
-  './manifest-violet.json',
-  './manifest-emerald.json',
-  './manifest-ocean.json',
   './supabase-compat.js',
   './aurax-theme.css',
   './rooms.js',
-  './icons/forever-violet.svg',
-  './icons/forever-emerald.svg',
-  './icons/forever-ocean.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',

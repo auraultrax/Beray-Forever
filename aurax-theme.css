@@ -583,7 +583,7 @@ body.room-chat-open .main-content { min-height:100dvh; padding-bottom:0; }
 .sticker-flower span { animation:sticker-spin 5s linear infinite; }
 .sticker-rocket span { animation:sticker-rocket 1.6s ease-in-out infinite; }
 .sticker-star span { animation:sticker-star 1.3s ease-in-out infinite; }
-.room-sticker-plus-note { flex-basis:100%; margin:0; color:#a89bb9; font-size:.66rem; }
+
 .room-animated-sticker { display:inline-grid; min-width:55px; min-height:55px; place-items:center; font-size:2.8rem; filter:drop-shadow(0 0 12px rgba(217,70,239,.5)); }
 .room-emoji-mix { width:150px; height:150px; object-fit:contain; }
 .emoji-mixer-dialog { width:min(430px,100%); }
@@ -593,7 +593,7 @@ body.room-chat-open .main-content { min-height:100dvh; padding-bottom:0; }
 .emoji-mixer-inputs > span { padding-bottom:15px; color:var(--primary); font-size:1.3rem; text-align:center; }
 .emoji-mixer-preview { display:grid; place-items:center; width:min(100%,240px); aspect-ratio:1; margin:14px auto; overflow:hidden; border:1px solid var(--border); border-radius:22px; background:#171024; }
 .emoji-mix-canvas,.emoji-mix-result { display:block; width:100%; height:100%; object-fit:contain; }
-.emoji-mixer-plus-note { margin:10px 0 14px; color:var(--text-muted); font-size:.72rem; text-align:center; }
+
 
 /* Message tools, reactions, replies, pinned bar and report menus. */
 .room-message-menu-btn { margin-left:4px; padding:1px 4px; border:0; background:transparent; color:#9999a4; font:inherit; font-weight:900; letter-spacing:1px; cursor:pointer; }
@@ -649,9 +649,6 @@ body.room-chat-open .main-content { min-height:100dvh; padding-bottom:0; }
 @keyframes sticker-rocket { 0%,100% { transform:translateY(2px) rotate(-8deg); } 50% { transform:translateY(-8px) rotate(7deg); } }
 @keyframes sticker-star { 0%,100% { transform:scale(1) rotate(0); } 50% { transform:scale(1.2) rotate(22deg); } }
 
-/* Real emerald appearance for the Plus gemstone badge. */
-.forever-emerald { width:18px !important; height:20px !important; overflow:visible !important; border-radius:0 !important; background:transparent !important; box-shadow:0 1px 9px rgba(16,185,129,.45) !important; }
-.forever-emerald svg { display:block; width:100%; height:100%; filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
 
 /* User discovery: search, following, followers and profile viewing. */
 .aura-x-directory-tabs { display:flex; gap:5px; padding:5px; border:1px solid var(--border); border-radius:12px; background:var(--bg-base); }

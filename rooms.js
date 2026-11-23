@@ -1,8 +1,7 @@
 import { supabaseClient } from './supabase-compat.js';
 
 const $ = id => document.getElementById(id);
-let session = null, userId = null, username = '', isPlus = false, activeRoom = null, roomChannel = null;
-let knownPlusUserIds = new Set(), plusUsersChannel = null;
+let session = null, userId = null, username = '', activeRoom = null, roomChannel = null;
 let drawingDirty = false, roomUiBound = false, currentMembersMode = 'members';
 let isAppAdmin = false, selectedMessage = null, pendingReply = null, longPressTimer = null;
 let lastRoomMessages = new Map(), lastRoomReactions = [];
@@ -20,9 +19,6 @@ function toast(message) {
   if (window.fxToast) window.fxToast(message);
   else alert(message);
 }
-function plusBadge(plus) {
-  return plus ? '<span class="forever-badges"><span class="forever-emerald" title="Zümrüt Plus rozeti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7 8 3h8l4 4-8 14L4 7Z" fill="#087f45" stroke="#34d399" stroke-width="1.1"/><path d="M4 7h16L12 21 4 7Z" fill="#10b981"/><path d="M8 3 9.5 7 12 21 4 7 8 3Z" fill="#064e3b"/><path d="M16 3 14.5 7 12 21 20 7 16 3Z" fill="#6ee7b7"/><path d="M8 3h8l-1.5 4h-5L8 3Z" fill="#a7f3d0"/></svg></span><span class="forever-verified">✓</span></span>' : '';
-}
 function roomOwner(){return Boolean(activeRoom?.data?.ownerId===userId);}
 function roomModerator(){return Boolean(roomOwner()||isAppAdmin||(activeRoom?.data?.adminIds||[]).includes(userId));}
 async function fetchDocs(collectionName) {
@@ -32,29 +28,13 @@ async function fetchDocs(collectionName) {
   if (error) throw error;
   return data || [];
 }
-async function refreshKnownPlusUsers() {
-  try {
-    const users = await fetchDocs('users');
-    knownPlusUserIds = new Set(users.filter(row => row.data?.isPlus).map(row => row.id));
-  } catch (error) { console.warn('Plus kullanıcı rozetleri yüklenemedi:', error); }
-}
-function watchRoomPlusUsers() {
-  if (plusUsersChannel) return;
-  plusUsersChannel = supabaseClient.channel('forever-room-plus-user-profiles')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_documents', filter: 'collection_name=eq.users' }, async () => {
-      await refreshKnownPlusUsers();
-      if (activeRoom) await loadRoomMessages();
-    }).subscribe();
-}
-function syncPlusControls(){
-  const label=$('roomPlanLabel');if(label)label.textContent=isPlus?'✦ Plus: oda sınırı yok':'Ücretsiz: en fazla 3 oda';
+function syncRoomFeatureControls(){
+  const label=$('roomPlanLabel');if(label)label.textContent='En fazla 3 oda';
   const features=activeRoom?.data?.features||{},stickersEnabled=features.stickers!==false,drawingEnabled=features.drawing!==false;
-  if($('openStickersBtn'))$('openStickersBtn').disabled=!isPlus||!stickersEnabled;
-  if($('toggleDrawingBtn'))$('toggleDrawingBtn').disabled=!isPlus||!drawingEnabled;
-  if($('stickerLock'))$('stickerLock').textContent=isPlus?'Yeni animasyonlar aktif':'🔒 Plus üyelerine özel';
-  if($('drawingLock'))$('drawingLock').textContent=isPlus?'':'🔒 Plus';
-  if(!isPlus||!drawingEnabled)$('drawingBox')?.classList.add('hidden');
-  if(!isPlus||!stickersEnabled)$('stickerTray')?.classList.add('hidden');
+  if($('openStickersBtn'))$('openStickersBtn').disabled=!stickersEnabled;
+  if($('toggleDrawingBtn'))$('toggleDrawingBtn').disabled=!drawingEnabled;
+  if(!drawingEnabled)$('drawingBox')?.classList.add('hidden');
+  if(!stickersEnabled)$('stickerTray')?.classList.add('hidden');
 }
 async function insertDoc(collectionName, id, data) {
   const { error } = await supabaseClient.from('forever_documents').insert({
@@ -93,7 +73,7 @@ async function loadRoomList(){
     const [rooms,memberships]=await Promise.all([fetchDocs('rooms'),currentMemberships()]);
     const savedIds=new Set(memberships.map(row=>row.data?.roomId).filter(Boolean));
     const saved=rooms.filter(room=>savedIds.has(room.id)).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
-    if($('roomPlanLabel'))$('roomPlanLabel').textContent=isPlus?'✦ Plus: oda sınırı yok':'Ücretsiz: en fazla 3 oda';
+    if($('roomPlanLabel'))$('roomPlanLabel').textContent='En fazla 3 oda';
     list.innerHTML=saved.length?saved.map(room=>{
       const d=room.data||{};
       return '<article class="room-list-item"><div class="room-list-icon"><i class="fa-solid fa-hashtag"></i></div><div class="room-list-copy"><strong>'+escapeHtml(d.name||'Adsız oda')+'</strong><small>'+(d.ownerId===userId?'Oda sahibi sensin':'Kayıtlı odan')+'</small></div><button type="button" class="room-list-open" data-room-open="'+escapeHtml(room.id)+'">Odaya Gir</button></article>';
@@ -113,7 +93,7 @@ function renderMessage(row){
   else if(isSingleEmoji(d.text))body='<button type="button" class="room-single-emoji" data-fly-emoji="'+escapeHtml(d.text.trim())+'">'+escapeHtml(d.text.trim())+'</button>';
   else body='<div class="room-message-text">'+renderTextWithClickableEmojis(d.text||'')+'</div>';
   const time=row.created_at?new Date(row.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
-  const meta='<div class="room-message-meta"><span class="room-message-author">'+escapeHtml(d.username||'kullanıcı')+'</span>'+plusBadge(knownPlusUserIds.has(d.userId))+(d.pinned?'<span class="room-pinned-label">📌 Sabit</span>':'')+'<time>'+time+'</time><button type="button" class="room-message-menu-btn" data-message-menu="'+escapeHtml(row.id)+'">•••</button></div>';
+  const meta='<div class="room-message-meta"><span class="room-message-author">'+escapeHtml(d.username||'kullanıcı')+'</span>'+(d.pinned?'<span class="room-pinned-label">📌 Sabit</span>':'')+'<time>'+time+'</time><button type="button" class="room-message-menu-btn" data-message-menu="'+escapeHtml(row.id)+'">•••</button></div>';
   const reply=d.replyTo?'<div class="room-reply-quote"><strong>'+escapeHtml(d.replyTo.username||'Yanıtlanan mesaj')+'</strong><span>'+escapeHtml(d.replyTo.text||'Mesaj')+'</span></div>':'';
   const groups=new Map();lastRoomReactions.filter(x=>x.data?.messageId===row.id).forEach(x=>{const e=x.data?.emoji;if(e)groups.set(e,(groups.get(e)||0)+1);});
   const reactions=groups.size?'<div class="room-reaction-list">'+[...groups].map(([emoji,count])=>'<button type="button" data-react="'+escapeHtml(emoji)+'" data-react-message="'+escapeHtml(row.id)+'">'+escapeHtml(emoji)+' <span>'+count+'</span></button>').join('')+'</div>':'';
@@ -152,7 +132,7 @@ async function updateActiveRoomSettings(patch){
     p_messages_locked:Object.prototype.hasOwnProperty.call(patch,'messagesLocked')?Boolean(patch.messagesLocked):null,
     p_theme:Object.prototype.hasOwnProperty.call(patch,'theme')?String(patch.theme):null
   });
-  if(error)throw error;activeRoom.data=data||Object.assign({},activeRoom.data,patch);syncRoomControls();syncPlusControls();await loadRoomList();
+  if(error)throw error;activeRoom.data=data||Object.assign({},activeRoom.data,patch);syncRoomControls();syncRoomFeatureControls();await loadRoomList();
 }
 function syncRoomControls(){
   if(!activeRoom)return;const owner=roomModerator(),muted=(activeRoom.data.mutedUserIds||[]).includes(userId);
@@ -176,7 +156,7 @@ async function loadRoomMemberCount() {
 async function openRoom(id,name,data){
   activeRoom={id,name,data:Object.assign({},data||{})};$('roomSelectionArea')?.classList.add('hidden');$('roomChat')?.classList.remove('hidden');
   $('roomChatTitle').textContent=name;document.body.classList.add('room-chat-open');
-  applyRoomTheme();renderRoomThemePanel();syncPlusControls();syncRoomControls();
+  applyRoomTheme();renderRoomThemePanel();syncRoomFeatureControls();syncRoomControls();
   await Promise.all([loadRoomMessages(),loadRoomMemberCount()]);
   if(roomChannel)await supabaseClient.removeChannel(roomChannel);
   roomChannel=supabaseClient.channel('forever-room-'+id)
@@ -187,15 +167,14 @@ async function openRoom(id,name,data){
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'forever_documents',filter:'collection_name=eq.room_members'},()=>loadRoomMemberCount())
     .on('postgres_changes',{event:'*',schema:'public',table:'forever_documents',filter:'collection_name=eq.rooms'},payload=>{
-      if(payload.new?.id===activeRoom?.id&&payload.new?.data){activeRoom.data=payload.new.data;syncRoomControls();syncPlusControls();}
+      if(payload.new?.id===activeRoom?.id&&payload.new?.data){activeRoom.data=payload.new.data;syncRoomControls();syncRoomFeatureControls();}
     }).subscribe();
 }
 async function sendRoomMessage(payload){
   if(!activeRoom||!userId)return;
   if(activeRoom.data.messagesLocked&&!roomModerator())return toast('Bu odada mesaj gönderme geçici olarak kilitlendi.');
   if((activeRoom.data.mutedUserIds||[]).includes(userId))return toast('Bu odada mesaj gönderme iznin yok.');
-  if(['animated_sticker','emoji_mix'].includes(payload.kind)&&!isPlus)return toast('Bu özellik yalnızca Plus üyelerine açık. 🔒');
-  const data=Object.assign({roomId:activeRoom.id,userId,username,isPlus,createdAt:{seconds:Math.floor(Date.now()/1000)}},payload);
+  const data=Object.assign({roomId:activeRoom.id,userId,username,createdAt:{seconds:Math.floor(Date.now()/1000)}},payload);
   if(pendingReply)data.replyTo={id:pendingReply.id,username:pendingReply.username,text:pendingReply.text.slice(0,160)};
   try{await insertDoc('room_messages',crypto.randomUUID(),data);if(payload.kind==='text'){$('roomMessageText').value='';$('roomMessageText').style.height='auto';}pendingReply=null;renderReplyPreview();await loadRoomMessages();}
   catch(e){toast(e.message||'Mesaj gönderilemedi.');}
@@ -460,9 +439,9 @@ function drawEmojiMixPreview(){
   if(one!=='❔'&&two!=='❔'){const pending=findEmojiKitchenImage(emojiKitchenCandidateUrls(one,two));emojiKitchenState.pending=pending;pending.then(result=>{if(!result||emojiKitchenState.version!==version||emojiKitchenState.key!==key)return;emojiKitchenState.url=result.url;box.innerHTML='';const img=document.createElement('img');img.src=result.url;img.alt='Birleştirilmiş emoji';img.className='emoji-mix-result';box.appendChild(img);}).catch(()=>{});}
 }
 window.closeEmojiMixer=()=> $('emojiMixerModal')?.classList.add('hidden');
-function openEmojiMixer(){if(!activeRoom)return toast('Önce bir odaya gir.');if(!isPlus)return toast('İki emojiyi birleştirme yalnızca Plus üyelerine açıktır. 🔒');$('emojiMixerModal')?.classList.remove('hidden');drawEmojiMixPreview();}
+function openEmojiMixer(){if(!activeRoom)return toast('Önce bir odaya gir.');$('emojiMixerModal')?.classList.remove('hidden');drawEmojiMixPreview();}
 async function sendEmojiMixToRoom(){
-  if(!isPlus)return toast('Emoji birleştirme Plus özelliğidir. 🔒');const one=readOneEmoji('emojiMixerOne'),two=readOneEmoji('emojiMixerTwo');if(!one||!two)return toast('İki kutuya da birer emoji girmelisin.');
+  const one=readOneEmoji('emojiMixerOne'),two=readOneEmoji('emojiMixerTwo');if(!one||!two)return toast('İki kutuya da birer emoji girmelisin.');
   try{const key=one+'\u0000'+two;let result=emojiKitchenState.key===key?await emojiKitchenState.pending:null;
     if(result?.url&&emojiKitchenState.key===key)await sendRoomMessage({kind:'emoji_mix',stickerUrl:result.url,emojiOne:one,emojiTwo:two,text:one+' + '+two});
     else{let canvas=$('emojiMixerPreview')?.querySelector('canvas');if(!canvas){drawEmojiMixPreview();canvas=$('emojiMixerPreview')?.querySelector('canvas');}if(!canvas)throw new Error('Emoji önizlemesi hazırlanamadı.');const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('Emoji görseli üretilemedi.');const file=new File([blob],'emoji-mix.png',{type:'image/png'});const url=await uploadRoomAsset(file,'emoji-mixes');await sendRoomMessage({kind:'emoji_mix',stickerUrl:url,emojiOne:one,emojiTwo:two,text:one+' + '+two});}
@@ -498,7 +477,7 @@ function setupCanvas() {
     return {x,y};
   }
   canvas.addEventListener('pointerdown', event => {
-    if (!isPlus || activeRoom?.data?.features?.drawing === false) return;
+    if (activeRoom?.data?.features?.drawing === false) return;
     drawing = true; canvas.setPointerCapture(event.pointerId);
     const p = point(event); ctx.beginPath(); ctx.moveTo(p.x,p.y);
   });
@@ -512,7 +491,6 @@ function setupCanvas() {
     ctx.clearRect(0,0,canvas.width,canvas.height); drawingDirty = false;
   };
   $('sendDrawingBtn').onclick = async () => {
-    if (!isPlus) return toast('Oda çizimi Plus üyeliği gerektirir. 🔒');
     if (!drawingDirty) return toast('Önce tuvale bir şey çiz.');
     try {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -583,7 +561,6 @@ function bindRoomUi(){
   $('roomMixerBtn').onclick=()=>{$('roomComposerMenu').classList.add('hidden');openEmojiMixer();};
   $('roomBaiBtn').onclick=()=>{
     $('roomComposerMenu').classList.add('hidden');
-    if(!isPlus)return toast('BAI yalnızca Plus üyelerine açıktır. 🔒');
     toast('BAI servisi bu Forever projesine henüz bağlanmadı. Bağlantı kurulmadan çalışıyor gösterilmeyecek.');
   };
 
@@ -599,17 +576,14 @@ function bindRoomUi(){
   });
 
   $('openStickersBtn').onclick=()=>{
-    if(!isPlus)return toast('Yeni animasyonlu çıkartmalar Plus üyelerine özel. 🔒');
     if(activeRoom?.data?.features?.stickers===false)return toast('Bu odada çıkartmalar kapalı.');
     $('stickerTray').classList.toggle('hidden');
   };
   $('stickerTray').querySelectorAll('[data-animated-sticker]').forEach(button=>button.onclick=()=>{
-    if(!isPlus)return toast('Animasyonlu çıkartmalar Plus üyelerine özel. 🔒');
     sendRoomMessage({kind:'animated_sticker',stickerId:button.dataset.animatedSticker,emoji:button.dataset.emoji,text:button.dataset.emoji});
   });
   $('toggleDrawingBtn').onclick=()=>{
     $('roomComposerMenu').classList.add('hidden');
-    if(!isPlus)return toast('Oda çizimi Plus özelliğidir. 🔒');
     if(activeRoom?.data?.features?.drawing===false)return toast('Bu odada çizim kapalı.');
     $('drawingBox').classList.toggle('hidden');
   };
@@ -672,20 +646,16 @@ async function initForUser(){
     return;
   }
   userId=session.user.id;
-  const [profile,plus,admin]=await Promise.all([
+  const [profile,admin]=await Promise.all([
     supabaseClient.from('forever_documents').select('data').eq('collection_name','users').eq('id',userId).maybeSingle(),
-    supabaseClient.rpc('is_forever_plus'),
     supabaseClient.rpc('is_forever_admin')
   ]);
   if(profile.error)throw profile.error;
   username=profile.data?.data?.username||session.user.user_metadata?.name||'Kullanıcı';
-  isPlus=Boolean(plus.data);
   isAppAdmin=!admin.error&&admin.data===true;
   window.foreverIsAdmin=isAppAdmin;
   document.querySelectorAll('.admin-nav').forEach(node=>node.classList.toggle('hidden',!isAppAdmin));
-  await refreshKnownPlusUsers();
-  watchRoomPlusUsers();
-  syncPlusControls();
+  syncRoomFeatureControls();
   bindRoomUi();
   await loadRoomList();
 }
@@ -695,7 +665,7 @@ window.addEventListener('forever-user-ready',()=>{
 });
 window.addEventListener('forever-user-signed-out',()=>{
   if(roomChannel){supabaseClient.removeChannel(roomChannel);roomChannel=null;}
-  activeRoom=null;userId=null;username='';isPlus=false;isAppAdmin=false;
+  activeRoom=null;userId=null;username='';isAppAdmin=false;
   window.foreverIsAdmin=false;
   document.querySelectorAll('.admin-nav').forEach(node=>node.classList.add('hidden'));
 });

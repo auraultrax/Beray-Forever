@@ -5,7 +5,7 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 ## İlk kurulum
 
 1. Yeni Supabase projesinde SQL Editor bölümünü aç.
-2. supabase/schema.sql dosyasının tamamını bir kez çalıştır. Bu dosya tabloları, RLS kurallarını, özel fonksiyonları, Storage bucket'larını ve Realtime yayınını kurar.
+2. supabase/schema.sql dosyasının tamamını çalıştır. Mevcut kurulumlarda da güncel dosyayı yeniden çalıştırarak Plus üyeliğinin kaldırılması, tüm hesaplar için ortak yetki/kota kuralları ve oda moderasyonu güncellemeleri uygulanır.
 3. Supabase → Authentication → Providers → Google alanında Google sağlayıcısını etkinleştir. Google Cloud Console'dan oluşturduğun Web application OAuth Client ID ve Client Secret değerlerini buraya ekle.
 4. Google Cloud Console'daki OAuth istemcisinde Authorized JavaScript origins kısmına yerel geliştirme adresini (ör. http://localhost:8080) ve canlı site adresini ekle.
 5. Aynı OAuth istemcisinde Authorized redirect URIs kısmına şu Supabase callback adresini ekle:
@@ -27,9 +27,9 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 
 - index.html — Forever ana arayüzü, Google ile giriş, kayıt ve sosyal akış.
 - supabase-compat.js — Eski veri erişim çağrılarını Supabase'e yönlendiren uyumluluk katmanı.
-- rooms.js — Supabase Realtime oda listesi, oda sohbeti, Plus çıkartmaları ve çizim.
+- rooms.js — Supabase Realtime oda listesi, oda sohbeti, çıkartmalar, emoji birleştirme ve çizim.
 - admin.html — Supabase oturumuyla korunan yönetim paneli.
-- supabase/schema.sql — Tablolar, RLS kuralları, güvenli kayıt/Plus fonksiyonları, kota denetimleri ve Storage.
+- supabase/schema.sql — Tablolar, RLS kuralları, güvenli kayıt fonksiyonları, ortak kota denetimleri, oda moderasyonu ve Storage.
 - kvkk.html — KVKK aydınlatma metni taslağı.
 - kullanim-kosullari.html — Kullanım koşulları taslağı.
 
@@ -41,34 +41,26 @@ IP adresi yalnızca Supabase/API katmanının ilgili istek başlıklarını sağ
 
 ## Gönderiler, hikâyeler ve günlük kota
 
-- Standart üyeler fotoğraf veya video içeren gönderi paylaşır; açıklama isteğe bağlıdır.
-- Yalnızca metin gönderisi Plus üyelere açıktır.
-- Günlük toplam fotoğraf/video yükleme sınırı standart üyelerde 5, Plus üyelerde 10'dur. Gönderiler ve hikâyeler aynı kotayı paylaşır.
+- Tüm hesaplar metin, fotoğraf veya video içeren gönderi ve anket paylaşabilir; açıklama isteğe bağlıdır.
+- Günlük toplam fotoğraf/video yükleme sınırı hesap başına 5'tir. Gönderiler ve hikâyeler aynı kotayı paylaşır.
 - Gönderi medyası forever-media bucket'ında saklanır ve herkese açık görüntülenebilir. Bu bucket'taki dosya URL'lerini bilen kişiler dosyayı doğrudan açabilir.
-- forever-media yüklemeleri yalnızca posts, drawings ve stickers klasörlerine kabul edilir; çizim ve çıkartma yüklemeleri Plus yetkisi gerektirir.
+- forever-media yüklemeleri yalnızca posts, drawings ve stickers klasörlerine kabul edilir. Çizim ve çıkartma yüklemeleri tüm hesaplarda kullanılabilir.
 - Hikâye medyası forever-stories adlı özel bucket'ta saklanır. Hikâyeler yalnızca sahibine ve onu takip eden oturum açmış kullanıcılara imzalı bağlantıyla gösterilir. Üretilen imzalı bağlantı 24 saat geçerlidir.
 - Varsayılan dosya boyutu üst sınırı 25 MB'dır.
 
-## Forever Plus
+## Üyelik ve kullanım sınırları
 
-Plus üyeliği uygulama içi satın alma değildir; yönetici admin.html içinden kullanıcı adını girerek Plus tanımlar veya kaldırır.
+Forever'da tek bir standart üyelik türü vardır. Metin gönderileri, anketler, animasyonlu çıkartmalar, oda çizimi ve emoji birleştirme tüm kullanıcılara açıktır. Oda mesajlarını sabitleme oda sahibi, oda yöneticisi veya sistem yöneticisi yetkisiyle yapılır.
 
-Plus özellikleri:
-- Hazır ve özel animasyonlu çıkartmalar gönderme.
-- Kullanıcı adının yanında mor zümrüt tasarımlı işaret ve mavi doğrulanmış rozet.
-- Odalarda çizim yapma.
-- Özel uygulama simgeleri.
-- Üçten fazla odaya katılma; standart üyeler en fazla üç odaya katılır.
-- Oda mesajlarını sabitleme.
-- +10 takipçi bonus hakkı. Bu hak profil kaydında tutulur; sahte hesaplar oluşturulup gerçek takipçi gibi eklenmez.
-- Günlük toplam 10 fotoğraf/video yükleme.
-- Yalnızca metin gönderisi paylaşma.
+- Her hesap en fazla 3 odaya katılabilir.
+- Her hesap günde toplam 5 fotoğraf/video yükleyebilir; gönderiler ve hikâyeler aynı kotayı paylaşır.
+- Tek medya dosyasının varsayılan üst sınırı 25 MB'dır.
 
 ## Yönetim
 
 Yönetim paneli Google OAuth ile giriş yapar ancak hesabın e-posta adresi public.forever_admins tablosunda kayıtlı değilse panel açılmaz. İlk yönetici hesabı için yukarıdaki SQL adımını uygula.
 
-Panelden kullanıcıyı askıya alabilir/yasaklayabilir, şikâyetleri çözebilir, oda üyelerini çıkarabilir/odaya girişini engelleyebilir ve Plus üyeliği yönetebilirsin.
+Panelden kullanıcıyı askıya alabilir/yasaklayabilir, şikâyetleri çözebilir, oda üyelerini çıkarabilir ve odaya yeniden girişlerini engelleyebilirsin.
 
 ## Güvenlik
 
@@ -95,5 +87,5 @@ Ardından http://localhost:8080 adresini aç. Bu adresi Supabase Redirect URLs l
 - [ ] KVKK ve Kullanım Koşulları sayfalarındaki tüm yer tutucular dolduruldu.
 - [ ] IP verisi için amaç, hukuki sebep, saklama süresi ve silme görevi belirlendi.
 - [ ] Supabase projesinin bölgesi ve yurt dışı veri aktarımı koşulları incelendi.
-- [ ] Gerçek kullanıcılarla açmadan önce kayıt, hikâye erişimi, oda, şikâyet, engelleme, Plus ve kota kuralları test edildi.
+- [ ] Gerçek kullanıcılarla açmadan önce kayıt, hikâye erişimi, oda, şikâyet, engelleme, oda moderasyonu ve ortak kota kuralları test edildi.
 - [ ] Eski Firebase verilerine ihtiyaç varsa yedek/import planı hazırlandı.

@@ -12,12 +12,6 @@ create table if not exists public.forever_admins (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.forever_plus_members (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  created_by text,
-  created_at timestamptz not null default now()
-);
-
 create table if not exists public.forever_private_user_data (
   user_id uuid primary key references auth.users(id) on delete cascade,
   first_name text not null,
@@ -52,7 +46,6 @@ grant select, insert, update, delete on public.forever_documents to authenticate
 grant select on public.forever_private_user_data to authenticated;
 
 alter table public.forever_admins enable row level security;
-alter table public.forever_plus_members enable row level security;
 alter table public.forever_private_user_data enable row level security;
 alter table public.forever_documents enable row level security;
 
@@ -64,16 +57,6 @@ as $$
   select exists (
     select 1 from public.forever_admins a
     where a.email = lower(coalesce(auth.jwt() ->> 'email', ''))
-  );
-$$;
-
-create or replace function private.is_forever_plus()
-returns boolean
-language sql stable security definer
-set search_path = ''
-as $$
-  select auth.uid() is not null and exists (
-    select 1 from public.forever_plus_members p where p.user_id = auth.uid()
   );
 $$;
 
@@ -89,6 +72,26 @@ as $$
       and m.data ->> 'userId' = auth.uid()::text
   );
 $$;
+create or replace function private.is_forever_room_moderator(p_room_id text)
+returns boolean
+language sql stable security definer
+set search_path = ''
+as $$
+  select auth.uid() is not null and (
+    private.is_forever_admin()
+    or exists (
+      select 1
+      from public.forever_documents room
+      where room.collection_name = 'rooms'
+        and room.id = p_room_id
+        and (
+          room.data ->> 'ownerId' = auth.uid()::text
+          or coalesce(room.data -> 'adminIds', '[]'::jsonb) @> jsonb_build_array(auth.uid()::text)
+        )
+    )
+  );
+$$;
+
 create or replace function private.can_view_forever_story(p_author_id text)
 returns boolean
 language sql stable security definer
@@ -106,10 +109,10 @@ as $$
 $$;
 revoke all on function private.is_forever_admin() from public, anon;
 grant execute on function private.is_forever_admin() to authenticated;
-revoke all on function private.is_forever_plus() from public, anon;
-grant execute on function private.is_forever_plus() to authenticated;
 revoke all on function private.is_forever_room_member(text) from public, anon;
 grant execute on function private.is_forever_room_member(text) to authenticated;
+revoke all on function private.is_forever_room_moderator(text) from public, anon;
+grant execute on function private.is_forever_room_moderator(text) to authenticated;
 revoke all on function private.can_view_forever_story(text) from public, anon;
 grant execute on function private.can_view_forever_story(text) to authenticated;
 
@@ -155,14 +158,14 @@ using (
   or (owner_id = (select auth.uid()) and collection_name not in ('room_members','usernames','room_bans','modlogs'))
   or collection_name in ('posts','users')
   or (collection_name = 'notifications' and data ->> 'toUid' = (select auth.uid())::text)
-  or (collection_name = 'room_messages' and (select private.is_forever_plus()) and private.is_forever_room_member(data ->> 'roomId'))
+  or (collection_name = 'room_messages' and private.is_forever_room_moderator(data ->> 'roomId'))
 )
 with check (
   (select private.is_forever_admin())
   or (owner_id = (select auth.uid()) and collection_name not in ('room_members','usernames','room_bans','modlogs'))
   or collection_name in ('posts','users')
   or (collection_name = 'notifications' and data ->> 'toUid' = (select auth.uid())::text)
-  or (collection_name = 'room_messages' and (select private.is_forever_plus()) and private.is_forever_room_member(data ->> 'roomId'))
+  or (collection_name = 'room_messages' and private.is_forever_room_moderator(data ->> 'roomId'))
 );
 
 drop policy if exists forever_documents_delete on public.forever_documents;
@@ -180,10 +183,6 @@ using (user_id = (select auth.uid()) or (select private.is_forever_admin()));
 
 drop policy if exists forever_admins_no_client_access on public.forever_admins;
 create policy forever_admins_no_client_access on public.forever_admins
-for all to authenticated using (false) with check (false);
-
-drop policy if exists forever_plus_members_no_client_access on public.forever_plus_members;
-create policy forever_plus_members_no_client_access on public.forever_plus_members
 for all to authenticated using (false) with check (false);
 
 create or replace function private.register_forever_profile(
@@ -252,7 +251,7 @@ begin
     jsonb_build_object(
       'uid',v_uid::text,'username',v_username,'displayName',v_name,
       'following','[]'::jsonb,'followers','[]'::jsonb,'bio','',
-      'isPlus',false,'suspended',false,'createdAt',
+      'suspended',false,'suspended',false,'createdAt',
       jsonb_build_object('seconds',extract(epoch from now())::bigint)
     ));
 
@@ -267,56 +266,6 @@ $$;
 revoke all on function private.register_forever_profile(text,text,text,date,boolean,boolean) from public, anon;
 grant execute on function private.register_forever_profile(text,text,text,date,boolean,boolean) to authenticated;
 
-create or replace function private.grant_forever_plus(p_username text)
-returns jsonb
-language plpgsql security definer
-set search_path = ''
-as $$
-declare v_uid uuid;
-begin
-  if not private.is_forever_admin() then raise exception 'Bu işlem yalnızca yöneticilere açıktır.'; end if;
-  select (data ->> 'uid')::uuid into v_uid
-  from public.forever_documents
-  where collection_name='users' and lower(data ->> 'username')=lower(trim(p_username))
-  limit 1;
-  if v_uid is null then raise exception 'Bu kullanıcı adıyla bir hesap bulunamadı.'; end if;
-  insert into public.forever_plus_members(user_id,created_by)
-  values(v_uid,lower(coalesce(auth.jwt() ->> 'email','')))
-  on conflict(user_id) do nothing;
-  update public.forever_documents
-  set data = data || jsonb_build_object('isPlus',true,'plusSince',now()::text,'plusFollowerBonus',10),
-      updated_at=now()
-  where collection_name='users' and id=v_uid::text;
-  return jsonb_build_object('success',true,'uid',v_uid::text,'username',lower(trim(p_username)));
-end;
-$$;
-revoke all on function private.grant_forever_plus(text) from public, anon;
-grant execute on function private.grant_forever_plus(text) to authenticated;
-
-create or replace function private.revoke_forever_plus(p_username text)
-returns jsonb
-language plpgsql security definer
-set search_path = ''
-as $$
-declare v_uid uuid;
-begin
-  if not private.is_forever_admin() then raise exception 'Bu işlem yalnızca yöneticilere açıktır.'; end if;
-  select (data ->> 'uid')::uuid into v_uid
-  from public.forever_documents
-  where collection_name='users' and lower(data ->> 'username')=lower(trim(p_username))
-  limit 1;
-  if v_uid is null then raise exception 'Kullanıcı bulunamadı.'; end if;
-  delete from public.forever_plus_members where user_id=v_uid;
-  update public.forever_documents
-  set data = data || jsonb_build_object('isPlus',false) - 'plusSince' - 'plusFollowerBonus',
-      updated_at=now()
-  where collection_name='users' and id=v_uid::text;
-  return jsonb_build_object('success',true,'uid',v_uid::text);
-end;
-$$;
-revoke all on function private.revoke_forever_plus(text) from public, anon;
-grant execute on function private.revoke_forever_plus(text) to authenticated;
-
 create or replace function private.enforce_forever_limits()
 returns trigger
 language plpgsql
@@ -325,7 +274,6 @@ set search_path = ''
 as $$
 declare
   v_is_admin boolean;
-  v_is_plus boolean;
   v_daily_limit integer;
   v_count integer;
   v_room_id text;
@@ -338,17 +286,13 @@ declare
   v_option_index integer;
 begin
   v_is_admin := private.is_forever_admin();
-  v_is_plus := private.is_forever_plus();
-  if v_is_plus then
-    v_daily_limit := 10;
-  else
-    v_daily_limit := 5;
-  end if;
+  v_daily_limit := 5;
 
   if not v_is_admin and tg_op in ('INSERT','UPDATE') then
     if new.collection_name = 'users' then
       new.data := new.data - 'email' - 'firstName' - 'lastName' - 'birthDate'
-        - 'dateOfBirth' - 'ipAddress' - 'ip_address' - 'kvkkAcceptedAt' - 'termsAcceptedAt';
+        - 'dateOfBirth' - 'ipAddress' - 'ip_address' - 'kvkkAcceptedAt' - 'termsAcceptedAt'
+        - 'isPlus' - 'plusSince' - 'plusFollowerBonus';
     elsif new.collection_name in ('posts','stories','room_messages','comments') then
       new.data := new.data - 'email' - 'authorEmail';
     end if;
@@ -413,14 +357,12 @@ begin
       ) then
         raise exception 'Bu odaya katılman yönetim tarafından engellenmiş.';
       end if;
-      if not v_is_plus then
-        select count(*) into v_count
-        from public.forever_documents member
-        where member.collection_name = 'room_members'
-          and member.data ->> 'userId' = v_user_id;
-        if v_count >= 3 then
-          raise exception 'Ücretsiz üyeler en fazla 3 odaya katılabilir. Plus ile sınırı kaldır.';
-        end if;
+      select count(*) into v_count
+      from public.forever_documents member
+      where member.collection_name = 'room_members'
+        and member.data ->> 'userId' = v_user_id;
+      if v_count >= 3 then
+        raise exception 'En fazla 3 odaya katılabilirsin.';
       end if;
     end if;
   end if;
@@ -458,7 +400,6 @@ begin
              or v_username is null
              or v_comment ->> 'userId' is distinct from auth.uid()::text
              or v_comment ->> 'author' is distinct from v_username
-             or coalesce(v_comment ->> 'authorIsPlus','false') is distinct from v_is_plus::text
              or length(trim(coalesce(v_comment ->> 'text',''))) < 1
              or length(coalesce(v_comment ->> 'text','')) > 500 then
             raise exception 'Yorum yalnızca kendi hesabın adına eklenebilir ve en fazla 500 karakter olabilir.';
@@ -471,7 +412,6 @@ begin
     -- Counts are recalculated in PostgreSQL, never trusted from the browser.
     if new.collection_name = 'posts' and (old.data ? 'poll' or new.data ? 'poll') then
       if not (old.data ? 'poll') then
-        if not v_is_plus then raise exception 'Anket oluşturma Plus özelliğidir.'; end if;
         if jsonb_typeof(new.data -> 'poll' -> 'options') <> 'array'
            or jsonb_array_length(new.data -> 'poll' -> 'options') < 2
            or jsonb_array_length(new.data -> 'poll' -> 'options') > 4
@@ -598,14 +538,15 @@ begin
         if (new.data - 'pinned') is distinct from (old.data - 'pinned') then
           raise exception 'Başkasının oda mesajı içeriğini değiştiremezsin.';
         end if;
+        if (new.data ->> 'pinned') is distinct from (old.data ->> 'pinned')
+           and not private.is_forever_room_moderator(new.data ->> 'roomId') then
+          raise exception 'Mesajı yalnızca oda yöneticisi sabitleyebilir.';
+        end if;
       end if;
     end if;
   end if;
 
   if tg_op = 'INSERT' and new.collection_name = 'posts' and new.data ? 'poll' then
-    if not v_is_plus and not v_is_admin then
-      raise exception 'Anket oluşturma Plus özelliğidir.';
-    end if;
     if jsonb_typeof(new.data -> 'poll' -> 'options') <> 'array'
        or jsonb_array_length(new.data -> 'poll' -> 'options') < 2
        or jsonb_array_length(new.data -> 'poll' -> 'options') > 4
@@ -620,12 +561,7 @@ begin
     new.data := jsonb_set(new.data,'{poll,counts}',v_expected_counts,true);
   end if;
 
-  if new.collection_name = 'posts' and (new.data ->> 'imageUrl') is null
-     and not v_is_plus and not v_is_admin then
-    raise exception 'Yalnızca Plus üyeleri sadece metin gönderisi paylaşabilir.';
-  end if;
-
-  if new.collection_name in ('posts','stories') then
+    if new.collection_name in ('posts','stories') then
     if tg_op = 'INSERT' then
       v_new_media := coalesce(new.data ->> 'imageUrl', new.data ->> 'imagePath') is not null;
     else
@@ -651,19 +587,7 @@ begin
     if not v_is_admin and not private.is_forever_room_member(v_room_id) then
       raise exception 'Bu odanın üyesi değilsin.';
     end if;
-    if (coalesce(new.data ->> 'kind','') in ('sticker','drawing','custom_sticker')
-        or coalesce(new.data ->> 'stickerUrl','') <> ''
-        or coalesce(new.data ->> 'drawingData','') <> '')
-       and not v_is_plus and not v_is_admin then
-      raise exception 'Animasyonlu çıkartmalar ve oda çizimi Plus üyeliği gerektirir.';
-    end if;
-    if tg_op = 'UPDATE'
-       and coalesce((new.data ->> 'pinned')::boolean,false)
-       and not coalesce((old.data ->> 'pinned')::boolean,false)
-       and not v_is_plus and not v_is_admin then
-      raise exception 'Mesaj sabitleme Plus üyeliği gerektirir.';
-    end if;
-  end if;
+      end if;
 
   new.updated_at := now();
   return new;
@@ -671,12 +595,20 @@ end;
 $$;
 
 drop trigger if exists forever_limits_guard on public.forever_documents;
+
+-- Strip old membership flags while the previous trigger is paused.
+update public.forever_documents
+set data = data - 'isPlus' - 'plusSince' - 'plusFollowerBonus',
+    updated_at = now()
+where collection_name = 'users'
+  and (data ? 'isPlus' or data ? 'plusSince' or data ? 'plusFollowerBonus');
+
 create trigger forever_limits_guard
 before insert or update on public.forever_documents
 for each row execute function private.enforce_forever_limits();
 revoke all on function private.enforce_forever_limits() from public, anon, authenticated;
 
--- Supabase Storage: images, videos and user-uploaded Plus stickers.
+-- Supabase Storage: images, videos, drawings and stickers.
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values (
   'forever-media','forever-media',true,26214400,
@@ -695,7 +627,7 @@ as $$
   select auth.uid() is not null and (
     private.is_forever_admin()
     or (
-      select count(*) < case when private.is_forever_plus() then 10 else 5 end
+      select count(*) < 5
       from storage.objects o
       where o.bucket_id in ('forever-media','forever-stories')
         and (storage.foldername(o.name))[1] = auth.uid()::text
@@ -722,7 +654,7 @@ with check (
     ((storage.foldername(name))[2]='posts' and private.can_upload_forever_media())
     or (
       (storage.foldername(name))[2] in ('drawings','stickers')
-      and (private.is_forever_plus() or private.is_forever_admin())
+      
     )
   )
 );
@@ -739,7 +671,7 @@ with check (
     ((storage.foldername(name))[2]='posts' and private.can_upload_forever_media())
     or (
       (storage.foldername(name))[2] in ('drawings','stickers')
-      and (private.is_forever_plus() or private.is_forever_admin())
+      
     )
   )
 );
@@ -823,12 +755,9 @@ end $$;
 -- Public invoker wrappers preserve the existing app RPC names.
 -- Their privileged implementations remain private and verify the caller.
 drop function if exists public.is_forever_admin();
-drop function if exists public.is_forever_plus();
 drop function if exists public.is_forever_room_member(text);
 drop function if exists public.can_view_forever_story(text);
 drop function if exists public.register_forever_profile(text,text,text,date,boolean,boolean);
-drop function if exists public.grant_forever_plus(text);
-drop function if exists public.revoke_forever_plus(text);
 drop function if exists public.enforce_forever_limits();
 drop function if exists public.can_upload_forever_media();
 
@@ -836,11 +765,6 @@ create or replace function public.is_forever_admin()
 returns boolean language sql stable security invoker
 set search_path = ''
 as $forever$ select private.is_forever_admin(); $forever$;
-
-create or replace function public.is_forever_plus()
-returns boolean language sql stable security invoker
-set search_path = ''
-as $forever$ select private.is_forever_plus(); $forever$;
 
 create or replace function public.is_forever_room_member(p_room_id text)
 returns boolean language sql stable security invoker
@@ -867,37 +791,30 @@ as $forever$ select private.register_forever_profile(
   p_kvkk_notice_accepted,p_terms_accepted
 ); $forever$;
 
-create or replace function public.grant_forever_plus(p_username text)
-returns jsonb language sql security invoker
-set search_path = ''
-as $forever$ select private.grant_forever_plus(p_username); $forever$;
-
-create or replace function public.revoke_forever_plus(p_username text)
-returns jsonb language sql security invoker
-set search_path = ''
-as $forever$ select private.revoke_forever_plus(p_username); $forever$;
-
 create or replace function public.can_upload_forever_media()
 returns boolean language sql stable security invoker
 set search_path = ''
 as $forever$ select private.can_upload_forever_media(); $forever$;
 
 revoke all on function public.is_forever_admin() from public, anon;
-revoke all on function public.is_forever_plus() from public, anon;
 revoke all on function public.is_forever_room_member(text) from public, anon;
 revoke all on function public.can_view_forever_story(text) from public, anon;
 revoke all on function public.register_forever_profile(text,text,text,date,boolean,boolean) from public, anon;
-revoke all on function public.grant_forever_plus(text) from public, anon;
-revoke all on function public.revoke_forever_plus(text) from public, anon;
 revoke all on function public.can_upload_forever_media() from public, anon;
 grant execute on function public.is_forever_admin() to authenticated;
-grant execute on function public.is_forever_plus() to authenticated;
 grant execute on function public.is_forever_room_member(text) to authenticated;
 grant execute on function public.can_view_forever_story(text) to authenticated;
 grant execute on function public.register_forever_profile(text,text,text,date,boolean,boolean) to authenticated;
-grant execute on function public.grant_forever_plus(text) to authenticated;
-grant execute on function public.revoke_forever_plus(text) to authenticated;
 grant execute on function public.can_upload_forever_media() to authenticated;
+
+-- Permanently remove the legacy Plus data model and RPCs.
+drop function if exists public.is_forever_plus();
+drop function if exists public.grant_forever_plus(text);
+drop function if exists public.revoke_forever_plus(text);
+drop function if exists private.is_forever_plus();
+drop function if exists private.grant_forever_plus(text);
+drop function if exists private.revoke_forever_plus(text);
+drop table if exists public.forever_plus_members cascade;
 
 -- IP addresses are personal data. Keep them only for a documented, limited purpose;
 -- define a retention schedule with your privacy notice and delete expired records periodically.
