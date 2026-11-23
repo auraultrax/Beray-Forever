@@ -76,7 +76,7 @@ create or replace function private.is_forever_room_moderator(p_room_id text)
 returns boolean
 language sql stable security definer
 set search_path = ''
-as $
+as $$
   select auth.uid() is not null and (
     private.is_forever_admin()
     or exists (
@@ -90,7 +90,7 @@ as $
         )
     )
   );
-$;
+$$;
 
 create or replace function private.can_view_forever_story(p_author_id text)
 returns boolean
