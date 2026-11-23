@@ -1,6 +1,6 @@
 # Forever — ürün yol haritası
 
-Forever, Google hesabıyla giriş yapılan ve Supabase altyapısını kullanan sosyal bir topluluk alanıdır. Ana arayüz, oda sistemi, Plus özellikleri ve yönetim paneli temel akış olarak hazırlanmıştır.
+Forever, Google hesabıyla giriş yapılan ve Supabase altyapısını kullanan sosyal bir topluluk alanıdır. Ana arayüz, oda sistemi ve yönetim paneli temel akış olarak hazırlanmıştır.
 
 ## Mevcut ana yapı
 
@@ -8,10 +8,10 @@ Forever, Google hesabıyla giriş yapılan ve Supabase altyapısını kullanan s
 - Kayıt sırasında ad, soyad, doğum tarihi, KVKK aydınlatma metni ve kullanım koşulları onayı.
 - Supabase Auth, PostgreSQL, RLS, Realtime ve Storage.
 - Fotoğraf/video içeren gönderiler; açıklama isteğe bağlı.
-- Standart üyede günlük toplam 5; Plus üyede günlük toplam 10 medya yükleme.
+- Tüm hesaplarda günlük toplam 5 medya yükleme.
 - Odalar, mesajlar, şikâyet, engelleme, odadan çıkarma ve oda yasağı.
-- Plus için animasyonlu çıkartmalar, oda çizimi, özel uygulama simgeleri, sabitleme, ek oda hakkı ve metin gönderisi.
-- Kullanıcı/şikâyet/oda/Plus yönetimi için admin paneli.
+- Metin gönderileri, anketler, animasyonlu çıkartmalar, oda çizimi ve emoji birleştirme tüm hesaplarda açık; oda sabitleme oda yöneticisi yetkisiyle çalışır.
+- Kullanıcı/şikâyet/oda yönetimi için admin paneli.
 
 ## Yayın öncesi zorunlu işler
 
