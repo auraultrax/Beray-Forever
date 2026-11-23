@@ -60,6 +60,100 @@ as $$
   );
 $$;
 
+
+-- Forever Super Plus: membership is server-controlled, separate from editable profiles.
+create table if not exists public.forever_plus_members (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+alter table public.forever_plus_members enable row level security;
+revoke all on table public.forever_plus_members from public, anon, authenticated;
+grant select on table public.forever_plus_members to authenticated;
+drop policy if exists forever_plus_members_read on public.forever_plus_members;
+create policy forever_plus_members_read on public.forever_plus_members
+for select to authenticated using (true);
+
+create or replace function private.is_forever_plus()
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select auth.uid() is not null and exists (
+    select 1 from public.forever_plus_members p where p.user_id = auth.uid()
+  );
+$$;
+revoke all on function private.is_forever_plus() from public, anon;
+grant execute on function private.is_forever_plus() to authenticated;
+
+create or replace function private.grant_forever_plus(p_username text)
+returns jsonb language plpgsql security definer set search_path = ''
+as $$
+declare v_uid uuid; v_username text := lower(trim(coalesce(p_username,'')));
+begin
+  if not private.is_forever_admin() then raise exception 'Süper Plus üyeliğini yalnızca sistem yöneticisi yönetebilir.'; end if;
+  if v_username = '' then raise exception 'Kullanıcı adı girilmeli.'; end if;
+  select (data ->> 'uid')::uuid into v_uid from public.forever_documents
+  where collection_name='users' and lower(data ->> 'username')=v_username limit 1;
+  if v_uid is null then raise exception 'Bu kullanıcı adıyla bir Forever hesabı bulunamadı.'; end if;
+  insert into public.forever_plus_members(user_id,created_by) values(v_uid,auth.uid()) on conflict(user_id) do nothing;
+  return jsonb_build_object('success',true,'uid',v_uid::text,'username',v_username,'isPlus',true);
+end;
+$$;
+revoke all on function private.grant_forever_plus(text) from public, anon;
+grant execute on function private.grant_forever_plus(text) to authenticated;
+
+create or replace function private.revoke_forever_plus(p_username text)
+returns jsonb language plpgsql security definer set search_path = ''
+as $$
+declare v_uid uuid; v_username text := lower(trim(coalesce(p_username,'')));
+begin
+  if not private.is_forever_admin() then raise exception 'Süper Plus üyeliğini yalnızca sistem yöneticisi yönetebilir.'; end if;
+  if v_username = '' then raise exception 'Kullanıcı adı girilmeli.'; end if;
+  select (data ->> 'uid')::uuid into v_uid from public.forever_documents
+  where collection_name='users' and lower(data ->> 'username')=v_username limit 1;
+  if v_uid is null then raise exception 'Bu kullanıcı adıyla bir Forever hesabı bulunamadı.'; end if;
+  delete from public.forever_plus_members where user_id=v_uid;
+  return jsonb_build_object('success',true,'uid',v_uid::text,'username',v_username,'isPlus',false);
+end;
+$$;
+revoke all on function private.revoke_forever_plus(text) from public, anon;
+grant execute on function private.revoke_forever_plus(text) to authenticated;
+
+-- BAI usage counter. Plus accounts skip personal caps; Edge Functions keep a global safety budget.
+create table if not exists public.forever_bai_usage_daily (
+  user_id uuid not null, usage_date date not null,
+  feature text not null check (feature in ('chat','search','global')),
+  request_count integer not null default 0 check (request_count >= 0),
+  updated_at timestamptz not null default now(),
+  primary key (user_id,usage_date,feature)
+);
+alter table public.forever_bai_usage_daily enable row level security;
+revoke all on table public.forever_bai_usage_daily from public, anon, authenticated;
+grant select, insert, update, delete on table public.forever_bai_usage_daily to service_role;
+
+create or replace function public.forever_bai_bump(p_user uuid, p_feature text)
+returns jsonb language plpgsql security definer set search_path = ''
+as $$
+declare v_user_count integer; v_global_count integer;
+  v_global_user constant uuid := '00000000-0000-0000-0000-000000000001';
+begin
+  if p_user is null or p_feature not in ('chat','search') then raise exception 'Geçersiz BAI sayaç isteği.'; end if;
+  insert into public.forever_bai_usage_daily(user_id,usage_date,feature,request_count,updated_at)
+  values(p_user,current_date,p_feature,1,now())
+  on conflict(user_id,usage_date,feature) do update
+    set request_count=public.forever_bai_usage_daily.request_count+1,updated_at=now()
+  returning request_count into v_user_count;
+  insert into public.forever_bai_usage_daily(user_id,usage_date,feature,request_count,updated_at)
+  values(v_global_user,current_date,'global',1,now())
+  on conflict(user_id,usage_date,feature) do update
+    set request_count=public.forever_bai_usage_daily.request_count+1,updated_at=now()
+  returning request_count into v_global_count;
+  delete from public.forever_bai_usage_daily where usage_date < current_date - 35;
+  return jsonb_build_object('user_count',v_user_count,'global_count',v_global_count);
+end;
+$$;
+revoke all on function public.forever_bai_bump(uuid,text) from public, anon, authenticated;
+grant execute on function public.forever_bai_bump(uuid,text) to service_role;
+
 create or replace function private.is_forever_room_member(p_room_id text)
 returns boolean
 language sql stable security definer
@@ -274,6 +368,7 @@ set search_path = ''
 as $$
 declare
   v_is_admin boolean;
+  v_is_plus boolean;
   v_daily_limit integer;
   v_count integer;
   v_room_id text;
@@ -286,6 +381,7 @@ declare
   v_option_index integer;
 begin
   v_is_admin := private.is_forever_admin();
+  v_is_plus := private.is_forever_plus();
   v_daily_limit := 5;
 
   if not v_is_admin and tg_op in ('INSERT','UPDATE') then
@@ -589,6 +685,38 @@ begin
     end if;
       end if;
 
+
+  if new.collection_name = 'posts' then
+    if tg_op = 'INSERT'
+       and not (new.data ? 'poll')
+       and coalesce(nullif(new.data ->> 'imageUrl',''),nullif(new.data ->> 'imagePath','')) is null
+       and not v_is_plus and not v_is_admin then
+      raise exception 'Sadece metin gönderisi Süper Plus ayrıcalığıdır.';
+    end if;
+    if tg_op = 'INSERT' and nullif(new.data ->> 'promotedUntil','') is not null then
+      if not v_is_plus and not v_is_admin then raise exception 'Gönderiyi üste çıkarma Süper Plus ayrıcalığıdır.'; end if;
+      if (new.data ->> 'promotedUntil')::timestamptz > now() + interval '24 hours' then
+        raise exception 'Bir gönderi en fazla 24 saat öne çıkarılabilir.';
+      end if;
+    elsif tg_op = 'UPDATE'
+       and new.data ->> 'promotedUntil' is distinct from old.data ->> 'promotedUntil'
+       and nullif(new.data ->> 'promotedUntil','') is not null then
+      if not v_is_plus and not v_is_admin then raise exception 'Gönderiyi üste çıkarma Süper Plus ayrıcalığıdır.'; end if;
+      if old.owner_id is distinct from auth.uid() and not v_is_admin then
+        raise exception 'Yalnızca kendi gönderini öne çıkarabilirsin.';
+      end if;
+      if (new.data ->> 'promotedUntil')::timestamptz > now() + interval '24 hours' then
+        raise exception 'Bir gönderi en fazla 24 saat öne çıkarılabilir.';
+      end if;
+    end if;
+  end if;
+
+  if new.collection_name = 'room_messages'
+     and coalesce(new.data ->> 'kind','') in ('animated_sticker','custom_sticker','sticker','emoji_mix','emoji_flight')
+     and not v_is_plus and not v_is_admin then
+    raise exception 'Bu animasyonlu oda aracı Süper Plus ayrıcalığıdır.';
+  end if;
+
   new.updated_at := now();
   return new;
 end;
@@ -649,13 +777,11 @@ for insert to authenticated
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
-  and (storage.foldername(name))[2] in ('posts','drawings','stickers')
+  and (storage.foldername(name))[2] in ('posts','drawings','stickers','emoji-mixes')
   and (
     ((storage.foldername(name))[2]='posts' and private.can_upload_forever_media())
-    or (
-      (storage.foldername(name))[2] in ('drawings','stickers')
-      
-    )
+    or ( (storage.foldername(name))[2]='drawings' )
+    or ( (storage.foldername(name))[2] in ('stickers','emoji-mixes') and private.is_forever_plus() )
   )
 );
 
@@ -666,13 +792,11 @@ using (bucket_id='forever-media' and (storage.foldername(name))[1]=auth.uid()::t
 with check (
   bucket_id='forever-media'
   and (storage.foldername(name))[1]=auth.uid()::text
-  and (storage.foldername(name))[2] in ('posts','drawings','stickers')
+  and (storage.foldername(name))[2] in ('posts','drawings','stickers','emoji-mixes')
   and (
     ((storage.foldername(name))[2]='posts' and private.can_upload_forever_media())
-    or (
-      (storage.foldername(name))[2] in ('drawings','stickers')
-      
-    )
+    or ( (storage.foldername(name))[2]='drawings' )
+    or ( (storage.foldername(name))[2] in ('stickers','emoji-mixes') and private.is_forever_plus() )
   )
 );
 
@@ -766,6 +890,19 @@ returns boolean language sql stable security invoker
 set search_path = ''
 as $forever$ select private.is_forever_admin(); $forever$;
 
+
+create or replace function public.is_forever_plus()
+returns boolean language sql stable security invoker set search_path = ''
+as $forever$ select private.is_forever_plus(); $forever$;
+
+create or replace function public.grant_forever_plus(p_username text)
+returns jsonb language sql security invoker set search_path = ''
+as $forever$ select private.grant_forever_plus(p_username); $forever$;
+
+create or replace function public.revoke_forever_plus(p_username text)
+returns jsonb language sql security invoker set search_path = ''
+as $forever$ select private.revoke_forever_plus(p_username); $forever$;
+
 create or replace function public.is_forever_room_member(p_room_id text)
 returns boolean language sql stable security invoker
 set search_path = ''
@@ -797,24 +934,21 @@ set search_path = ''
 as $forever$ select private.can_upload_forever_media(); $forever$;
 
 revoke all on function public.is_forever_admin() from public, anon;
+revoke all on function public.is_forever_plus() from public, anon;
+revoke all on function public.grant_forever_plus(text) from public, anon;
+revoke all on function public.revoke_forever_plus(text) from public, anon;
 revoke all on function public.is_forever_room_member(text) from public, anon;
 revoke all on function public.can_view_forever_story(text) from public, anon;
 revoke all on function public.register_forever_profile(text,text,text,date,boolean,boolean) from public, anon;
 revoke all on function public.can_upload_forever_media() from public, anon;
 grant execute on function public.is_forever_admin() to authenticated;
+grant execute on function public.is_forever_plus() to authenticated;
+grant execute on function public.grant_forever_plus(text) to authenticated;
+grant execute on function public.revoke_forever_plus(text) to authenticated;
 grant execute on function public.is_forever_room_member(text) to authenticated;
 grant execute on function public.can_view_forever_story(text) to authenticated;
 grant execute on function public.register_forever_profile(text,text,text,date,boolean,boolean) to authenticated;
 grant execute on function public.can_upload_forever_media() to authenticated;
-
--- Permanently remove the legacy Plus data model and RPCs.
-drop function if exists public.is_forever_plus();
-drop function if exists public.grant_forever_plus(text);
-drop function if exists public.revoke_forever_plus(text);
-drop function if exists private.is_forever_plus();
-drop function if exists private.grant_forever_plus(text);
-drop function if exists private.revoke_forever_plus(text);
-drop table if exists public.forever_plus_members cascade;
 
 -- IP addresses are personal data. Keep them only for a documented, limited purpose;
 -- define a retention schedule with your privacy notice and delete expired records periodically.
