@@ -525,6 +525,10 @@
   
   <div id="profileModal" class="modal hidden" onclick="if(event.target===this)closeProfile()">
     <div class="modal-card" style="width:min(420px,100%);">
+      <a id="superPlusCta" href="https://sites.google.com/view/forever-super-plus/ana-sayfa" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:14px;border:1px solid rgba(167,139,250,.36);border-radius:14px;background:linear-gradient(110deg,rgba(139,92,246,.18),rgba(236,72,153,.10));color:var(--text);text-decoration:none;font-weight:800;">
+        <i class="fa-solid fa-gem" style="color:var(--primary2);font-size:1.05rem;"></i><span id="superPlusCtaText">Süper Plus Üyesi Ol</span>
+        <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:.7rem;opacity:.65;"></i>
+      </a>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h2 style="margin:0;">Profil</h2>
         <button type="button" class="btn-icon" onclick="closeProfile()"><i class="fa-solid fa-xmark"></i></button>
@@ -534,6 +538,30 @@
         <div style="min-width:0;">
           <div id="profileName" style="font-weight:800;font-size:1.05rem;">—</div>
           <div id="profileHandle" style="font-size:.75rem;color:var(--muted);">—</div>
+          <div id="plusIconSettings" class="hidden" style="margin-top:9px;">
+            <small style="display:block;color:var(--muted);margin-bottom:6px;">Uygulama simgesi</small>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('violet')">Mor</button>
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('emerald')">Zümrüt</button>
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('ocean')">Okyanus</button>
+            </div>
+          </div>
+          <div id="plusIconLocked" class="sub" style="margin-top:7px;">Özel uygulama simgeleri Süper Plus üyelerine açıktır 🔒</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;padding:12px;background:rgba(139,92,246,.08);">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><strong>💎 Forever Süper Plus</strong><span id="plusStatusLabel" class="tag">Standart</span></div>
+        <p class="muted" style="margin:8px 0;">Süper Plus ayrıcalıkları:</p>
+        <div id="plusFeatureList" style="font-size:.78rem;line-height:1.9;color:var(--muted);">
+          <div>🔒 Doğrulanmış rozet ve kullanıcı bul alanında elmas</div>
+          <div>🔒 Daha fazla uygulama simgesi seçeneği</div>
+          <div>🔒 Yalnızca metin gönderisi paylaşma</div>
+          <div>🔒 Özel animasyonlu çıkartmalar</div>
+          <div>🔒 Emoji birleştirme</div>
+          <div>🔒 BAI için kişisel günlük kullanım kotası olmaması</div>
+          <div>🔒 Gönderileri 24 saate kadar öne çıkarma</div>
+          <div>🔒 Ek oda temaları ve konuşma baloncuğu şekilleri</div>
+          <div>🔒 Animasyonlu emoji gönderileri</div>
         </div>
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
@@ -1365,6 +1393,8 @@
 
     let currentUser = null;
     let followingIds = new Set();
+    let plusUserIds = new Set();
+    let isForeverPlus = false;
     let allPostsCache = [];
     let feedQuery = '';
 
@@ -1386,6 +1416,32 @@
       }, 2600);
     }
     window.fxToast = fxToast;
+    function foreverBadges(active) {
+      return active ? '<span class="forever-plus-badges" title="Forever Süper Plus · Doğrulanmış hesap" style="display:inline-flex;align-items:center;gap:3px;margin-left:4px;vertical-align:middle;"><i class="fa-solid fa-gem" style="color:#b99aff;font-size:.78em;"></i><span style="display:inline-grid;place-items:center;width:13px;height:13px;border-radius:50%;background:#2684ff;color:white;font-size:9px;font-weight:900;">✓</span></span>' : '';
+    }
+    async function loadPlusUsers() {
+      try {
+        const result = await supabaseClient.from('forever_plus_members').select('user_id');
+        if (result.error) throw result.error;
+        plusUserIds = new Set((result.data || []).map(row => String(row.user_id)));
+        if (currentUser) {
+          currentUser.isPlus = plusUserIds.has(String(currentUser.uid));
+          isForeverPlus = currentUser.isPlus;
+          window.foreverIsPlus = isForeverPlus;
+        }
+      } catch (error) { console.warn('Süper Plus rozetleri yüklenemedi:', error); }
+      return plusUserIds;
+    }
+    async function refreshForeverPlusStatus() {
+      if (!currentUser) return false;
+      const result = await supabaseClient.rpc('is_forever_plus');
+      if (result.error) throw result.error;
+      currentUser.isPlus = Boolean(result.data);
+      isForeverPlus = currentUser.isPlus;
+      window.foreverIsPlus = isForeverPlus;
+      await loadPlusUsers();
+      return isForeverPlus;
+    }
 
     let isSignUpMode = false;
     let unsubscribePosts = null;
@@ -1693,7 +1749,7 @@
         const stripBio = document.getElementById('stripBio');
         if (stripBio) stripBio.textContent = profileCache.bio || 'Profilini düzenle';
         const stripName = document.getElementById('stripName');
-        if (stripName) stripName.innerHTML = escapeHTML(currentUser.username || profileCache.displayName);
+        if (stripName) stripName.innerHTML = escapeHTML(currentUser.username || profileCache.displayName) + foreverBadges(Boolean(currentUser.isPlus));
         const stripAv = document.getElementById('stripAvatar');
         if (stripAv) stripAv.textContent = profileCache.displayName.charAt(0).toUpperCase();
       } catch (e) { console.warn(e); }
@@ -1701,16 +1757,36 @@
 
     window.openProfile = async function() {
       if (!currentUser) return;
+      try { await refreshForeverPlusStatus(); } catch (error) { console.warn('Süper Plus durumu alınamadı:', error); }
       await refreshProfileStats();
       const name = currentUser.username || profileCache.displayName || currentUser.displayName || 'Kullanıcı';
       document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
-      document.getElementById('profileName').innerHTML = escapeHTML(name);
+      document.getElementById('profileName').innerHTML = escapeHTML(name) + foreverBadges(Boolean(currentUser.isPlus));
       document.getElementById('profileHandle').textContent = '@' + (currentUser.username || name.toLowerCase().replace(/\s+/g, ''));
+      document.getElementById('plusIconSettings')?.classList.toggle('hidden', !currentUser.isPlus);
+      document.getElementById('plusIconLocked')?.classList.toggle('hidden', Boolean(currentUser.isPlus));
+      const plusStatus = document.getElementById('plusStatusLabel');
+      if (plusStatus) { plusStatus.textContent = currentUser.isPlus ? '💎 Aktif' : 'Standart'; plusStatus.classList.toggle('plus', Boolean(currentUser.isPlus)); }
+      const ctaText = document.getElementById('superPlusCtaText');
+      if (ctaText) ctaText.textContent = currentUser.isPlus ? 'Süper Plus Üyeliğin Aktif' : 'Süper Plus Üyesi Ol';
+      const featureBox = document.getElementById('plusFeatureList');
+      if (featureBox) featureBox.querySelectorAll('div').forEach(item => { item.textContent = (currentUser.isPlus ? '✅ ' : '🔒 ') + item.textContent.replace(/^[🔒✅]\s*/, ''); });
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
       document.getElementById('profileModal').classList.remove('hidden');
     };
     window.closeProfile = function() { document.getElementById('profileModal').classList.add('hidden'); };
+    window.changeAppIcon = function(theme) {
+      if (!currentUser?.isPlus) { fxToast('Özel uygulama simgeleri Süper Plus ayrıcalığıdır.'); return; }
+      if (!['violet','emerald','ocean'].includes(theme)) return;
+      const manifest = document.querySelector('link[rel="manifest"]');
+      if (manifest) manifest.href = './manifest-' + theme + '.json';
+      document.querySelectorAll('link[rel="icon"]').forEach(link => { link.href = './icons/forever-' + theme + '.svg'; });
+      const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+      if (appleIcon) appleIcon.href = './icons/forever-' + theme + '.svg';
+      localStorage.setItem('forever_app_icon', theme);
+      fxToast('Uygulama simgesi değiştirildi. Yeni ana ekran kısayolu için yeniden ekleme gerekebilir.');
+    };
 
     window.toggleProfileEdit = function() {
       const box = document.getElementById('profileEditBox');
@@ -2406,6 +2482,7 @@
     });  </script>
 
   <script type="module" src="./rooms.js"></script>
+  <script src="./aurai-widget.js" defer></script>
 </body>
 </html>
 
