@@ -70,6 +70,16 @@ create table if not exists public.forever_plus_members (
 alter table public.forever_plus_members enable row level security;
 revoke all on table public.forever_plus_members from public, anon, authenticated;
 grant select on table public.forever_plus_members to authenticated;
+do $
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='forever_plus_members'
+  ) then
+    alter publication supabase_realtime add table public.forever_plus_members;
+  end if;
+end;
+$;
 drop policy if exists forever_plus_members_read on public.forever_plus_members;
 create policy forever_plus_members_read on public.forever_plus_members
 for select to authenticated using (true);
