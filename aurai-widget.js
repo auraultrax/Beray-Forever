@@ -113,8 +113,12 @@
     const {data}=await client.auth.getSession();const user=data?.session?.user;
     if(!user){isPlus=false;fab.style.display='none';closePanel();return;}
     const result=await client.rpc('is_forever_plus');isPlus=!result.error&&Boolean(result.data);
-    fab.style.display=isPlus?'block':'none';
-    if(!isPlus)closePanel();
+    fab.style.display='block';
+    const status=head.querySelector('small');
+    if(status)status.textContent=isPlus?'Süper Plus · kişisel günlük kota yok':'Standart · 30 sohbet / 10 arama';
+    foot.textContent=isPlus
+      ? 'Süper Plus: kişi başı günlük kota yok. Ortak sistem bütçesi ve sağlayıcı sınırları geçerlidir.'
+      : 'Standart hesap: günlük 30 sohbet ve 10 arama. Parolanı veya özel bilgilerini paylaşma.';
   }
   async function boot(){
     for(let i=0;i<80&&!window.supabaseClient;i++)await new Promise(resolve=>setTimeout(resolve,150));
