@@ -28,7 +28,7 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 - index.html — Forever ana arayüzü, Google ile giriş, kayıt ve sosyal akış.
 - supabase-compat.js — Eski veri erişim çağrılarını Supabase'e yönlendiren uyumluluk katmanı.
 - rooms.js — Supabase Realtime oda listesi, oda sohbeti, Plus animasyonları, emoji birleştirme ve gelişmiş tema seçenekleri.
-- aurai-widget.js — Plus kullanıcılarına açık BAI sohbet arayüzü.
+- aurai-widget.js — Tüm giriş yapmış hesaplara açık BAI sohbet arayüzü; Süper Plus üyelerinde kişi başı günlük kullanım kotası yoktur.
 - supabase/functions/aurai-chat ve aurai-search — BAI model ve arama proxy'leri; API anahtarları yalnızca Supabase Secrets içinde tutulur.
 - BAI-KURULUM.md — BAI sağlayıcı Secret'ları, kota modeli ve Edge Function yayım adımları.
 - admin.html — Supabase oturumuyla korunan yönetim paneli.
