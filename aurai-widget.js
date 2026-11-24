@@ -123,6 +123,7 @@
     await syncAccess().catch(()=>{fab.style.display='none';});
     client.auth.onAuthStateChange(()=>syncAccess().catch(()=>{}));
     window.addEventListener('forever-user-ready',()=>syncAccess().catch(()=>{}));
+    window.addEventListener('forever-plus-updated',()=>syncAccess().catch(()=>{}));
     window.addEventListener('forever-user-signed-out',()=>{isPlus=false;fab.style.display='none';closePanel();});
     addMessage('Merhaba! Ben BAI 💜 Forever kullanımı ve genel sorular konusunda yardımcı olabilirim. İnternet araması için mesajına /ara ile başla.');
   }
