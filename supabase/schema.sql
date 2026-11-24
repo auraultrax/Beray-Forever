@@ -692,6 +692,12 @@ begin
        and coalesce(nullif(new.data ->> 'imageUrl',''),nullif(new.data ->> 'imagePath','')) is null
        and not v_is_plus and not v_is_admin then
       raise exception 'Sadece metin gönderisi Süper Plus ayrıcalığıdır.';
+    elsif tg_op = 'UPDATE'
+       and coalesce(nullif(old.data ->> 'imageUrl',''),nullif(old.data ->> 'imagePath','')) is not null
+       and coalesce(nullif(new.data ->> 'imageUrl',''),nullif(new.data ->> 'imagePath','')) is null
+       and not (new.data ? 'poll')
+       and not v_is_plus and not v_is_admin then
+      raise exception 'Medya gönderisini metin gönderisine dönüştürmek Süper Plus ayrıcalığıdır.';
     end if;
     if tg_op = 'INSERT' and nullif(new.data ->> 'promotedUntil','') is not null then
       if not v_is_plus and not v_is_admin then raise exception 'Gönderiyi üste çıkarma Süper Plus ayrıcalığıdır.'; end if;
