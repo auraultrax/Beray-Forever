@@ -978,6 +978,7 @@
       supabaseClient
     } from "./supabase-compat.js";
 
+    window.supabaseClient = supabaseClient;
     const app = initializeApp();
     const auth = getForeverAuth(app);
     const db = getForeverStore(app);
