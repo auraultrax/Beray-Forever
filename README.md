@@ -30,6 +30,7 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 - rooms.js — Supabase Realtime oda listesi, oda sohbeti, Plus animasyonları, emoji birleştirme ve gelişmiş tema seçenekleri.
 - aurai-widget.js — Plus kullanıcılarına açık BAI sohbet arayüzü.
 - supabase/functions/aurai-chat ve aurai-search — BAI model ve arama proxy'leri; API anahtarları yalnızca Supabase Secrets içinde tutulur.
+- BAI-KURULUM.md — BAI sağlayıcı Secret'ları, kota modeli ve Edge Function yayım adımları.
 - admin.html — Supabase oturumuyla korunan yönetim paneli.
 - supabase/schema.sql — Tablolar, RLS kuralları, Süper Plus yetkileri, BAI günlük sayaçları, kota denetimleri, oda moderasyonu ve Storage.
 - kvkk.html — KVKK aydınlatma metni taslağı.
@@ -43,7 +44,7 @@ IP adresi yalnızca Supabase/API katmanının ilgili istek başlıklarını sağ
 
 ## Gönderiler, hikâyeler ve günlük kota
 
-- Tüm hesaplar metin, fotoğraf veya video içeren gönderi ve anket paylaşabilir; açıklama isteğe bağlıdır.
+- Tüm hesaplar fotoğraf/video içeren gönderi ve anket paylaşabilir; yalnızca metinden oluşan gönderiler Süper Plus ayrıcalığıdır.
 - Günlük toplam fotoğraf/video yükleme sınırı hesap başına 5'tir. Gönderiler ve hikâyeler aynı kotayı paylaşır.
 - Gönderi medyası forever-media bucket'ında saklanır ve herkese açık görüntülenebilir. Bu bucket'taki dosya URL'lerini bilen kişiler dosyayı doğrudan açabilir.
 - forever-media yüklemeleri yalnızca posts, drawings ve stickers klasörlerine kabul edilir. Çizim ve çıkartma yüklemeleri tüm hesaplarda kullanılabilir.
@@ -70,7 +71,7 @@ Standart hesaplar için oda ve medya sınırları korunur:
 - Her hesap günde toplam 5 fotoğraf/video yükleyebilir; gönderiler ve hikâyeler aynı kotayı paylaşır.
 - Tek medya dosyasının varsayılan üst sınırı 25 MB'dır.
 
-Süper Plus, oda veya medya kotasını artırmaz. BAI'de Plus kullanıcılar için kişisel günlük limit uygulanmaz; sağlayıcı kesintileri ve tüm siteyi koruyan ortak günlük sistem bütçesi (varsayılan 5.000 istek) devam eder. Model/arama hizmeti ayrıca yapılandırılmalıdır.
+Standart hesaplarda BAI günlük 30 sohbet ve 10 arama isteğiyle sınırlıdır. Süper Plus, BAI'de kişi başı günlük limiti kaldırır; sağlayıcı kesintileri ve tüm siteyi koruyan ortak günlük sistem bütçesi (varsayılan 5.000 istek) devam eder. Model/arama hizmeti ayrıca yapılandırılmalıdır. Süper Plus oda veya medya kotasını artırmaz.
 ## Yönetim
 
 Yönetim paneli Google OAuth ile giriş yapar ancak hesabın e-posta adresi public.forever_admins tablosunda kayıtlı değilse panel açılmaz. İlk yönetici hesabı için yukarıdaki SQL adımını uygula.
