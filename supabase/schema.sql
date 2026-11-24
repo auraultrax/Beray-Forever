@@ -70,6 +70,7 @@ create table if not exists public.forever_plus_members (
 alter table public.forever_plus_members enable row level security;
 revoke all on table public.forever_plus_members from public, anon, authenticated;
 grant select on table public.forever_plus_members to authenticated;
+grant select on table public.forever_plus_members to service_role;
 do $
 begin
   if not exists (
