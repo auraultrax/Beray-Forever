@@ -2025,6 +2025,7 @@
         const isSaved = currentUser && savedPostIds.has(post.id);
         const initialLetter = (post.authorName || 'K').charAt(0).toUpperCase();
         const isFollowing = followingIds.has(post.userId);
+        const authorIsPlus = plusUserIds.has(String(post.userId));
         const tags = post.tags || extractTags(post.content || '');
         const tagsHtml = tags.map(t =>
           '<span class="tag-chip" onclick="document.getElementById(\'feedSearch\').value=\'#' + escapeHTML(t) + '\';filterFeed(\'#' + escapeHTML(t) + '\')">#' + escapeHTML(t) + '</span>'
@@ -2071,7 +2072,7 @@
           <div class="post-head">
             <div class="avatar">${initialLetter}</div>
             <div style="flex:1;min-width:0;">
-              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}</div>
+              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}${foreverBadges(authorIsPlus)}</div>
               <div class="time">${post.createdAt && post.createdAt.seconds ? new Date(post.createdAt.seconds * 1000).toLocaleString('tr-TR', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Az önce'}</div>
             </div>
             ${moreMenu}
@@ -2112,6 +2113,16 @@
           </div>
         `;
         postsFeed.appendChild(card);
+        const postAuthorName = card.querySelector('.post-head .name');
+        if (postAuthorName && authorIsPlus) postAuthorName.innerHTML = escapeHTML(post.authorName || 'Kullanıcı') + foreverBadges(true);
+        if (isOwner && currentUser?.isPlus) {
+          const boost = document.createElement('button');
+          boost.type = 'button';
+          boost.textContent = Date.parse(post.promotedUntil || '') > Date.now() ? '✦ Öne çıkarıldı' : '✦ Öne çıkar';
+          boost.title = 'Gönderiyi 24 saat boyunca akışın üst sıralarına taşı';
+          boost.onclick = () => window.promotePost(post.id);
+          card.querySelector('.post-actions')?.appendChild(boost);
+        }
       });
     }
 
@@ -2351,7 +2362,7 @@
       if(auraXActiveProfileUid!==uid)return;
       const name=data.displayName||data.username||'Kullanıcı';
       document.getElementById('otherProfileAvatar').textContent=name.charAt(0).toLocaleUpperCase('tr-TR');
-      document.getElementById('otherProfileName').textContent=name;
+      document.getElementById('otherProfileName').innerHTML=escapeHTML(name)+foreverBadges(plusUserIds.has(String(uid)));
       document.getElementById('otherProfileHandle').textContent='@'+(data.username||String(uid).slice(0,8));
       document.getElementById('otherProfileBio').textContent=data.bio||'Henüz bir biyografi eklenmemiş.';
       document.getElementById('otherProfileStats').innerHTML='<span><strong>'+auraXFollowerCount({data:data})+'</strong> Takipçi</span><span><strong>'+(Array.isArray(data.following)?data.following.length:0)+'</strong> Takip</span>';
@@ -2394,7 +2405,12 @@
         const action=uid===currentUser?.uid?'<span class="aura-x-self">Sen</span>':'<button type="button" class="btn-follow '+(following?'on':'')+'" data-follow-uid="'+escapeHTML(uid)+'">'+(following?'Takiptesin':'Takip et')+'</button>';
         return '<article class="aura-x-user-row"><button type="button" class="aura-x-user-open" data-open-user-profile="'+escapeHTML(uid)+'"><span class="aura-x-user-avatar">'+escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'))+'</span><span class="aura-x-user-meta"><strong>'+escapeHTML(name)+'</strong><small>'+escapeHTML(d.bio||'@'+(d.username||'kullanici'))+'</small><small>'+count+' takipçi</small></span></button>'+action+'</article>';
       }).join('');
-      list.querySelectorAll('[data-follow-uid]').forEach(button=>button.addEventListener('click',async()=>{
+      list.querySelectorAll('[data-open-user-profile]').forEach(button=>{
+         if (!plusUserIds.has(String(button.dataset.openUserProfile))) return;
+         const strong=button.querySelector('.aura-x-user-meta strong');
+         if (strong) strong.innerHTML=escapeHTML(strong.textContent||'')+foreverBadges(true);
+       });
+       list.querySelectorAll('[data-follow-uid]').forEach(button=>button.addEventListener('click',async()=>{
         await window.toggleFollow(button.dataset.followUid,button);renderAuraXDirectory();
       }));
       list.querySelectorAll('[data-open-user-profile]').forEach(button=>button.addEventListener('click',()=>window.openAuraXUserProfile(button.dataset.openUserProfile)));
@@ -2417,6 +2433,7 @@
       }
       try{
         await loadFollowing();
+        await loadPlusUsers();
         const snap=await getDocs(collection(db,'users'));auraXDirectoryUsers=[];
         snap.forEach(docSnap=>{
           const data=docSnap.data()||{};
