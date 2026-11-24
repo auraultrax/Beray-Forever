@@ -23,3 +23,11 @@ Yayınlamadan önce:
 node --check aurai-widget.js
 node --test tests/aurai-logic.test.cjs
 ```
+
+## Forever Plus özellik geçişi
+
+Mevcut Supabase kurulumunda ek sunucu kurallarını etkinleştirmek için `SUPABASE_FOREVER_PLUS_FEATURES_MIGRATION.sql` dosyasını Supabase SQL Editor'da çalıştırın. Yeni kurulumda `SUPABASE_TUM_KURULUM.sql` bunları içerir. Daha sonra `supabase/functions/aurai-chat` Edge Function'ını yeniden dağıtın.
+
+## Forever Plus
+
+Plus paketinde 16 yerleşik uygulama simgesi ve 160 özgün animasyonlu SVG çıkartması bulunur. Keşfet metin-only gönderi, 12 saatlik otomatik Plus gönderi öne çıkarma, emoji animasyonları, Unicode emoji birleştirme, ek oda temaları ve özel baloncuk şekilleri Plus kontrolündedir.

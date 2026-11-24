@@ -3,69 +3,42 @@ FOREVER — PROJE TANITIMI
 
 PROJE ÖZETİ
 -----------
-Forever, Supabase altyapısıyla çalışan, web ve PWA olarak yayınlanabilen sosyal platform projesidir. Uygulama arayüzü index.html dosyasında; Supabase istemci uyumluluğu supabase-bridge.js dosyasında; BAI arayüzü aurai-widget.js dosyasında bulunur.
+Forever, Supabase altyapısıyla çalışan web ve PWA sosyal platformudur. Ana kullanıcı arayüzü index.html; Supabase uyumluluk katmanı supabase-bridge.js; BAI arayüzü aurai-widget.js dosyasındadır.
 
 ANA PLATFORM ÖZELLİKLERİ
 ------------------------
-1. Hesap oluşturma ve oturum açma: kullanıcı adı/parola akışı ve yapılandırılmış sağlayıcı oturumları.
-2. Profil yönetimi: profil bilgileri, profil fotoğrafı, biyografi, kullanıcı adı ve gizlilik ayarları.
-3. Sosyal akış: metin, görsel ve video gönderileri; beğeni, yorum ve yanıtlar.
-4. Kullanıcı bulma: kullanıcı adıyla arama, takipçiler ve takip edilen hesaplar.
-5. Hikâyeler/durumlar: metin, görsel veya video durumları; mevcut SQL'deki erişim politikaları takip ilişkisini dikkate alır.
-6. Odalar: oda oluşturma/katılma, oda erişim ayarları, sohbet, yanıt, düzenleme, silme, medya ve özel alıcıya bildirim gönderimi.
-7. Oda etkileşimi: emoji tepkileri, çıkartmalar, ortak çizim alanı ve oda yapılandırmasına bağlı senkron YouTube özelliği.
-8. Oda görünümü: oda teması, arka plan, baloncuk rengi ve Plus baloncuk şekilleri.
-9. Bildirimler: uygulama içi bildirimler ve VAPID/Web Push secret'ları kurulduğunda tarayıcı/işletim sistemi bildirimleri.
-10. Liderlik ve yönetim: liderlik sıralaması, şikâyet yönetimi, sistem kısıtlamaları ve yalnızca A_UR_A_XX hesabına açık yönetim paneli.
-11. BAI: uygulama içi sohbet ve Edge Function yapılandırıldığında internet araması. Gerçek model ve arama sağlayıcı anahtarları Supabase Edge Function Secrets bölümüne eklenmelidir.
-12. PWA: Forever simgeleri, manifest dosyaları ve service worker ile kurulabilir web uygulaması.
+1. Hesap oluşturma ve oturum açma: kullanıcı adı/parola akışı ve yapılandırılan sağlayıcı oturumları.
+2. Profil yönetimi: profil fotoğrafı, ad, biyografi, kullanıcı adı, mod, gizlilik ve hesap etkinliği.
+3. Keşfet akışı: fotoğraf, video ve uygun hesaplar için metin gönderileri; beğeni, yorum, yanıt ve gönderi yönetimi.
+4. Kullanıcı bulma: kullanıcı adıyla arama, takipçiler/takip edilenler, çevrimiçi durumu ve hesap rozetleri.
+5. Hikâyeler/durumlar: metin, görsel ve video durumları; görünürlük mevcut takip/erişim kurallarına bağlıdır.
+6. Odalar: oda oluşturma/katılma, erişim ayarları, sohbet, mesaj düzenleme/silme, medya, özel bildirimler ve kullanıcı etkileşimi.
+7. Oda etkileşimi: emoji tepkileri, kişisel çıkartmalar, hazır Forever animasyon paketi, emoji birleştirme, ortak çizim ve oda ayarına bağlı YouTube özelliği.
+8. Bildirimler: uygulama içi bildirimler; VAPID/Web Push secret'ları ve dağıtım doğru kurulduğunda tarayıcı/işletim sistemi bildirimleri.
+9. Liderlik ve yönetim: liderlik sıralaması, şikâyet yönetimi, sistem kısıtlamaları ve A_UR_A_XX yönetici paneli.
+10. BAI: Edge Function üzerinden sohbet; yapılandırıldığında internet araması. Model ve arama anahtarları Supabase Edge Function Secrets bölümünde tutulur.
+11. PWA: Forever uygulama simgeleri, manifest dosyaları ve service worker ile kurulabilir web uygulaması.
 
 FOREVER PLUS
 ------------
-Forever Plus üyeliği yalnızca A_UR_A_XX yönetici hesabının yönetim panelinden kullanıcı adı girilerek etkinleştirilir veya kaldırılır. Kullanıcılar üyelik başvurusu için Profil yönetiminin üst kısmındaki “Plus Üyesi Ol” düğmesinden şu adrese gider:
+Plus üyeliği A_UR_A_XX yönetici panelinden kullanıcı adı girilerek etkinleştirilir veya kaldırılır. Kullanıcılar Profil yönetiminin üstündeki “Plus Üyesi Ol” düğmesiyle başvuru sayfasına yönlendirilir:
 https://sites.google.com/view/forever-super-plus/ana-sayfa
 
-Plus üyelerine tanımlanan özellikler:
+1. Doğrulanmış rozet ve profil/kullanıcı bulma alanında küçük elmas simgesi.
+2. Kullanıcının dosya yüklemesine gerek kalmadan uygulama içinde seçebileceği 16 yerleşik Forever uygulama simgesi. Seçim hesaba kaydedilir; tarayıcıdaki favicon/manifest güncellenir. Önceden ana ekrana yüklenmiş PWA ikonunun yenilenme zamanı işletim sistemine göre değişebilir.
+3. Keşfet'te yalnızca metin içeren gönderi yayınlama. Normal hesaplar fotoğraf veya video eklemelidir; medya gönderilerine açıklama yazabilirler.
+4. 160 özgün, kategorilere ayrılmış, SVG tabanlı animasyonlu Forever çıkartması. Çıkartmalar projeyle birlikte gelir; WhatsApp veya Emoji Kitchen varlıkları kopyalanmamıştır. Normal hesaplar paketi görüntüleyebilir, ancak gönderemez.
+5. Emoji Laboratuvarı: Unicode emoji seçerek tek bir bileşik çıkartma oluşturma; bir gönderimde 64 emojiye kadar desteklenir. Birleştirme cihaz üzerinde yapılır.
+6. BAI sohbetinde Plus hesabının kişisel günlük kullanım sayacı uygulanmaz. Plus yanıtlarında daha kapsamlı yönerge ve daha yüksek yanıt token bütçesi kullanılır. İnternet araması için de kişisel günlük sayaç muafiyeti uygulanır.
+7. Her yeni Plus gönderisi veritabanı tetikleyicisi tarafından sunucu saatine göre 12 saat boyunca otomatik öne çıkarılır. Kullanıcı tarayıcıdan boost süresi uyduramaz veya uzatamaz.
+8. Ek oda arka planları, daha fazla baloncuk rengi ve 11 farklı Plus konuşma baloncuğu şekli.
+9. Plus kullanıcısının sohbet mesajlarındaki emojiler animasyonlu görünür. Kalp emojileri nabız atar ve küçük kalpler çıkar; kalp-göz emojileri kalp parçacıkları, kahkaha emojileri gözyaşı parçacıkları üretir. Plus kullanıcı emojiye bastığında büyük oda animasyonu diğer katılımcılara da yayınlanır.
+10. Genişletilmiş hızlı emoji yanıtları. Mevcut 30 emojilik Plus tepki grubu korunmuştur.
 
-1. Profil ve kullanıcı bulma alanında doğrulama rozeti ile küçük elmas simgesi.
-2. Sekiz Forever uygulama simgesi/palet seçeneği arasından seçim.
-3. Sohbet için isteğe bağlı “Yalnızca metin modu”. Bu mod Plus kullanıcısının medya/çıkartma eklerini kapatır; metin mesajları göndermeye devam eder.
-4. Kişisel çıkartma alanında 200 öğeye kadar saklama ve animasyonlu GIF/APNG/WebP dosyası yükleme. Animasyonlu dosyalar için en fazla 8 MB kuralı vardır. Standart hesaplarda kişisel çıkartma sınırı 40'tır.
-5. İki Unicode emojisini birleştirerek çıkartma/görsel oluşturma. Harici Emoji Kitchen eşleşmesi bulunmazsa uygulama yerel görsel yedeğini kullanır.
-6. BAI sohbeti ve internet aramasında Plus üyeleri için kişi başına günlük limit muafiyeti.
-7. Kendi gönderilerini akışın en üstüne sabitleme. Yönetici mevcut yönetim yetkisi kapsamında gönderileri sabitleyebilir.
-8. Ek oda temaları, renk seçenekleri ve özel konuşma baloncuğu şekilleri.
-9. Oda içinde animasyonlu emoji yayını; Plus hesabı gönderimi başlatır, diğer katılımcılar animasyonu görür.
-10. Standart tepki grubuna ek olarak genişletilmiş 30 emojilik tepki seçeneği.
+BAI VE KOTA NOTU
+----------------
+Plus kullanıcılarının kişisel günlük BAI sohbet ve internet arama sayaçları atlanır. Ancak `AURAI_DAILY_BUDGET`, model/arama sağlayıcısının kendi kotası, hız sınırı, ücretlendirmesi ve sunucu kapasitesi geçerlidir. Bu yüzden dış sağlayıcının veya ortak site bütçesinin sınırları kaldırılamaz. Plus yönergesi modelin temel ağırlıklarını değiştirmez; aynı yapılandırılmış modelden daha dikkatli ve kapsamlı yanıt üretmesini ister.
 
-ÖNEMLİ KAPSAM NOTLARI
----------------------
-- “BAI sınırsız” uygulama açısından Plus hesabının kişisel günlük BAI ve arama kotasının kaldırılması anlamına gelir. Ortak site günlük bütçesi, model/arama sağlayıcısının kendi hız ve kullanım limitleri ile ücretlendirmesi geçerlidir. Bu nedenle sınırsız/sonsuz altyapı kapasitesi garanti edilmez.
-- Kaynak ZIP'te hazır 150 adetlik animasyonlu çıkartma görsel paketi bulunmuyordu. Bu sürüm Plus hesabına 200 öğelik kişisel çıkartma alanı ve animasyonlu dosya yükleme desteği verir; 150 adet hazır çıkartma görseli içermez.
-- Emoji birleştirmede harici Emoji Kitchen servisi bazı ikili eşleşmeleri sağlamayabilir; bu durumda yerel canvas yedeği oluşturulur. Her olası emoji kombinasyonu için üçüncü taraf görsel garantisi verilmez.
-- Oda teması ve baloncuk şekli seçimleri mevcut sürümde tarayıcıdaki kullanıcıya özel localStorage alanında saklanır; cihazlar arasında senkronize edilmez.
-- Plus haklarının bir bölümü istemci arayüzünde sunulur. Üyelik verme, BAI kişi kotası, animasyonlu dosya yükleme ve gönderi sabitleme gibi kritik kontroller Supabase SQL/Edge Function tarafında da denetlenir.
-
-SUPABASE VE DAĞITIM DOSYALARI
------------------------------
-- SUPABASE_TUM_KURULUM.sql: yeni proje için temel tablolar, fonksiyonlar, politikalar, BAI sayaçları ve Plus migration'ı.
-- SUPABASE_FOREVER_PLUS_MIGRATION.sql: mevcut kurulumlarda Plus/yetki ve medya politikası güncellemesi.
-- SUPABASE_BAI_ODA_KISITLAMA_MIGRATION.sql: mevcut kurulumlardaki oda/kısıtlama ek yamaları.
-- ADMIN-HESABI-BAGLA.sql: A_UR_A_XX yönetici hesabını mevcut Supabase Auth hesabına bağlamak için isteğe bağlı SQL. Dosyadaki e-posta/parola yer tutucuları çalıştırılmadan önce kullanıcı tarafından düzenlenmelidir.
-- supabase/functions/: aurai-chat, aurai-search, delete-account, push-notify, username-available ve username-login fonksiyonları.
-
-GÜVENLİK / OPERASYON
+SUPABASE KURULUM NOTU
 --------------------
-1. service_role anahtarı, model API anahtarı ve VAPID özel anahtarı asla HTML/JavaScript içine veya Git deposuna konulmamalıdır.
-2. Edge Function Secrets yalnızca Supabase Dashboard'da yönetilmelidir.
-3. Yeni Supabase projesinde önce SUPABASE_TUM_KURULUM.sql çalıştırılmalıdır. Mevcut projeye migration uygulanırken BAI-KURULUM.md içindeki sıra izlenmelidir.
-4. SQL dosyalarının depoya eklenmiş olması canlı Supabase veritabanına otomatik uygulanmış oldukları anlamına gelmez. SQL Editor'de uygulanmalı ve Edge Function'lar ayrıca deploy edilmelidir.
-5. Üretime almadan önce standart kullanıcı, Plus kullanıcı ve A_UR_A_XX hesabıyla ayrı test yapılmalıdır.
-
-TEST
-----
-Node.js ile:
-  node --check aurai-widget.js
-  node --test tests/aurai-logic.test.cjs
-
-Son test çalıştırmasında BAI mantık testlerinin 11'i başarılı olmuştur. Bu test sonucu SQL'in canlı Supabase üzerinde çalıştırıldığı veya Edge Function'ların deploy edildiği anlamına gelmez.
+Yeni Supabase projesinde `SUPABASE_TUM_KURULUM.sql` dosyası kullanılır. Mevcut projede ek Plus sunucu kurallarını etkinleştirmek için `SUPABASE_FOREVER_PLUS_FEATURES_MIGRATION.sql` dosyası SQL Editor'da bir kez çalıştırılmalıdır. Sonrasında `supabase/functions/aurai-chat` Edge Function yeniden dağıtılmalıdır. Kaynak kodun GitHub'a eklenmesi bu SQL'i canlı veritabanında çalıştırmaz ve Edge Function'ı kendiliğinden dağıtmaz.

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'forever-v22';
+const CACHE_NAME = 'forever-v23';
 const APP_SHELL = [
   './',
   './index.html',

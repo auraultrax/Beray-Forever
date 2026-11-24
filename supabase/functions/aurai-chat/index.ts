@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // AURAI: yalnızca giriş yapmış AuraX kullanıcıları kullanabilir. Model, kendi sunucundaki
 // OpenAI uyumlu bir uç noktadır (AURAI_API_URL). Secret'lar: AURAI_API_URL, AURAI_MODEL,
-// AURAI_API_KEY (isteğe bağlı), AURAI_DAILY_LIMIT (kişi başı, varsayılan 30), AURAI_DAILY_BUDGET (tüm site, varsayılan 5000).
+// AURAI_API_KEY (isteğe bağlı), AURAI_DAILY_LIMIT (standart hesap, varsayılan 30), AURAI_DAILY_BUDGET (ortak site bütçesi, varsayılan 5000). Plus kişisel günlük sohbet kotasına tabi değildir.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -106,7 +106,7 @@ YANIT BİÇİMİ
 
 FOREVER ÜRÜN BİLGİSİ
 Bu bilgilerin dışına çıkma. Burada olmayan veya emin olmadığın bir şeyi belirtirken temkinli ol.
-- Forever Plus: yönetici tarafından etkinleştirilen üyelik; profilde doğrulama rozeti ve elmas işareti, 8 uygulama simgesi seçeneği, kullanıcı başına 200 kişisel çıkartma alanı ve GIF/APNG/animasyonlu WebP yükleme, emoji birleştirme, animasyonlu emoji yayını, kendi gönderilerini sabitleme, ilave oda temaları ve baloncuk şekilleri ile 30 emoji tepkisi sağlar. BAI ve internet aramasında kişisel günlük limit kaldırılır; hizmetin ortak günlük site bütçesi yine geçerlidir. Plus başvurusu Profil yönetimindeki "Plus Üyesi Ol" bağlantısından yapılır.
+- Forever Plus: yönetici tarafından etkinleştirilen üyelik; profilde doğrulama rozeti ve elmas işareti, dosya yüklemeden seçilen 16 yerleşik uygulama simgesi, 160 özgün animasyonlu Forever SVG çıkartması, 200 öğelik kişisel çıkartma alanı, emoji birleştirme (bir bileşimde 64 Unicode emojiye kadar), animasyonlu emoji efektleri, 12 saatlik otomatik gönderi öne çıkarma, ek oda temaları ve 11 Plus baloncuk şekli ile 30 hızlı emoji tepkisi sağlar. Keşfet'te yalnızca metin gönderisi Plus'a özeldir; standart hesaplar fotoğraf/video ekleyerek açıklama yazabilir. BAI sohbeti ve internet aramasında Plus için kişisel günlük limit uygulanmaz; ortak site bütçesi ve sağlayıcı limitleri yine geçerlidir. Plus başvurusu Profil yönetimindeki "Plus Üyesi Ol" bağlantısından yapılır.
 - Hesap: Kullanıcı adı ve şifreyle kayıt ve giriş yapılır. Kayıtta ad, soyad, doğum tarihi ve bölge istenir; sosyal özellikler için 15 yaş sınırı vardır. "Şifremi Unuttum" ile şifre sıfırlanır. Bazı hesaplarda ek doğrulama kodu istenebilir; bu kodu yönetici verir.
 - Profil: Ad, hakkında yazısı ve "Modun" alanı düzenlenebilir. Kullanıcı adı değiştirilebilir, ama aynı adı kullanan bir hesap varsa kabul edilmez. Mod seçilip Keşfet'e gönderi atılırsa mod, gönderide kullanıcı adının altında küçük bir etiket olarak görünür; etikete basınca "Bu kullanıcının modunu gösterir" açıklaması çıkar.
 - Keşfet: Metin, görsel ve video içeren gönderiler paylaşılır. Gönderilere beğeni ve yorum yapılabilir, yanıt verilebilir. Kendi gönderini düzenleyebilir veya silebilirsin. Gönderideki "Oy Ver" düğmesiyle kullanıcılara oy verilebilir.
@@ -129,6 +129,17 @@ GÜVENLİK
 
 Hedefin: kullanıcının gerçekten işine yarayan, doğru, sıcak ve akıcı bir Türkçe yanıt vermek.`;
 const CRISIS = `\n\nACİL DESTEK MODU: Kullanıcı kendine zarar verme ya da yaşamdan vazgeçme sinyali verdiyse sıcak, yalın ve yargısız cevap ver. Tehlikenin yakın olup olmadığını nazikçe sorabilirsin ama yardım çağırmayı geciktirme. Yakın tehlike varsa Türkiye'de 112'yi aramasını ve hemen yanında güvendiği bir kişiye haber vermesini söyle. Zarar verme yöntemi veya ayrıntısı verme. Hiçbir aramayı kendi başına başlattığını ya da yardım gönderdiğini iddia etme; kullanıcı telefonundaki arama düğmesine kendi basmalıdır.`;
+const PLUS_ENHANCEMENT = `
+
+FOREVER PLUS — GELİŞMİŞ BAI MODU
+- Plus hesabı için daha kapsamlı ve dikkatli akıl yürütme uygula; soruyu tek cümleyle geçiştirme.
+- Kullanıcının istediği işi önce doğru anla; eksik bilgi sonucu gerçekten değiştiriyorsa yalnızca en gerekli tek soruyu sor.
+- Karmaşık isteklerde çözümü küçük, uygulanabilir adımlara böl; teknik yanıtlarda nedenini, riskini ve doğrulama yöntemini de belirt.
+- Konuşmanın önceki bağlamını dikkate al; aynı bilgiyi tekrar tekrar isteme ve çelişki görürsen açıkça belirt.
+- Güncel veya doğrulanması gereken bilgi gerekiyorsa web_search aracını kullan; kaynaklardan emin değilsen bunu dürüstçe söyle.
+- Daha uzun yanıt vermek için gereksiz uzatma yapma. Doğru, somut, bağlama uygun ve yararlı ol.
+- Plus üyeliği farklı bir temel model olduğun anlamına gelmez; altyapını veya yeteneklerini olduğundan fazla gösterme.
+- Normal BAI güvenlik ve gizlilik kurallarını aynen uygula; Plus üyeliği güvenlik sınırlarını kaldırmaz.`;
 const LIMITED = 'Bugünkü BAI kullanım hakkın doldu. Yarın tekrar deneyebilirsin.';
 const CRISIS_LIMITED = 'Seni ciddiye alıyorum. Şu an yakın bir tehlike varsa Türkiye’de 112’yi ara ve yanında güvendiğin bir kişiye hemen haber ver. Yakın tehlike yoksa bile bunu tek başına taşımak zorunda değilsin; güvendiğin bir yetişkine veya destek alabileceğin birine şimdi ulaş.';
 const GLOBAL_USAGE_ID = '00000000-0000-0000-0000-000000000000';
@@ -212,7 +223,7 @@ Deno.serve(async (req) => {
     if (Number(mine.data) > perUser) return json({ answer: LIMITED, limited: true });
   }
 
-  const systemText = BASE + (crisis ? CRISIS : '');
+  const systemText = BASE + (isPlusMember ? PLUS_ENHANCEMENT : '') + (crisis ? CRISIS : '');
   const statusError = (status: number) => (status === 401 || status === 403
     ? 'BAI model sunucusu kimlik doğrulamasını reddetti. AURAI_API_KEY değerini kontrol et.'
     : status === 404
@@ -231,7 +242,7 @@ Deno.serve(async (req) => {
         const r = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model, max_tokens: 1500, temperature: 0.6, system: sys, messages: convo, tools: [WEB_SEARCH_TOOL] }),
+          body: JSON.stringify({ model, max_tokens: isPlusMember ? 2800 : 1500, temperature: 0.6, system: sys, messages: convo, tools: [WEB_SEARCH_TOOL] }),
           signal: AbortSignal.timeout(50000),
         });
         d = await r.json().catch(() => ({}));
@@ -259,7 +270,7 @@ Deno.serve(async (req) => {
     // Bu yol num_ctx ayarını geçebildiği için uzun sistem istemi kırpılmaz. Arama bu yolda yoktur.
     if (useOllama) {
       const base = apiUrl.replace(/\/+$/, '').replace(/\/(v1|api\/chat|v1\/chat\/completions)$/, '');
-      const ollamaSystem = Deno.env.get('AURAI_OLLAMA_FULL_PROMPT') === '1'
+      const ollamaSystem = (isPlusMember || Deno.env.get('AURAI_OLLAMA_FULL_PROMPT') === '1')
         ? systemText
         : (crisis ? 'Sen BAI\'sin, Forever asistanısın. Türkçe, sıcak ve kısa yaz.' + CRISIS : '');
       const r = await fetch(base + '/api/chat', {
@@ -272,7 +283,7 @@ Deno.serve(async (req) => {
           messages: [...(ollamaSystem ? [{ role: 'system', content: ollamaSystem }] : []), ...messages],
           stream: false,
           keep_alive: '30m',
-          options: { num_predict: 800, ...(Number(Deno.env.get('AURAI_NUM_CTX')) ? { num_ctx: Math.max(2048, Number(Deno.env.get('AURAI_NUM_CTX'))) } : {}) },
+          options: { num_predict: isPlusMember ? 1800 : 800, ...(Number(Deno.env.get('AURAI_NUM_CTX')) ? { num_ctx: Math.max(2048, Number(Deno.env.get('AURAI_NUM_CTX'))) } : {}) },
         }),
         signal: AbortSignal.timeout(110000), // CPU'da çalışan küçük modeller yavaş olabilir
       });
@@ -296,7 +307,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model,
         messages: [{ role: 'system', content: systemText }, ...messages],
-        temperature: 0.6, max_tokens: 1700, stream: false,
+        temperature: 0.6, max_tokens: isPlusMember ? 2800 : 1700, stream: false,
       }),
       signal: AbortSignal.timeout(50000),
     });
