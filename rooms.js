@@ -581,7 +581,6 @@ function bindRoomUi(){
   $('roomMixerBtn').onclick=()=>{$('roomComposerMenu').classList.add('hidden');openEmojiMixer();};
   $('roomBaiBtn').onclick=()=>{
     $('roomComposerMenu').classList.add('hidden');
-    if(!isPlus)return toast('BAI sınırsız kullanım ayrıcalığı Süper Plus üyelerine açıktır. 💎');
     if(typeof window.openForeverBAI==='function')window.openForeverBAI();
     else toast('BAI arayüzü henüz yüklenmedi.');
   };
