@@ -1970,6 +1970,12 @@
       const hint = document.getElementById('feedFilterHint');
       if (!postsFeed) return;
       let posts = allPostsCache.slice();
+      posts.sort((a,b) => {
+        const activeA = Date.parse(a.promotedUntil || '') > Date.now() ? 1 : 0;
+        const activeB = Date.parse(b.promotedUntil || '') > Date.now() ? 1 : 0;
+        if (activeA !== activeB) return activeB - activeA;
+        return Number(b.createdAt?.seconds || 0) - Number(a.createdAt?.seconds || 0);
+      });
 
       // Engellenen kullanıcıların gönderilerini gizle
       if (blockedIds && blockedIds.size) {
@@ -2177,6 +2183,15 @@
     };
 
     // Gönderi Silme
+    window.promotePost = async function(postId) {
+      if (!currentUser?.isPlus) return fxToast('Gönderiyi öne çıkarma Süper Plus ayrıcalığıdır.');
+      try {
+        const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await updateDoc(doc(db, 'posts', postId), { promotedUntil: until });
+        fxToast('Gönderin 24 saat boyunca akışın üst sıralarında gösterilecek. 💎');
+      } catch (error) { fxToast('Gönderi öne çıkarılamadı: ' + (error.message || error)); }
+    };
+
     window.deletePost = async function(postId) {
       if (!confirm("Bu gönderiyi silmek istediğinizden emin misiniz?")) return;
       try {
