@@ -84,6 +84,7 @@ $;
 drop policy if exists forever_plus_members_read on public.forever_plus_members;
 create policy forever_plus_members_read on public.forever_plus_members
 for select to authenticated using (true);
+create index if not exists forever_plus_members_created_by_idx on public.forever_plus_members(created_by);
 
 create or replace function private.is_forever_plus()
 returns boolean language sql stable security definer set search_path = ''
