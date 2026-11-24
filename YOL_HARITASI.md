@@ -25,7 +25,7 @@ Forever, Google hesabıyla giriş yapılan ve Supabase altyapısını kullanan s
 6. Supabase bölgesini ve yurt dışı veri aktarımı koşullarını kontrol et.
 7. RLS, Storage, Realtime, oda moderasyonu, Süper Plus yetkileri ve BAI sayaçlarını test et.
 8. BAI Edge Function Secrets alanında model ve arama sağlayıcı ayarlarını doğrula.
-8. Eski Firebase verileri gerekiyorsa yedeklerden kontrollü aktarım planı hazırla.
+9. Eski Firebase verileri gerekiyorsa yedeklerden kontrollü aktarım planı hazırla.
 
 ## Sonraki geliştirmeler
 
