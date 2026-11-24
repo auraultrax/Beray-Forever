@@ -52,7 +52,7 @@
   const foot = make('div','foreverBaiFoot','','BAI hata yapabilir. Parolanı veya özel bilgilerini paylaşma.');
   panel.append(head,messages,quick,form,foot);
   document.body.append(fab,panel);
-  let client=null, isPlus=false, busy=false;
+  let client=null, isPlus=false, busy=false, activeUserId=null, conversationVersion=0;
   const history=[];
   function addMessage(text,who='assistant',isError=false,links=[]){
     const bubble=make('div','','forever-bai-msg '+who+(isError?' error':''),text);
@@ -71,6 +71,7 @@
   }
   async function send(raw){
     const text=String(raw||'').trim();if(!text||busy)return;
+    const requestVersion=conversationVersion;
     input.value='';addMessage(text,'user');
     const normalized=text.toLocaleLowerCase('tr-TR');
     if(/kendime zarar|intihar|yaşamak istemiyorum|kendimi öldür|canıma kıymak/.test(normalized)){
@@ -85,6 +86,7 @@
       if(text.startsWith('/ara ')){
         const query=text.slice(5).trim();
         const {data,error}=await client.functions.invoke('aurai-search',{body:{query}});
+        if(requestVersion!==conversationVersion)return;
         if(error)throw error;
         const results=Array.isArray(data?.results)?data.results:[];
         if(!results.length)addMessage('Arama sonucu bulunamadı.');
@@ -92,12 +94,14 @@
       } else {
         history.push({role:'user',content:text});
         const {data,error}=await client.functions.invoke('aurai-chat',{body:{messages:history.slice(-12),mode:'assistant'}});
+        if(requestVersion!==conversationVersion)return;
         if(error)throw error;
         const answer=String(data?.answer||'').trim();
         if(!answer)throw new Error(data?.error||'BAI şu anda yanıt üretemedi.');
         history.push({role:'assistant',content:answer});addMessage(answer);
       }
     }catch(error){
+      if(requestVersion!==conversationVersion)return;
       const message=error?.message||'BAI bağlantısında bir sorun oluştu.';
       addMessage(message,'assistant',true);
     }finally{busy=false;sendButton.disabled=false;sendButton.textContent='Gönder';input.focus();}
@@ -110,8 +114,18 @@
   window.openForeverBAI=open;
   async function syncAccess(){
     if(!client)return;
-    const {data}=await client.auth.getSession();const user=data?.session?.user;
-    if(!user){isPlus=false;fab.style.display='none';closePanel();return;}
+    const {data}=await client.auth.getSession();
+    const user=data?.session?.user;
+    if(!user){
+      if(activeUserId!==null){
+        activeUserId=null;conversationVersion++;history.length=0;messages.replaceChildren();
+      }
+      isPlus=false;fab.style.display='none';closePanel();return;
+    }
+    if(activeUserId!==user.id){
+      activeUserId=user.id;conversationVersion++;history.length=0;messages.replaceChildren();
+      addMessage('Merhaba! Ben BAI 💜 Forever kullanımı ve genel sorular konusunda yardımcı olabilirim. İnternet araması için mesajına /ara ile başla.');
+    }
     const result=await client.rpc('is_forever_plus');isPlus=!result.error&&Boolean(result.data);
     fab.style.display='block';
     const status=head.querySelector('small');
@@ -129,7 +143,6 @@
     window.addEventListener('forever-user-ready',()=>syncAccess().catch(()=>{}));
     window.addEventListener('forever-plus-updated',()=>syncAccess().catch(()=>{}));
     window.addEventListener('forever-user-signed-out',()=>{isPlus=false;fab.style.display='none';closePanel();});
-    addMessage('Merhaba! Ben BAI 💜 Forever kullanımı ve genel sorular konusunda yardımcı olabilirim. İnternet araması için mesajına /ara ile başla.');
   }
   boot().catch(error=>console.warn('Forever BAI yüklenemedi:',error));
 })();
