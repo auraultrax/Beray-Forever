@@ -27,6 +27,8 @@ async function refreshRoomPlusUsers(){
  const {data,error}=await supabaseClient.from('forever_plus_members').select('user_id');
  if(error)throw error;
  plusUserIds=new Set((data||[]).map(row=>String(row.user_id)));
+ const mine=await supabaseClient.rpc('is_forever_plus');
+ if(!mine.error){isPlus=Boolean(mine.data);window.foreverIsPlus=isPlus;syncRoomFeatureControls();}
  if(activeRoom)await loadRoomMessages();
 }
 function watchRoomPlusUsers(){
