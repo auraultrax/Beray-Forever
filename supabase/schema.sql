@@ -71,7 +71,7 @@ alter table public.forever_plus_members enable row level security;
 revoke all on table public.forever_plus_members from public, anon, authenticated;
 grant select on table public.forever_plus_members to authenticated;
 grant select on table public.forever_plus_members to service_role;
-do $
+do $plus_publication$
 begin
   if not exists (
     select 1 from pg_publication_tables
@@ -80,7 +80,7 @@ begin
     alter publication supabase_realtime add table public.forever_plus_members;
   end if;
 end;
-$;
+$plus_publication$;
 drop policy if exists forever_plus_members_read on public.forever_plus_members;
 create policy forever_plus_members_read on public.forever_plus_members
 for select to authenticated using (true);
