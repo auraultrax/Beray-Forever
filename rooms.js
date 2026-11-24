@@ -358,7 +358,7 @@ const ROOM_SPACE_THEMES=[
 {id:'space-prism',name:'Prizma',background:'linear-gradient(135deg,#17102c,#0b3440 50%,#35142c)'}];
 const ROOM_BUBBLES=['#1f2937','#312e81','#4c1d95','#7c2d12','#134e4a','#1e3a5f','#4a044e','#172554','#3f1d2e','#3f3f46','#064e3b','#3b0764','#7f1d1d','#164e63','#713f12','#111827','#365314','#701a75','#1d4ed8','#9d174d','#0f766e','#6b21a8','#9a3412','#374151','#f8fafc','#fde68a','#bfdbfe','#fbcfe8','#bbf7d0','#e9d5ff','#fecdd3','#bae6fd','#ddd6fe','#fed7aa','#a7f3d0','#c7d2fe','#fef3c7','#f5d0fe','#cffafe','#dcfce7','#fce7f3','#e0f2fe','#fae8ff','#ffedd5','#d1fae5','#e0e7ff','#f3f4f6','#fef9c3'];
 function roomThemeKey(){return 'forever_room_theme_'+encodeURIComponent(String(userId||'guest'))+'_'+encodeURIComponent(String(activeRoom?.id||'room'));}
-function getRoomTheme(){try{const v=JSON.parse(localStorage.getItem(roomThemeKey())||'null');if(v&&typeof v==='object')return {space:isPlus?(v.space||'space-night'):'space-night',bubble:isPlus?(v.bubble||'#8b5cf6'):(ROOM_BUBBLES[0]),transparent:isPlus&&v.transparent===true,shape:isPlus?(v.shape||'rounded'):'rounded'};}catch(_){}return {space:'space-night',bubble:ROOM_BUBBLES[0],transparent:false,shape:'rounded'};}
+function getRoomTheme(){try{const v=JSON.parse(localStorage.getItem(roomThemeKey())||'null');if(v&&typeof v==='object')return {space:isPlus?(v.space||'space-night'):'space-night',bubble:isPlus?(v.bubble||'#8b5cf6'):'#8b5cf6',transparent:isPlus&&v.transparent===true,shape:isPlus?(v.shape||'rounded'):'rounded'};}catch(_){}return {space:'space-night',bubble:'#8b5cf6',transparent:false,shape:'rounded'};}
 function applyRoomTheme(){
   if(!$('roomChat'))return;
   const t=getRoomTheme(),space=ROOM_SPACE_THEMES.find(x=>x.id===t.space)||ROOM_SPACE_THEMES[0],c=$('roomChat');
