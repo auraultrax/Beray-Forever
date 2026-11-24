@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'forever-shell-v21';
+const CACHE_VERSION = 'forever-shell-v22';
 const APP_SHELL = [
   './',
   './index.html',
