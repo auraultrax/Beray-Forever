@@ -1497,7 +1497,7 @@
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
         set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('sidebarAvatar', initial); set('sidebarUsername', username); set('sidebarUsernameTag', '@' + username); set('sidebarRole', 'Forever üyesi'); set('postCreatorAvatar', initial);
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers();
         listenToPosts(); listenToStories();
         window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: currentUser.uid, username } }));
         fxToast('Forever hesabın oluşturuldu! ✨');
@@ -2134,6 +2134,7 @@
       let content = sanitizeText(contentInput.value, LIMITS.postContent);
       const file = fileInput && fileInput.files && fileInput.files[0];
       const publishBtn = document.getElementById('publishPostBtn');
+      if (!file && !currentUser.isPlus) { fxToast('Sadece metin gönderisi paylaşmak Süper Plus ayrıcalığıdır. 💎'); return; }
       if (!content && !file) {
         fxToast('Bir metin veya fotoğraf/video eklemelisin.');
         return;
@@ -2490,6 +2491,9 @@
         appShell?.classList.remove('hidden');
         currentUser.username = profile.username || '';
         currentUser.displayName = profile.username || profile.displayName || user.displayName || 'Kullanıcı';
+        try { await refreshForeverPlusStatus(); } catch (plusError) { console.warn('Plus durumu alınamadı:', plusError); currentUser.isPlus = false; window.foreverIsPlus = false; }
+        const savedIcon = localStorage.getItem('forever_app_icon');
+        if (currentUser.isPlus && savedIcon && typeof window.changeAppIcon === 'function') window.changeAppIcon(savedIcon);
         if (profile.suspended === true || profile.banned === true) { showSuspension(profile.suspendedMessage || 'Hesabınız yönetim tarafından askıya alındı.'); return; }
         hideSuspension(); authModal.classList.add('hidden'); usernameModal.classList.add('hidden');
         watchModeration(user.uid);
