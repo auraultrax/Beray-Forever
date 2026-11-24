@@ -1,0 +1,29 @@
+{
+  "id": "./",
+  "name": "Forever · Beray",
+  "short_name": "Forever",
+  "description": "Forever sosyal platformu.",
+  "lang": "tr-TR",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#080716",
+  "theme_color": "#059669",
+  "categories": [
+    "social",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "./icons/forever-emerald.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
