@@ -16,7 +16,10 @@ Bu sürüm Firebase/Firestore kullanmaz. Uygulama Supabase Auth, PostgreSQL, Row
 
 - Tarayıcıda yalnızca Supabase publishable key bulunabilir. Secret/service-role key hiçbir zaman HTML, JavaScript, GitHub veya istemci tarafı ortam değişkenlerine eklenmemelidir.
 - Gerçek yetkilendirme RLS ve güvenli veritabanı fonksiyonlarıyla uygulanır. Arayüzdeki görünürlük tek başına güvenlik sınırı değildir.
-- Üyelik seviyeleri arasında ayrıcalık farkı yoktur. Oda mesajı sabitleme RLS ve sunucu tarafı oda sahibi/yöneticisi denetimiyle korunur.
+- Süper Plus üyeliği `forever_plus_members` tablosunda tutulur; profil JSON'una güvenilmez. Üyelik verme/kaldırma RPC'leri çağrıyı yapan hesabı veritabanında admin olarak doğrular.
+- Plus'a özel gönderi ve oda özellikleri yalnızca arayüzde değil, `private.enforce_forever_limits()` tetikleyicisinde de denetlenir. Oda mesajı sabitleme oda sahibi/yöneticisi kontrolüyle korunur.
+- BAI model ve arama anahtarları yalnızca Edge Function Secrets içinde bulunur. `SUPABASE_SERVICE_ROLE_KEY` hiçbir istemci dosyasına eklenmemelidir.
+- BAI kullanım sayacı RLS ile istemciden kapalıdır; Edge Function service role ile sayacı günceller. Plus üyeleri kişi başı günlük kotayı aşabilir, ancak ortak günlük sistem bütçesi tüm kullanıcılar için geçerlidir.
 - Yönetim ve moderasyon alanları yalnızca admin fonksiyonuyla doğrulanan hesaplara açık olmalıdır.
 - `forever_private_user_data` tablosundaki ad, soyad, doğum tarihi ve varsa IP adresine normal kullanıcıların erişimi kapalıdır.
 - IP bilgisi yalnızca Supabase gateway'in istek başlıklarını sağlaması hâlinde alınabilir. IP için bir saklama süresi ve otomatik imha görevi ayrıca tanımlanmalıdır.
