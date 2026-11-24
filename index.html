@@ -525,6 +525,10 @@
   
   <div id="profileModal" class="modal hidden" onclick="if(event.target===this)closeProfile()">
     <div class="modal-card" style="width:min(420px,100%);">
+      <a id="superPlusCta" href="https://sites.google.com/view/forever-super-plus/ana-sayfa" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:14px;border:1px solid rgba(167,139,250,.36);border-radius:14px;background:linear-gradient(110deg,rgba(139,92,246,.18),rgba(236,72,153,.10));color:var(--text);text-decoration:none;font-weight:800;">
+        <i class="fa-solid fa-gem" style="color:var(--primary2);font-size:1.05rem;"></i><span id="superPlusCtaText">Süper Plus Üyesi Ol</span>
+        <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left:auto;font-size:.7rem;opacity:.65;"></i>
+      </a>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <h2 style="margin:0;">Profil</h2>
         <button type="button" class="btn-icon" onclick="closeProfile()"><i class="fa-solid fa-xmark"></i></button>
@@ -534,6 +538,30 @@
         <div style="min-width:0;">
           <div id="profileName" style="font-weight:800;font-size:1.05rem;">—</div>
           <div id="profileHandle" style="font-size:.75rem;color:var(--muted);">—</div>
+          <div id="plusIconSettings" class="hidden" style="margin-top:9px;">
+            <small style="display:block;color:var(--muted);margin-bottom:6px;">Uygulama simgesi</small>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('violet')">Mor</button>
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('emerald')">Zümrüt</button>
+              <button type="button" class="btn btn-ghost" onclick="changeAppIcon('ocean')">Okyanus</button>
+            </div>
+          </div>
+          <div id="plusIconLocked" class="sub" style="margin-top:7px;">Özel uygulama simgeleri Süper Plus üyelerine açıktır 🔒</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;padding:12px;background:rgba(139,92,246,.08);">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;"><strong>💎 Forever Süper Plus</strong><span id="plusStatusLabel" class="tag">Standart</span></div>
+        <p class="muted" style="margin:8px 0;">Süper Plus ayrıcalıkları:</p>
+        <div id="plusFeatureList" style="font-size:.78rem;line-height:1.9;color:var(--muted);">
+          <div>🔒 Doğrulanmış rozet ve kullanıcı bul alanında elmas</div>
+          <div>🔒 Daha fazla uygulama simgesi seçeneği</div>
+          <div>🔒 Yalnızca metin gönderisi paylaşma</div>
+          <div>🔒 Özel animasyonlu çıkartmalar</div>
+          <div>🔒 Emoji birleştirme</div>
+          <div>🔒 BAI için kişisel günlük kullanım kotası olmaması</div>
+          <div>🔒 Gönderileri 24 saate kadar öne çıkarma</div>
+          <div>🔒 Ek oda temaları ve konuşma baloncuğu şekilleri</div>
+          <div>🔒 Animasyonlu emoji gönderileri</div>
         </div>
       </div>
       <p id="profileBio" style="margin-top:12px;font-size:.85rem;color:var(--muted);"></p>
@@ -861,13 +889,13 @@
     </section>
 
     <footer class="foot">
-      <strong>Forever</strong> · Aura X ekosisteminde · from <strong>Beray</strong>
+      <strong>Forever</strong> · Sosyal platform · by <strong>Beray</strong>
     </footer>
   </div>
     </main>
   </div>
 
-  <nav class="mobile-bottom-nav" aria-label="Aura X ana gezinme">
+  <nav class="mobile-bottom-nav" aria-label="Forever ana gezinme">
     <a href="#" class="mobile-nav-item active" data-nav="discover" onclick="fxNavigate('discover');return false;" title="Keşfet" aria-label="Keşfet"><i class="fa-solid fa-compass"></i></a>
     <a href="#" class="mobile-nav-item" data-nav="users" onclick="fxNavigate('users');return false;" title="Kullanıcı Bul" aria-label="Kullanıcı Bul"><i class="fa-solid fa-magnifying-glass"></i></a>
     <a href="#" class="mobile-nav-item" data-nav="rooms" onclick="fxNavigate('rooms');return false;" title="Odalar" aria-label="Odalar"><i class="fa-solid fa-comments"></i><span class="room-notif-badge" id="mobileRoomNotifBadge">0</span></a>
@@ -950,6 +978,7 @@
       supabaseClient
     } from "./supabase-compat.js";
 
+    window.supabaseClient = supabaseClient;
     const app = initializeApp();
     const auth = getForeverAuth(app);
     const db = getForeverStore(app);
@@ -1365,6 +1394,9 @@
 
     let currentUser = null;
     let followingIds = new Set();
+    let plusUserIds = new Set();
+    let isForeverPlus = false;
+    let plusMembershipChannel = null;
     let allPostsCache = [];
     let feedQuery = '';
 
@@ -1386,6 +1418,45 @@
       }, 2600);
     }
     window.fxToast = fxToast;
+    function foreverBadges(active) {
+      return active ? '<span class="forever-plus-badges" title="Forever Süper Plus · Doğrulanmış hesap" style="display:inline-flex;align-items:center;gap:3px;margin-left:4px;vertical-align:middle;"><i class="fa-solid fa-gem" style="color:#b99aff;font-size:.78em;"></i><span style="display:inline-grid;place-items:center;width:13px;height:13px;border-radius:50%;background:#2684ff;color:white;font-size:9px;font-weight:900;">✓</span></span>' : '';
+    }
+    async function loadPlusUsers() {
+      try {
+        const result = await supabaseClient.from('forever_plus_members').select('user_id');
+        if (result.error) throw result.error;
+        plusUserIds = new Set((result.data || []).map(row => String(row.user_id)));
+        if (currentUser) {
+          currentUser.isPlus = plusUserIds.has(String(currentUser.uid));
+          isForeverPlus = currentUser.isPlus;
+          window.foreverIsPlus = isForeverPlus;
+        }
+      } catch (error) { console.warn('Süper Plus rozetleri yüklenemedi:', error); }
+      return plusUserIds;
+    }
+    async function refreshForeverPlusStatus() {
+      if (!currentUser) return false;
+      const result = await supabaseClient.rpc('is_forever_plus');
+      if (result.error) throw result.error;
+      currentUser.isPlus = Boolean(result.data);
+      isForeverPlus = currentUser.isPlus;
+      window.foreverIsPlus = isForeverPlus;
+      await loadPlusUsers();
+      return isForeverPlus;
+    }
+    function watchPlusMembership() {
+      if (plusMembershipChannel) supabaseClient.removeChannel(plusMembershipChannel);
+      plusMembershipChannel = supabaseClient.channel('forever-plus-profile-badges')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_plus_members' }, async () => {
+          const wasPlus = Boolean(currentUser?.isPlus);
+          await loadPlusUsers();
+          const nowPlus = Boolean(currentUser?.isPlus);
+          const headerName = document.getElementById('userHeaderName');
+          if (headerName && currentUser) headerName.innerHTML = escapeHTML(currentUser.username || currentUser.displayName || 'Kullanıcı') + foreverBadges(nowPlus);
+          if (wasPlus !== nowPlus) window.dispatchEvent(new CustomEvent('forever-plus-updated', { detail: { uid: currentUser?.uid, isPlus: nowPlus } }));
+          if (typeof renderPostsFromCache === 'function') renderPostsFromCache();
+        }).subscribe();
+    }
 
     let isSignUpMode = false;
     let unsubscribePosts = null;
@@ -1441,7 +1512,7 @@
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
         set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('sidebarAvatar', initial); set('sidebarUsername', username); set('sidebarUsernameTag', '@' + username); set('sidebarRole', 'Forever üyesi'); set('postCreatorAvatar', initial);
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers(); watchPlusMembership();
         listenToPosts(); listenToStories();
         window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: currentUser.uid, username } }));
         fxToast('Forever hesabın oluşturuldu! ✨');
@@ -1693,7 +1764,7 @@
         const stripBio = document.getElementById('stripBio');
         if (stripBio) stripBio.textContent = profileCache.bio || 'Profilini düzenle';
         const stripName = document.getElementById('stripName');
-        if (stripName) stripName.innerHTML = escapeHTML(currentUser.username || profileCache.displayName);
+        if (stripName) stripName.innerHTML = escapeHTML(currentUser.username || profileCache.displayName) + foreverBadges(Boolean(currentUser.isPlus));
         const stripAv = document.getElementById('stripAvatar');
         if (stripAv) stripAv.textContent = profileCache.displayName.charAt(0).toUpperCase();
       } catch (e) { console.warn(e); }
@@ -1701,16 +1772,36 @@
 
     window.openProfile = async function() {
       if (!currentUser) return;
+      try { await refreshForeverPlusStatus(); } catch (error) { console.warn('Süper Plus durumu alınamadı:', error); }
       await refreshProfileStats();
       const name = currentUser.username || profileCache.displayName || currentUser.displayName || 'Kullanıcı';
       document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
-      document.getElementById('profileName').innerHTML = escapeHTML(name);
+      document.getElementById('profileName').innerHTML = escapeHTML(name) + foreverBadges(Boolean(currentUser.isPlus));
       document.getElementById('profileHandle').textContent = '@' + (currentUser.username || name.toLowerCase().replace(/\s+/g, ''));
+      document.getElementById('plusIconSettings')?.classList.toggle('hidden', !currentUser.isPlus);
+      document.getElementById('plusIconLocked')?.classList.toggle('hidden', Boolean(currentUser.isPlus));
+      const plusStatus = document.getElementById('plusStatusLabel');
+      if (plusStatus) { plusStatus.textContent = currentUser.isPlus ? '💎 Aktif' : 'Standart'; plusStatus.classList.toggle('plus', Boolean(currentUser.isPlus)); }
+      const ctaText = document.getElementById('superPlusCtaText');
+      if (ctaText) ctaText.textContent = currentUser.isPlus ? 'Süper Plus Üyeliğin Aktif' : 'Süper Plus Üyesi Ol';
+      const featureBox = document.getElementById('plusFeatureList');
+      if (featureBox) featureBox.querySelectorAll('div').forEach(item => { item.textContent = (currentUser.isPlus ? '✅ ' : '🔒 ') + item.textContent.replace(/^[🔒✅]\s*/, ''); });
       document.getElementById('profileEditBox').classList.add('hidden');
       document.getElementById('followListBox').classList.add('hidden');
       document.getElementById('profileModal').classList.remove('hidden');
     };
     window.closeProfile = function() { document.getElementById('profileModal').classList.add('hidden'); };
+    window.changeAppIcon = function(theme) {
+      if (!currentUser?.isPlus) { fxToast('Özel uygulama simgeleri Süper Plus ayrıcalığıdır.'); return; }
+      if (!['violet','emerald','ocean'].includes(theme)) return;
+      const manifest = document.querySelector('link[rel="manifest"]');
+      if (manifest) manifest.href = './manifest-' + theme + '.json';
+      document.querySelectorAll('link[rel="icon"]').forEach(link => { link.href = './icons/forever-' + theme + '.svg'; });
+      const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+      if (appleIcon) appleIcon.href = './icons/forever-' + theme + '.svg';
+      localStorage.setItem('forever_app_icon', theme);
+      fxToast('Uygulama simgesi değiştirildi. Yeni ana ekran kısayolu için yeniden ekleme gerekebilir.');
+    };
 
     window.toggleProfileEdit = function() {
       const box = document.getElementById('profileEditBox');
@@ -1894,6 +1985,12 @@
       const hint = document.getElementById('feedFilterHint');
       if (!postsFeed) return;
       let posts = allPostsCache.slice();
+      posts.sort((a,b) => {
+        const activeA = Date.parse(a.promotedUntil || '') > Date.now() ? 1 : 0;
+        const activeB = Date.parse(b.promotedUntil || '') > Date.now() ? 1 : 0;
+        if (activeA !== activeB) return activeB - activeA;
+        return Number(b.createdAt?.seconds || 0) - Number(a.createdAt?.seconds || 0);
+      });
 
       // Engellenen kullanıcıların gönderilerini gizle
       if (blockedIds && blockedIds.size) {
@@ -1943,6 +2040,7 @@
         const isSaved = currentUser && savedPostIds.has(post.id);
         const initialLetter = (post.authorName || 'K').charAt(0).toUpperCase();
         const isFollowing = followingIds.has(post.userId);
+        const authorIsPlus = plusUserIds.has(String(post.userId));
         const tags = post.tags || extractTags(post.content || '');
         const tagsHtml = tags.map(t =>
           '<span class="tag-chip" onclick="document.getElementById(\'feedSearch\').value=\'#' + escapeHTML(t) + '\';filterFeed(\'#' + escapeHTML(t) + '\')">#' + escapeHTML(t) + '</span>'
@@ -1989,7 +2087,7 @@
           <div class="post-head">
             <div class="avatar">${initialLetter}</div>
             <div style="flex:1;min-width:0;">
-              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}</div>
+              <div class="name">${escapeHTML(post.authorName || 'Kullanıcı')}${foreverBadges(authorIsPlus)}</div>
               <div class="time">${post.createdAt && post.createdAt.seconds ? new Date(post.createdAt.seconds * 1000).toLocaleString('tr-TR', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Az önce'}</div>
             </div>
             ${moreMenu}
@@ -2030,6 +2128,16 @@
           </div>
         `;
         postsFeed.appendChild(card);
+        const postAuthorName = card.querySelector('.post-head .name');
+        if (postAuthorName && authorIsPlus) postAuthorName.innerHTML = escapeHTML(post.authorName || 'Kullanıcı') + foreverBadges(true);
+        if (isOwner && currentUser?.isPlus) {
+          const boost = document.createElement('button');
+          boost.type = 'button';
+          boost.textContent = Date.parse(post.promotedUntil || '') > Date.now() ? '✦ Öne çıkarıldı' : '✦ Öne çıkar';
+          boost.title = 'Gönderiyi 24 saat boyunca akışın üst sıralarına taşı';
+          boost.onclick = () => window.promotePost(post.id);
+          card.querySelector('.post-actions')?.appendChild(boost);
+        }
       });
     }
 
@@ -2041,6 +2149,7 @@
       let content = sanitizeText(contentInput.value, LIMITS.postContent);
       const file = fileInput && fileInput.files && fileInput.files[0];
       const publishBtn = document.getElementById('publishPostBtn');
+      if (!file && !currentUser.isPlus) { fxToast('Sadece metin gönderisi paylaşmak Süper Plus ayrıcalığıdır. 💎'); return; }
       if (!content && !file) {
         fxToast('Bir metin veya fotoğraf/video eklemelisin.');
         return;
@@ -2101,6 +2210,15 @@
     };
 
     // Gönderi Silme
+    window.promotePost = async function(postId) {
+      if (!currentUser?.isPlus) return fxToast('Gönderiyi öne çıkarma Süper Plus ayrıcalığıdır.');
+      try {
+        const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await updateDoc(doc(db, 'posts', postId), { promotedUntil: until });
+        fxToast('Gönderin 24 saat boyunca akışın üst sıralarında gösterilecek. 💎');
+      } catch (error) { fxToast('Gönderi öne çıkarılamadı: ' + (error.message || error)); }
+    };
+
     window.deletePost = async function(postId) {
       if (!confirm("Bu gönderiyi silmek istediğinizden emin misiniz?")) return;
       try {
@@ -2260,7 +2378,7 @@
       if(auraXActiveProfileUid!==uid)return;
       const name=data.displayName||data.username||'Kullanıcı';
       document.getElementById('otherProfileAvatar').textContent=name.charAt(0).toLocaleUpperCase('tr-TR');
-      document.getElementById('otherProfileName').textContent=name;
+      document.getElementById('otherProfileName').innerHTML=escapeHTML(name)+foreverBadges(plusUserIds.has(String(uid)));
       document.getElementById('otherProfileHandle').textContent='@'+(data.username||String(uid).slice(0,8));
       document.getElementById('otherProfileBio').textContent=data.bio||'Henüz bir biyografi eklenmemiş.';
       document.getElementById('otherProfileStats').innerHTML='<span><strong>'+auraXFollowerCount({data:data})+'</strong> Takipçi</span><span><strong>'+(Array.isArray(data.following)?data.following.length:0)+'</strong> Takip</span>';
@@ -2303,7 +2421,12 @@
         const action=uid===currentUser?.uid?'<span class="aura-x-self">Sen</span>':'<button type="button" class="btn-follow '+(following?'on':'')+'" data-follow-uid="'+escapeHTML(uid)+'">'+(following?'Takiptesin':'Takip et')+'</button>';
         return '<article class="aura-x-user-row"><button type="button" class="aura-x-user-open" data-open-user-profile="'+escapeHTML(uid)+'"><span class="aura-x-user-avatar">'+escapeHTML(name.charAt(0).toLocaleUpperCase('tr-TR'))+'</span><span class="aura-x-user-meta"><strong>'+escapeHTML(name)+'</strong><small>'+escapeHTML(d.bio||'@'+(d.username||'kullanici'))+'</small><small>'+count+' takipçi</small></span></button>'+action+'</article>';
       }).join('');
-      list.querySelectorAll('[data-follow-uid]').forEach(button=>button.addEventListener('click',async()=>{
+      list.querySelectorAll('[data-open-user-profile]').forEach(button=>{
+         if (!plusUserIds.has(String(button.dataset.openUserProfile))) return;
+         const strong=button.querySelector('.aura-x-user-meta strong');
+         if (strong) strong.innerHTML=escapeHTML(strong.textContent||'')+foreverBadges(true);
+       });
+       list.querySelectorAll('[data-follow-uid]').forEach(button=>button.addEventListener('click',async()=>{
         await window.toggleFollow(button.dataset.followUid,button);renderAuraXDirectory();
       }));
       list.querySelectorAll('[data-open-user-profile]').forEach(button=>button.addEventListener('click',()=>window.openAuraXUserProfile(button.dataset.openUserProfile)));
@@ -2326,6 +2449,7 @@
       }
       try{
         await loadFollowing();
+        await loadPlusUsers();
         const snap=await getDocs(collection(db,'users'));auraXDirectoryUsers=[];
         snap.forEach(docSnap=>{
           const data=docSnap.data()||{};
@@ -2366,6 +2490,8 @@
       const appShell = document.getElementById('app');
       appShell?.classList.add('hidden');
       if (!user) {
+        if (plusMembershipChannel) { supabaseClient.removeChannel(plusMembershipChannel); plusMembershipChannel = null; }
+        plusUserIds = new Set(); isForeverPlus = false; window.foreverIsPlus = false;
         authModal.classList.remove('hidden'); usernameModal.classList.add('hidden');
         if (networkAuthStatus) { networkAuthStatus.textContent = 'Giriş gerekli'; networkAuthStatus.className = 'status-warn'; }
         return;
@@ -2382,6 +2508,9 @@
         appShell?.classList.remove('hidden');
         currentUser.username = profile.username || '';
         currentUser.displayName = profile.username || profile.displayName || user.displayName || 'Kullanıcı';
+        try { await refreshForeverPlusStatus(); } catch (plusError) { console.warn('Plus durumu alınamadı:', plusError); currentUser.isPlus = false; window.foreverIsPlus = false; }
+        const savedIcon = localStorage.getItem('forever_app_icon');
+        if (currentUser.isPlus && savedIcon && typeof window.changeAppIcon === 'function') window.changeAppIcon(savedIcon);
         if (profile.suspended === true || profile.banned === true) { showSuspension(profile.suspendedMessage || 'Hesabınız yönetim tarafından askıya alındı.'); return; }
         hideSuspension(); authModal.classList.add('hidden'); usernameModal.classList.add('hidden');
         watchModeration(user.uid);
@@ -2392,7 +2521,7 @@
         set('desktopTopAvatar', initial);
         set('mobileTopAvatar', initial);
         const headerName = document.getElementById('userHeaderName');
-        if (headerName) headerName.textContent = name;
+        if (headerName) headerName.innerHTML = escapeHTML(name) + foreverBadges(Boolean(currentUser.isPlus));
         set('userHeaderEmail', 'Forever üyesi');
         set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('sidebarAvatar', initial); set('sidebarUsername', name); set('sidebarUsernameTag', '@' + currentUser.username); set('sidebarRole', 'Forever üyesi'); set('postCreatorAvatar', initial);
         if (networkAuthStatus) { networkAuthStatus.textContent = 'Çevrimiçi'; networkAuthStatus.className = 'status-ok'; networkAuthStatus.style.display = 'inline'; }
@@ -2406,6 +2535,7 @@
     });  </script>
 
   <script type="module" src="./rooms.js"></script>
+  <script src="./aurai-widget.js" defer></script>
 </body>
 </html>
 

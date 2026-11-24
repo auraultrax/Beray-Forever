@@ -10,7 +10,9 @@ Forever, Google hesabıyla giriş yapılan ve Supabase altyapısını kullanan s
 - Fotoğraf/video içeren gönderiler; açıklama isteğe bağlı.
 - Tüm hesaplarda günlük toplam 5 medya yükleme.
 - Odalar, mesajlar, şikâyet, engelleme, odadan çıkarma ve oda yasağı.
-- Metin gönderileri, anketler, animasyonlu çıkartmalar, oda çizimi ve emoji birleştirme tüm hesaplarda açık; oda sabitleme oda yöneticisi yetkisiyle çalışır.
+- Standart hesap ve yönetici tarafından kullanıcı adıyla tanımlanan Süper Plus üyeliği.
+- Süper Plus: doğrulanmış/elmas rozeti, özel uygulama simgeleri, metin-only gönderi, animasyonlu çıkartma ve emoji, emoji birleştirme, BAI kişisel kota muafiyeti, 24 saatlik gönderi öne çıkarma ve gelişmiş oda temaları.
+- Plus ayrıcalıkları hem istemcide hem PostgreSQL tetikleyicisi ve RLS ile denetlenir; ortak BAI sistem bütçesi korunur.
 - Kullanıcı/şikâyet/oda yönetimi için admin paneli.
 
 ## Yayın öncesi zorunlu işler
@@ -21,8 +23,9 @@ Forever, Google hesabıyla giriş yapılan ve Supabase altyapısını kullanan s
 4. KVKK ve Kullanım Koşulları dosyalarındaki yer tutucuları gerçek veri sorumlusu bilgileriyle tamamla.
 5. IP adresi için amaç, hukuki sebep, saklama süresi ve otomatik imha işini kesinleştir.
 6. Supabase bölgesini ve yurt dışı veri aktarımı koşullarını kontrol et.
-7. RLS, Storage, Realtime, oda moderasyonu ve kota kurallarını test et.
-8. Eski Firebase verileri gerekiyorsa yedeklerden kontrollü aktarım planı hazırla.
+7. RLS, Storage, Realtime, oda moderasyonu, Süper Plus yetkileri ve BAI sayaçlarını test et.
+8. BAI Edge Function Secrets alanında model ve arama sağlayıcı ayarlarını doğrula.
+9. Eski Firebase verileri gerekiyorsa yedeklerden kontrollü aktarım planı hazırla.
 
 ## Sonraki geliştirmeler
 

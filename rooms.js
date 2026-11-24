@@ -1,7 +1,8 @@
 import { supabaseClient } from './supabase-compat.js';
 
 const $ = id => document.getElementById(id);
-let session = null, userId = null, username = '', activeRoom = null, roomChannel = null;
+let session = null, userId = null, username = '', isPlus = false, activeRoom = null, roomChannel = null;
+let plusUserIds = new Set(), plusUsersChannel = null;
 let drawingDirty = false, roomUiBound = false, currentMembersMode = 'members';
 let isAppAdmin = false, selectedMessage = null, pendingReply = null, longPressTimer = null;
 let lastRoomMessages = new Map(), lastRoomReactions = [];
@@ -21,6 +22,21 @@ function toast(message) {
 }
 function roomOwner(){return Boolean(activeRoom?.data?.ownerId===userId);}
 function roomModerator(){return Boolean(roomOwner()||isAppAdmin||(activeRoom?.data?.adminIds||[]).includes(userId));}
+function roomPlusBadge(active){return active?'<span class="forever-plus-badges" title="Forever Süper Plus · Doğrulanmış hesap" style="display:inline-flex;align-items:center;gap:3px;margin-left:4px;vertical-align:middle;"><i class="fa-solid fa-gem" style="color:#b99aff;font-size:.78em;"></i><span style="display:inline-grid;place-items:center;width:13px;height:13px;border-radius:50%;background:#2684ff;color:white;font-size:9px;font-weight:900;">✓</span></span>':'';}
+async function refreshRoomPlusUsers(){
+ const {data,error}=await supabaseClient.from('forever_plus_members').select('user_id');
+ if(error)throw error;
+ plusUserIds=new Set((data||[]).map(row=>String(row.user_id)));
+ const mine=await supabaseClient.rpc('is_forever_plus');
+ if(!mine.error){isPlus=Boolean(mine.data);window.foreverIsPlus=isPlus;syncRoomFeatureControls();}
+ if(activeRoom)await loadRoomMessages();
+}
+function watchRoomPlusUsers(){
+ if(plusUsersChannel)return;
+ plusUsersChannel=supabaseClient.channel('forever-plus-room-badges')
+  .on('postgres_changes',{event:'*',schema:'public',table:'forever_plus_members'},()=>refreshRoomPlusUsers().catch(error=>console.warn('Plus rozetleri yenilenemedi:',error)))
+  .subscribe();
+}
 async function fetchDocs(collectionName) {
   const { data, error } = await supabaseClient.from('forever_documents')
     .select('id,data,owner_id,created_at').eq('collection_name', collectionName)
@@ -29,12 +45,13 @@ async function fetchDocs(collectionName) {
   return data || [];
 }
 function syncRoomFeatureControls(){
-  const label=$('roomPlanLabel');if(label)label.textContent='En fazla 3 oda';
+  const label=$('roomPlanLabel');if(label)label.textContent=isPlus?'💎 Süper Plus · 3 oda sınırı':'En fazla 3 oda';
   const features=activeRoom?.data?.features||{},stickersEnabled=features.stickers!==false,drawingEnabled=features.drawing!==false;
-  if($('openStickersBtn'))$('openStickersBtn').disabled=!stickersEnabled;
+  if($('openStickersBtn'))$('openStickersBtn').disabled=!isPlus||!stickersEnabled;
   if($('toggleDrawingBtn'))$('toggleDrawingBtn').disabled=!drawingEnabled;
+  if($('stickerLock'))$('stickerLock').textContent=isPlus?'Özel animasyonlar aktif':'🔒 Süper Plus';
   if(!drawingEnabled)$('drawingBox')?.classList.add('hidden');
-  if(!stickersEnabled)$('stickerTray')?.classList.add('hidden');
+  if(!isPlus||!stickersEnabled)$('stickerTray')?.classList.add('hidden');
 }
 async function insertDoc(collectionName, id, data) {
   const { error } = await supabaseClient.from('forever_documents').insert({
@@ -93,7 +110,7 @@ function renderMessage(row){
   else if(isSingleEmoji(d.text))body='<button type="button" class="room-single-emoji" data-fly-emoji="'+escapeHtml(d.text.trim())+'">'+escapeHtml(d.text.trim())+'</button>';
   else body='<div class="room-message-text">'+renderTextWithClickableEmojis(d.text||'')+'</div>';
   const time=row.created_at?new Date(row.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
-  const meta='<div class="room-message-meta"><span class="room-message-author">'+escapeHtml(d.username||'kullanıcı')+'</span>'+(d.pinned?'<span class="room-pinned-label">📌 Sabit</span>':'')+'<time>'+time+'</time><button type="button" class="room-message-menu-btn" data-message-menu="'+escapeHtml(row.id)+'">•••</button></div>';
+  const meta='<div class="room-message-meta"><span class="room-message-author">'+escapeHtml(d.username||'kullanıcı')+'</span>'+roomPlusBadge(plusUserIds.has(String(d.userId)))+(d.pinned?'<span class="room-pinned-label">📌 Sabit</span>':'')+'<time>'+time+'</time><button type="button" class="room-message-menu-btn" data-message-menu="'+escapeHtml(row.id)+'">•••</button></div>';
   const reply=d.replyTo?'<div class="room-reply-quote"><strong>'+escapeHtml(d.replyTo.username||'Yanıtlanan mesaj')+'</strong><span>'+escapeHtml(d.replyTo.text||'Mesaj')+'</span></div>':'';
   const groups=new Map();lastRoomReactions.filter(x=>x.data?.messageId===row.id).forEach(x=>{const e=x.data?.emoji;if(e)groups.set(e,(groups.get(e)||0)+1);});
   const reactions=groups.size?'<div class="room-reaction-list">'+[...groups].map(([emoji,count])=>'<button type="button" data-react="'+escapeHtml(emoji)+'" data-react-message="'+escapeHtml(row.id)+'">'+escapeHtml(emoji)+' <span>'+count+'</span></button>').join('')+'</div>':'';
@@ -172,6 +189,7 @@ async function openRoom(id,name,data){
 }
 async function sendRoomMessage(payload){
   if(!activeRoom||!userId)return;
+  if(['animated_sticker','custom_sticker','sticker','emoji_mix','emoji_flight'].includes(payload.kind)&&!isPlus)return toast('Bu animasyonlu özellik Süper Plus ayrıcalığıdır. 💎');
   if(activeRoom.data.messagesLocked&&!roomModerator())return toast('Bu odada mesaj gönderme geçici olarak kilitlendi.');
   if((activeRoom.data.mutedUserIds||[]).includes(userId))return toast('Bu odada mesaj gönderme iznin yok.');
   const data=Object.assign({roomId:activeRoom.id,userId,username,createdAt:{seconds:Math.floor(Date.now()/1000)}},payload);
@@ -340,7 +358,7 @@ const ROOM_SPACE_THEMES=[
 {id:'space-prism',name:'Prizma',background:'linear-gradient(135deg,#17102c,#0b3440 50%,#35142c)'}];
 const ROOM_BUBBLES=['#1f2937','#312e81','#4c1d95','#7c2d12','#134e4a','#1e3a5f','#4a044e','#172554','#3f1d2e','#3f3f46','#064e3b','#3b0764','#7f1d1d','#164e63','#713f12','#111827','#365314','#701a75','#1d4ed8','#9d174d','#0f766e','#6b21a8','#9a3412','#374151','#f8fafc','#fde68a','#bfdbfe','#fbcfe8','#bbf7d0','#e9d5ff','#fecdd3','#bae6fd','#ddd6fe','#fed7aa','#a7f3d0','#c7d2fe','#fef3c7','#f5d0fe','#cffafe','#dcfce7','#fce7f3','#e0f2fe','#fae8ff','#ffedd5','#d1fae5','#e0e7ff','#f3f4f6','#fef9c3'];
 function roomThemeKey(){return 'forever_room_theme_'+encodeURIComponent(String(userId||'guest'))+'_'+encodeURIComponent(String(activeRoom?.id||'room'));}
-function getRoomTheme(){try{const v=JSON.parse(localStorage.getItem(roomThemeKey())||'null');if(v&&typeof v==='object')return {space:v.space||'space-night',bubble:v.bubble||'#8b5cf6',transparent:v.transparent===true,shape:v.shape||'rounded'};}catch(_){}return {space:'space-night',bubble:'#8b5cf6',transparent:false,shape:'rounded'};}
+function getRoomTheme(){try{const v=JSON.parse(localStorage.getItem(roomThemeKey())||'null');if(v&&typeof v==='object')return {space:isPlus?(v.space||'space-night'):'space-night',bubble:isPlus?(v.bubble||'#8b5cf6'):'#8b5cf6',transparent:isPlus&&v.transparent===true,shape:isPlus?(v.shape||'rounded'):'rounded'};}catch(_){}return {space:'space-night',bubble:'#8b5cf6',transparent:false,shape:'rounded'};}
 function applyRoomTheme(){
   if(!$('roomChat'))return;
   const t=getRoomTheme(),space=ROOM_SPACE_THEMES.find(x=>x.id===t.space)||ROOM_SPACE_THEMES[0],c=$('roomChat');
@@ -361,18 +379,18 @@ function applyRoomTheme(){
 }
 function renderRoomThemePanel(){
   const grid=$('roomThemeSpaceGrid'),colors=$('roomThemeBubbleColors');
-  if(grid&&!grid.children.length)grid.innerHTML=ROOM_SPACE_THEMES.map(t=>'<button type="button" class="room-theme-choice" data-space-theme="'+t.id+'"><span style="background:'+t.background+'"></span><small>'+escapeHtml(t.name)+'</small></button>').join('');
-  if(colors&&!colors.children.length)colors.innerHTML=ROOM_BUBBLES.map(c=>'<button type="button" class="room-theme-swatch" data-bubble-color="'+c+'" style="background:'+c+'" title="'+c+'"></button>').join('');
+  if(grid)grid.innerHTML=(isPlus?ROOM_SPACE_THEMES:ROOM_SPACE_THEMES.slice(0,1)).map(t=>'<button type="button" class="room-theme-choice" data-space-theme="'+t.id+'"><span style="background:'+t.background+'"></span><small>'+escapeHtml(t.name)+'</small></button>').join('');
+  if(colors)colors.innerHTML=(isPlus?ROOM_BUBBLES:ROOM_BUBBLES.slice(0,6)).map(c=>'<button type="button" class="room-theme-swatch" data-bubble-color="'+c+'" style="background:'+c+'" title="'+c+'"></button>').join('');
   applyRoomTheme();
 }
 function saveRoomTheme(t){try{localStorage.setItem(roomThemeKey(),JSON.stringify(t));}catch(_){}applyRoomTheme();}
 function openRoomTheme(){renderRoomThemePanel();$('roomThemeModal')?.classList.remove('hidden');}
 window.closeRoomTheme=()=> $('roomThemeModal')?.classList.add('hidden');
 function resetRoomTheme(){try{localStorage.removeItem(roomThemeKey());}catch(_){}renderRoomThemePanel();}
-function setRoomThemeSpace(id){const t=getRoomTheme();t.space=id;saveRoomTheme(t);}
-function setRoomBubbleColor(color){const t=getRoomTheme();t.bubble=color;t.transparent=false;saveRoomTheme(t);}
-function setRoomBubbleShape(shape){const t=getRoomTheme();t.shape=shape;saveRoomTheme(t);}
-function setRoomBubbleTransparent(on){const t=getRoomTheme();t.transparent=Boolean(on);saveRoomTheme(t);}
+function setRoomThemeSpace(id){if(!isPlus&&id!=='space-night')return toast('Ek oda temaları Süper Plus ayrıcalığıdır.');if(!ROOM_SPACE_THEMES.some(theme=>theme.id===id))return;const t=getRoomTheme();t.space=id;saveRoomTheme(t);}
+function setRoomBubbleColor(color){if(!isPlus&&!ROOM_BUBBLES.slice(0,6).includes(color))return toast('Ek baloncuk renkleri Süper Plus ayrıcalığıdır.');if(!ROOM_BUBBLES.includes(color))return;const t=getRoomTheme();t.bubble=color;t.transparent=false;saveRoomTheme(t);}
+function setRoomBubbleShape(shape){if(!isPlus&&shape!=='rounded')return toast('Ek baloncuk şekilleri Süper Plus ayrıcalığıdır.');if(!['rounded','pill','sharp'].includes(shape))return;const t=getRoomTheme();t.shape=shape;saveRoomTheme(t);}
+function setRoomBubbleTransparent(on){if(!isPlus&&on)return toast('Şeffaf baloncuk Süper Plus ayrıcalığıdır.');const t=getRoomTheme();t.transparent=Boolean(on)&&isPlus;saveRoomTheme(t);}
 
 function renderReplyPreview(){
   let box=$('roomReplyPreview');
@@ -412,6 +430,7 @@ function animateFlyingEmoji(glyph){
   while(layer.children.length>160)layer.firstElementChild?.remove();
 }
 async function emojiChallenge(glyph){
+  if(!isPlus)return toast('Animasyonlu emoji gönderme Süper Plus ayrıcalığıdır. 💎');
   if(!activeRoom||!isSingleEmoji(glyph))return;animateFlyingEmoji(glyph);const id=crypto.randomUUID();
   try{await insertDoc('room_messages',id,{roomId:activeRoom.id,userId,username,kind:'emoji_flight',emoji:glyph,createdAt:{seconds:Math.floor(Date.now()/1000)}});
     window.setTimeout(()=>supabaseClient.from('forever_documents').delete().eq('collection_name','room_messages').eq('id',id).then(()=>{}).catch(()=>{}),3500);
@@ -439,8 +458,9 @@ function drawEmojiMixPreview(){
   if(one!=='❔'&&two!=='❔'){const pending=findEmojiKitchenImage(emojiKitchenCandidateUrls(one,two));emojiKitchenState.pending=pending;pending.then(result=>{if(!result||emojiKitchenState.version!==version||emojiKitchenState.key!==key)return;emojiKitchenState.url=result.url;box.innerHTML='';const img=document.createElement('img');img.src=result.url;img.alt='Birleştirilmiş emoji';img.className='emoji-mix-result';box.appendChild(img);}).catch(()=>{});}
 }
 window.closeEmojiMixer=()=> $('emojiMixerModal')?.classList.add('hidden');
-function openEmojiMixer(){if(!activeRoom)return toast('Önce bir odaya gir.');$('emojiMixerModal')?.classList.remove('hidden');drawEmojiMixPreview();}
+function openEmojiMixer(){if(!activeRoom)return toast('Önce bir odaya gir.');if(!isPlus)return toast('Emoji birleştirme Süper Plus ayrıcalığıdır. 💎');$('emojiMixerModal')?.classList.remove('hidden');drawEmojiMixPreview();}
 async function sendEmojiMixToRoom(){
+  if(!isPlus)return toast('Emoji birleştirme Süper Plus ayrıcalığıdır. 💎');
   const one=readOneEmoji('emojiMixerOne'),two=readOneEmoji('emojiMixerTwo');if(!one||!two)return toast('İki kutuya da birer emoji girmelisin.');
   try{const key=one+'\u0000'+two;let result=emojiKitchenState.key===key?await emojiKitchenState.pending:null;
     if(result?.url&&emojiKitchenState.key===key)await sendRoomMessage({kind:'emoji_mix',stickerUrl:result.url,emojiOne:one,emojiTwo:two,text:one+' + '+two});
@@ -561,7 +581,8 @@ function bindRoomUi(){
   $('roomMixerBtn').onclick=()=>{$('roomComposerMenu').classList.add('hidden');openEmojiMixer();};
   $('roomBaiBtn').onclick=()=>{
     $('roomComposerMenu').classList.add('hidden');
-    toast('BAI servisi bu Forever projesine henüz bağlanmadı. Bağlantı kurulmadan çalışıyor gösterilmeyecek.');
+    if(typeof window.openForeverBAI==='function')window.openForeverBAI();
+    else toast('BAI arayüzü henüz yüklenmedi.');
   };
 
   $('roomMessageForm').onsubmit=event=>{
@@ -576,10 +597,12 @@ function bindRoomUi(){
   });
 
   $('openStickersBtn').onclick=()=>{
+    if(!isPlus)return toast('Animasyonlu çıkartmalar Süper Plus ayrıcalığıdır. 💎');
     if(activeRoom?.data?.features?.stickers===false)return toast('Bu odada çıkartmalar kapalı.');
     $('stickerTray').classList.toggle('hidden');
   };
   $('stickerTray').querySelectorAll('[data-animated-sticker]').forEach(button=>button.onclick=()=>{
+    if(!isPlus)return toast('Animasyonlu çıkartmalar Süper Plus ayrıcalığıdır. 💎');
     sendRoomMessage({kind:'animated_sticker',stickerId:button.dataset.animatedSticker,emoji:button.dataset.emoji,text:button.dataset.emoji});
   });
   $('toggleDrawingBtn').onclick=()=>{
@@ -646,27 +669,32 @@ async function initForUser(){
     return;
   }
   userId=session.user.id;
-  const [profile,admin]=await Promise.all([
+  const [profile,plus,admin]=await Promise.all([
     supabaseClient.from('forever_documents').select('data').eq('collection_name','users').eq('id',userId).maybeSingle(),
+    supabaseClient.rpc('is_forever_plus'),
     supabaseClient.rpc('is_forever_admin')
   ]);
   if(profile.error)throw profile.error;
   username=profile.data?.data?.username||session.user.user_metadata?.name||'Kullanıcı';
+  if(plus.error)throw plus.error;
+  isPlus=Boolean(plus.data);window.foreverIsPlus=isPlus;
   isAppAdmin=!admin.error&&admin.data===true;
   window.foreverIsAdmin=isAppAdmin;
   document.querySelectorAll('.admin-nav').forEach(node=>node.classList.toggle('hidden',!isAppAdmin));
+  await refreshRoomPlusUsers();watchRoomPlusUsers();
   syncRoomFeatureControls();
   bindRoomUi();
   await loadRoomList();
 }
 
 window.addEventListener('forever-user-ready',()=>{
-  initForUser().catch(error=>console.error('Aura X oda başlangıcı başarısız:',error));
+  initForUser().catch(error=>console.error('Forever oda başlangıcı başarısız:',error));
 });
 window.addEventListener('forever-user-signed-out',()=>{
   if(roomChannel){supabaseClient.removeChannel(roomChannel);roomChannel=null;}
-  activeRoom=null;userId=null;username='';isAppAdmin=false;
-  window.foreverIsAdmin=false;
+  activeRoom=null;userId=null;username='';isPlus=false;isAppAdmin=false;plusUserIds=new Set();
+  if(plusUsersChannel){supabaseClient.removeChannel(plusUsersChannel);plusUsersChannel=null;}
+  window.foreverIsPlus=false;window.foreverIsAdmin=false;
   document.querySelectorAll('.admin-nav').forEach(node=>node.classList.add('hidden'));
 });
-initForUser().catch(error=>console.error('Aura X oda başlangıcı başarısız:',error));
+initForUser().catch(error=>console.error('Forever oda başlangıcı başarısız:',error));
