@@ -1,6 +1,6 @@
 # Forever BAI — kurulum
 
-BAI, Forever içinde çalışan sohbet ve uygulama destek panelidir. Panel yalnızca Süper Plus üyelerine gösterilir. Normal üyeler için kişisel günlük kota uygulanmaz; Plus üyeleri için sohbet ve arama sayaçlarında kişisel günlük üst sınır atlanır.
+BAI, Forever içinde oturum açmış tüm hesaplara sunulan sohbet ve uygulama destek panelidir. Standart hesaplar için günlük 30 sohbet ve 10 arama sınırı vardır. Süper Plus üyeleri için sohbet ve arama sayaçlarında kişi başı günlük üst sınır uygulanmaz.
 
 ## 1. Edge Function'lar
 
