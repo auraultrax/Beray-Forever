@@ -5,7 +5,7 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 ## İlk kurulum
 
 1. Yeni Supabase projesinde SQL Editor bölümünü aç.
-2. supabase/schema.sql dosyasının tamamını çalıştır. Mevcut kurulumlarda da güncel dosyayı yeniden çalıştırarak Plus üyeliğinin kaldırılması, tüm hesaplar için ortak yetki/kota kuralları ve oda moderasyonu güncellemeleri uygulanır.
+2. supabase/schema.sql dosyasının tamamını çalıştır. Mevcut kurulumlarda bu sürüm, yönetici kontrollü Süper Plus üyeliği, BAI sayaçları, Realtime rozetleri ve oda moderasyonu kurallarını da kurar.
 3. Supabase → Authentication → Providers → Google alanında Google sağlayıcısını etkinleştir. Google Cloud Console'dan oluşturduğun Web application OAuth Client ID ve Client Secret değerlerini buraya ekle.
 4. Google Cloud Console'daki OAuth istemcisinde Authorized JavaScript origins kısmına yerel geliştirme adresini (ör. http://localhost:8080) ve canlı site adresini ekle.
 5. Aynı OAuth istemcisinde Authorized redirect URIs kısmına şu Supabase callback adresini ekle:
@@ -27,9 +27,11 @@ Forever, Google hesabıyla giriş yapılan; Supabase Auth, PostgreSQL, Realtime 
 
 - index.html — Forever ana arayüzü, Google ile giriş, kayıt ve sosyal akış.
 - supabase-compat.js — Eski veri erişim çağrılarını Supabase'e yönlendiren uyumluluk katmanı.
-- rooms.js — Supabase Realtime oda listesi, oda sohbeti, çıkartmalar, emoji birleştirme ve çizim.
+- rooms.js — Supabase Realtime oda listesi, oda sohbeti, Plus animasyonları, emoji birleştirme ve gelişmiş tema seçenekleri.
+- aurai-widget.js — Plus kullanıcılarına açık BAI sohbet arayüzü.
+- supabase/functions/aurai-chat ve aurai-search — BAI model ve arama proxy'leri; API anahtarları yalnızca Supabase Secrets içinde tutulur.
 - admin.html — Supabase oturumuyla korunan yönetim paneli.
-- supabase/schema.sql — Tablolar, RLS kuralları, güvenli kayıt fonksiyonları, ortak kota denetimleri, oda moderasyonu ve Storage.
+- supabase/schema.sql — Tablolar, RLS kuralları, Süper Plus yetkileri, BAI günlük sayaçları, kota denetimleri, oda moderasyonu ve Storage.
 - kvkk.html — KVKK aydınlatma metni taslağı.
 - kullanim-kosullari.html — Kullanım koşulları taslağı.
 
@@ -50,17 +52,30 @@ IP adresi yalnızca Supabase/API katmanının ilgili istek başlıklarını sağ
 
 ## Üyelik ve kullanım sınırları
 
-Forever'da tek bir standart üyelik türü vardır. Metin gönderileri, anketler, animasyonlu çıkartmalar, oda çizimi ve emoji birleştirme tüm kullanıcılara açıktır. Oda mesajlarını sabitleme oda sahibi, oda yöneticisi veya sistem yöneticisi yetkisiyle yapılır.
+Forever'da standart hesap ve yönetici tarafından tanımlanan **Süper Plus** üyeliği bulunur. Kullanıcı profilinin en üstündeki “Süper Plus Üyesi Ol” bağlantısı şu tanıtım sayfasına gider: https://sites.google.com/view/forever-super-plus/ana-sayfa. Üyelik verme veya kaldırma işlemini yalnızca sistem yöneticisi Yönetim Paneli → Süper Plus alanından kullanıcı adıyla yapabilir.
 
+Süper Plus ayrıcalıkları:
+1. Profilde ve kullanıcı bulma alanında elmas/ doğrulanmış rozeti.
+2. Ek uygulama simgeleri (Mor, Zümrüt, Okyanus).
+3. Yalnızca metin içeren gönderi paylaşma.
+4. Özel animasyonlu çıkartmalar.
+5. Emoji birleştirme.
+6. BAI sohbeti ve aramasında kişi başı günlük kullanım kotası olmaması.
+7. Kendi gönderisini 24 saate kadar akışın en üstüne çıkarma.
+8. Ek oda temaları, renkler ve baloncuk şekilleri.
+9. Animasyonlu emoji gönderme.
+
+Standart hesaplar için oda ve medya sınırları korunur:
 - Her hesap en fazla 3 odaya katılabilir.
 - Her hesap günde toplam 5 fotoğraf/video yükleyebilir; gönderiler ve hikâyeler aynı kotayı paylaşır.
 - Tek medya dosyasının varsayılan üst sınırı 25 MB'dır.
 
+Süper Plus, oda veya medya kotasını artırmaz. BAI'de Plus kullanıcılar için kişisel günlük limit uygulanmaz; sağlayıcı kesintileri ve tüm siteyi koruyan ortak günlük sistem bütçesi (varsayılan 5.000 istek) devam eder. Model/arama hizmeti ayrıca yapılandırılmalıdır.
 ## Yönetim
 
 Yönetim paneli Google OAuth ile giriş yapar ancak hesabın e-posta adresi public.forever_admins tablosunda kayıtlı değilse panel açılmaz. İlk yönetici hesabı için yukarıdaki SQL adımını uygula.
 
-Panelden kullanıcıyı askıya alabilir/yasaklayabilir, şikâyetleri çözebilir, oda üyelerini çıkarabilir ve odaya yeniden girişlerini engelleyebilirsin.
+Panelden kullanıcıyı askıya alabilir/yasaklayabilir, şikâyetleri çözebilir, oda üyelerini çıkarabilir, odaya yeniden girişlerini engelleyebilir ve Süper Plus üyeliğini kullanıcı adıyla verebilir/kaldırabilirsin.
 
 ## Güvenlik
 
@@ -81,6 +96,7 @@ Ardından http://localhost:8080 adresini aç. Bu adresi Supabase Redirect URLs l
 ## Yayına çıkmadan önce kontrol listesi
 
 - [ ] Google Auth Provider etkinleştirildi ve Client ID / Secret eklendi.
+- [ ] `aurai-chat` ve `aurai-search` Edge Function'ları yayımlandı; AURAI/Tavily veya Google CSE Secret'ları eklendi.
 - [ ] Google Cloud OAuth callback adresi doğru girildi.
 - [ ] Canlı site ve localhost Supabase Redirect URLs listesine eklendi.
 - [ ] Yönetici e-postası forever_admins tablosuna eklendi.
