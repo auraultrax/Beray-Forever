@@ -1396,6 +1396,7 @@
     let followingIds = new Set();
     let plusUserIds = new Set();
     let isForeverPlus = false;
+    let plusMembershipChannel = null;
     let allPostsCache = [];
     let feedQuery = '';
 
@@ -1442,6 +1443,19 @@
       window.foreverIsPlus = isForeverPlus;
       await loadPlusUsers();
       return isForeverPlus;
+    }
+    function watchPlusMembership() {
+      if (plusMembershipChannel) supabaseClient.removeChannel(plusMembershipChannel);
+      plusMembershipChannel = supabaseClient.channel('forever-plus-profile-badges')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'forever_plus_members' }, async () => {
+          const wasPlus = Boolean(currentUser?.isPlus);
+          await loadPlusUsers();
+          const nowPlus = Boolean(currentUser?.isPlus);
+          const headerName = document.getElementById('userHeaderName');
+          if (headerName && currentUser) headerName.innerHTML = escapeHTML(currentUser.username || currentUser.displayName || 'Kullanıcı') + foreverBadges(nowPlus);
+          if (wasPlus !== nowPlus) window.dispatchEvent(new CustomEvent('forever-plus-updated', { detail: { uid: currentUser?.uid, isPlus: nowPlus } }));
+          if (typeof renderPostsFromCache === 'function') renderPostsFromCache();
+        }).subscribe();
     }
 
     let isSignUpMode = false;
@@ -1498,7 +1512,7 @@
         const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
         set('userHeaderAvatar', initial); set('userHeaderName', username); set('userHeaderEmail', currentUser.email || '');
         set('sideUserAvatar', initial); set('sideUserName', username); set('sideUserHandle', '@' + username); set('sidebarAvatar', initial); set('sidebarUsername', username); set('sidebarUsernameTag', '@' + username); set('sidebarRole', 'Forever üyesi'); set('postCreatorAvatar', initial);
-        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers();
+        await loadFollowing(); await loadBlocked(); await loadSaves(); await refreshProfileStats(); await loadPlusUsers(); watchPlusMembership();
         listenToPosts(); listenToStories();
         window.dispatchEvent(new CustomEvent('forever-user-ready', { detail: { uid: currentUser.uid, username } }));
         fxToast('Forever hesabın oluşturuldu! ✨');
@@ -2476,6 +2490,8 @@
       const appShell = document.getElementById('app');
       appShell?.classList.add('hidden');
       if (!user) {
+        if (plusMembershipChannel) { supabaseClient.removeChannel(plusMembershipChannel); plusMembershipChannel = null; }
+        plusUserIds = new Set(); isForeverPlus = false; window.foreverIsPlus = false;
         authModal.classList.remove('hidden'); usernameModal.classList.add('hidden');
         if (networkAuthStatus) { networkAuthStatus.textContent = 'Giriş gerekli'; networkAuthStatus.className = 'status-warn'; }
         return;
@@ -2505,7 +2521,7 @@
         set('desktopTopAvatar', initial);
         set('mobileTopAvatar', initial);
         const headerName = document.getElementById('userHeaderName');
-        if (headerName) headerName.textContent = name;
+        if (headerName) headerName.innerHTML = escapeHTML(name) + foreverBadges(Boolean(currentUser.isPlus));
         set('userHeaderEmail', 'Forever üyesi');
         set('sideUserAvatar', initial); set('sideUserName', name); set('sideUserHandle', '@' + currentUser.username); set('sidebarAvatar', initial); set('sidebarUsername', name); set('sidebarUsernameTag', '@' + currentUser.username); set('sidebarRole', 'Forever üyesi'); set('postCreatorAvatar', initial);
         if (networkAuthStatus) { networkAuthStatus.textContent = 'Çevrimiçi'; networkAuthStatus.className = 'status-ok'; networkAuthStatus.style.display = 'inline'; }
