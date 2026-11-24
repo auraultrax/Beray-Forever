@@ -688,7 +688,7 @@ async function initForUser(){
 }
 
 window.addEventListener('forever-user-ready',()=>{
-  initForUser().catch(error=>console.error('Aura X oda başlangıcı başarısız:',error));
+  initForUser().catch(error=>console.error('Forever oda başlangıcı başarısız:',error));
 });
 window.addEventListener('forever-user-signed-out',()=>{
   if(roomChannel){supabaseClient.removeChannel(roomChannel);roomChannel=null;}
@@ -697,4 +697,4 @@ window.addEventListener('forever-user-signed-out',()=>{
   window.foreverIsPlus=false;window.foreverIsAdmin=false;
   document.querySelectorAll('.admin-nav').forEach(node=>node.classList.add('hidden'));
 });
-initForUser().catch(error=>console.error('Aura X oda başlangıcı başarısız:',error));
+initForUser().catch(error=>console.error('Forever oda başlangıcı başarısız:',error));
