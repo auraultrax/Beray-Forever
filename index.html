@@ -4529,14 +4529,33 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                 const savedUsername = sessionStorage.getItem('aurax_active_user') || localStorage.getItem('aurax_active_user');
                 let resolvedUsername = null;
                 if (savedUsername) {
-                    const savedSnap = await dataStore.collection('users').doc(savedUsername).get();
-                    if (savedSnap.exists && String(savedSnap.data()?.authUid || '') === String(authUser.id)) resolvedUsername = savedUsername;
+                    try {
+                        const savedSnap = await dataStore.collection('users').doc(savedUsername).get();
+                        if (savedSnap.exists && String(savedSnap.data()?.authUid || '') === String(authUser.id)) resolvedUsername = savedUsername;
+                    } catch (e) { console.warn('Kayıtlı kullanıcı doğrulanamadı, sunucudan çözülecek:', e); }
+                }
+                // Geçici ağ/sunucu hatasında oturumu silme: RPC'yi bir kez tekrar dene.
+                let resolveFailed = false;
+                if (!resolvedUsername) {
+                    for (let attempt = 0; attempt < 2 && !resolvedUsername; attempt++) {
+                        try {
+                            const { data: ownUsername, error: ownError } = await supabaseClient.rpc('aurax_resolve_oauth_username', { p_provider: authUser?.app_metadata?.provider || 'email' });
+                            if (ownError) throw ownError;
+                            resolveFailed = false;
+                            if (ownUsername) resolvedUsername = ownUsername;
+                            else break; // Sunucu net olarak "eşleşen hesap yok" dedi.
+                        } catch (e) {
+                            resolveFailed = true;
+                            console.warn('Kullanıcı adı çözümleme hatası (deneme ' + (attempt + 1) + '):', e);
+                            await new Promise(r => setTimeout(r, 600));
+                        }
+                    }
                 }
                 if (!resolvedUsername) {
-                    const { data: ownUsername } = await supabaseClient.rpc('aurax_resolve_oauth_username', { p_provider: authUser?.app_metadata?.provider || 'email' });
-                    if (ownUsername) resolvedUsername = ownUsername;
+                    // Hata geçiciyse oturumu ve kayıtlı kullanıcıyı koru; bir sonraki açılışta tekrar denenir.
+                    if (resolveFailed) { currentUser = null; return; }
+                    await authService.signOut().catch(() => {}); currentUser = null; return;
                 }
-                if (!resolvedUsername) { await authService.signOut().catch(() => {}); currentUser = null; return; }
                 currentUser = resolvedUsername;
                 sessionStorage.setItem('aurax_active_user', currentUser);
                 localStorage.setItem('aurax_active_user', currentUser);
@@ -4560,7 +4579,10 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                     }
                 }
                 startSecurityHeartbeat(); detachGlobalListeners(); attachGlobalListeners(); setupAppUI();
-            } catch (e) { console.error('Otomatik giriş doğrulanamadı:', e); currentUser = null; sessionStorage.removeItem('aurax_active_user'); localStorage.removeItem('aurax_active_user'); }
+            } catch (e) {
+                // Geçici hatada kayıtlı kullanıcıyı silme; Supabase oturumu zaten kalıcı, sonraki açılışta otomatik giriş tekrar denenir.
+                console.error('Otomatik giriş doğrulanamadı:', e); currentUser = null;
+            }
         };
 
         let authToggleBusy = false;
