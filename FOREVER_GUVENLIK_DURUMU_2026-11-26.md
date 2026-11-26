@@ -20,6 +20,7 @@ Bu dosya, bu tarihte gerçek Supabase projesinde yapılan değişiklikleri ve he
 6. Oda RPC'leri kullanıcı adını istemciden kabul etmek yerine doğrulanmış profilden alıyor. Oda parolası bcrypt tabanlı hash olarak özel tabloda tutuluyor; oda JSON belgesinde düz metin parola bulunmuyor.
 7. Oda yardımcı yöneticilerinin odayı silmesi engellendi; oda silme hakkı oda sahibi ve sistem yöneticisiyle sınırlandırıldı.
 8. Oda çizim özelliği arayüzden ve yeni oda kayıtlarından kaldırıldı. Profil/emoji gibi ilgisiz canvas işlevleri kaldırılmadı.
+9. Oda yöneticisi/owner rolü ile sistem yöneticisi rolü ayrıldı; yalnızca oda sahibi veya sistem yöneticisi odayı silebilir.
 
 ## Test edilenler
 
@@ -27,6 +28,8 @@ Bu dosya, bu tarihte gerçek Supabase projesinde yapılan değişiklikleri ve he
 - RLS testi bir deneme hesabı kimliğiyle transaction içinde çalıştırıldı ve `ROLLBACK` ile tüm test yazmaları geri alındı.
 - Başka kullanıcının ham profil kaydına erişimin engellenmesi, hassas profil alanlarının yazılamaması, doğrudan oda/üyelik eklemenin reddedilmesi ve oda üyesi olmayan kullanıcının mesaj ekleyememesi kontrol edildi.
 - Güvenli profil projeksiyonunda e-posta, doğum tarihi, IP ve kaydedilmiş gönderiler gibi özel alanların bulunmadığı doğrulandı.
+- Doğrudan takipçi/takip edilen listesini değiştirme denemesi de reddedildi; takip listelerini yalnızca sunucu tarafı takip işlevi güncelleyebilir.
+- Oda oluşturma/katılma RPC'leri istemcinin gönderdiği kullanıcı adını kullanmayacak şekilde güncellendi; yeni oda şifresi en az 8 karakter ve hash olarak özel tabloda tutulur.
 - Güncel `index.html` içindeki 6 satır içi JavaScript bloğu sözdizimi açısından ayrıştırıldı; hata bulunmadı. Oda çizim işlevine ait eski işaretlerin kalmadığı doğrulandı.
 
 ## Henüz tamamlanmayan / yayına engel konular
