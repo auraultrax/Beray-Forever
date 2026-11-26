@@ -58,13 +58,13 @@ Canlı ses aktarımı ve ekran paylaşımı bu sürümde uygulanmamıştır. Ö�
 ## Okul e-posta doğrulama fonksiyonu
 
 - Edge Function: `education-school-verify`
-- Canlı durum: Gmail API güncellemesi sonrası version 5 olarak doğrulanacak; `verify_jwt=true` korunur; `withSupabase({auth:'user'})` ile kullanıcı JWT'si doğrulanır, ayrıcalıklı istemci yalnızca sunucu tarafında kullanılır.
+- Canlı durum: ACTIVE, version 5, `verify_jwt=true`; `withSupabase({auth:'user'})` ile kullanıcı JWT'si doğrulanır, ayrıcalıklı istemci yalnızca sunucu tarafında kullanılır.
 - Kod 8 haneli; 5 dakika geçerli; en fazla 5 yanlış deneme.
 - E-posta, kurum kodundan sunucu tarafında `kurumkodu@meb.k12.tr` olarak oluşturulur.
-- Kodun HMAC-SHA-256 özeti saklanır; düz kod veritabanına yazılmaz.
+- Kodun HMAC-SHA-256 özeti saklanır; düz kod veritabanına yazılmaz. Gönderim zamanı, `xauraultra@gmail.com` göndericisi, `gmail-api` sağlayıcısı ve Gmail mesaj kimliği ayrı kolonlarda kaydedilir.
 - Yeni kod gönderildiğinde aynı kullanıcı/kurum kodu için önceki bekleyen kodlar geçersizleştirilir. 8 haneli kod üretimi modülo yanlılığını önleyen rejection-sampling kullanır.
 - Kurum ve kullanıcı bazlı hız sınırı ve 60 saniye tekrar gönderme aralığı vardır.
-- Fonksiyon Gmail API üzerinden `xauraultra@gmail.com` hesabıyla e-posta gönderecek biçimde güncellendi. Gerçek gönderim, Google OAuth izinleri ve Edge Function secrets tamamlanana kadar yapılandırılmış sayılmaz.
+- Fonksiyon Gmail API üzerinden `xauraultra@gmail.com` hesabıyla e-posta gönderecek biçimde güncellendi ve canlı Supabase'e version 5 olarak dağıtıldı. `openid`, `email` ve `gmail.send` OAuth kapsamları kullanılır; kod gönderimi öncesinde kimlik e-posta adresinin tam eşleşmesi doğrulanır. Gerçek gönderim, Google OAuth izinleri ve Edge Function secrets tamamlanana kadar yapılandırılmış sayılmaz.
 
 **Eksik operatör ayarları:** `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `OTP_HMAC_SECRET` değerleri Supabase Dashboard > Edge Functions > Secrets kısmına eklenmelidir. Gizli değerler GitHub'a, sohbete veya tarayıcı koduna yazılmamalıdır. Google OAuth uygulaması Testing durumunda ise Gmail kapsamlı refresh token 7 gün sonra sona erebilir. Bu değerler olmadan fonksiyon `mail_service_not_configured` hatası verir; gerçek MEB posta kutusuna e-posta gönderildiği iddia edilmemelidir.
 
@@ -80,7 +80,7 @@ Test yazmaları transaction içinde çalıştırılıp `ROLLBACK` edildi:
 - Denetim tetikleyicisi sınıf ve tahta oluşturma olaylarını yazıyor.
 - `forever-education.js` JavaScript sözdizimi kontrolünden geçti; güncel `index.html` içindeki altı inline script de ayrıştırıldı.
 
-Bu testler sınırlı RLS/SQL kontrolleridir; tüm uygulamayı kapsayan bağımsız saldırı testi değildir. Gerçek MEB e-posta kutusuna OTP gönderimi, gerçek kullanıcılı öğretmen/öğrenci kabul akışı ve tarayıcı uçtan uca testi yapılmadı; çünkü sosyal giriş projesi farklı ve Resend secrets/alan adı henüz ayarlı değil.
+Bu testler sınırlı RLS/SQL kontrolleridir; tüm uygulamayı kapsayan bağımsız saldırı testi değildir. Gerçek MEB e-posta kutusuna OTP gönderimi, gerçek kullanıcılı öğretmen/öğrenci kabul akışı ve tarayıcı uçtan uca testi yapılmadı; çünkü uygulama auth bağlantısı hâlâ farklı ve Google OAuth/Edge Function secrets henüz ayarlı değil.
 
 ## Okul yetkisi ve hukuki veri işleme sınırı
 
