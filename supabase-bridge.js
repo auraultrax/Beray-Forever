@@ -337,7 +337,7 @@
       let poll = null;
       let lastStamp;
       // Oda belgesi: Realtime olay göndermese bile diğer kullanıcıların tepkileri/mesajları düzenli çekilir.
-      const alwaysPoll = this._table === 'rooms';
+      const alwaysPoll = this._table === 'rooms' || this._table === 'users';
       const emit = async () => {
         if (stopped) return;
         try {
@@ -353,14 +353,16 @@
       const onLocalWrite = (e) => { if (e && e.detail && e.detail.table === this._table) schedule(); };
       emit();
       window.addEventListener('aurax:write', onLocalWrite);
-      channel = window.supabaseClient.channel(`aurax-doc-${this._table}-${Math.random().toString(36).slice(2)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: this._table }, schedule)
+      const realtimeTable = this._table === 'users' ? 'public_profiles' : 'forever_documents';
+      const realtimeFilter = this._table === 'users' ? `id=eq.${this._id}` : `collection_name=eq.${this._table}`;
+      channel = window.supabaseClient.channel(`forever-doc-${this._table}-${Math.random().toString(36).slice(2)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: realtimeTable, filter: realtimeFilter }, schedule)
         .subscribe((status) => {
           if (stopped) return;
           if (status === 'SUBSCRIBED') { if (poll && !alwaysPoll) { clearInterval(poll); poll = null; } }
           else if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') && !poll) poll = setInterval(emit, 10000);
         });
-      if (alwaysPoll && !poll) poll = setInterval(emit, 3000);
+      if (alwaysPoll && !poll) poll = setInterval(emit, 3500);
       return () => {
         stopped = true;
         clearTimeout(timer);
