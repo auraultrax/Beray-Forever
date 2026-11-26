@@ -51,7 +51,7 @@ function escapeHtml(input: string): string {
   })[char] || char);
 }
 
-Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
+Deno.serve(withSupabase({ auth: "user", cors: false }, async (req, ctx) => {
   const origin = req.headers.get("origin") || "";
   if (req.method === "OPTIONS") {
     if (origin && !ALLOWED_ORIGINS.has(origin)) return response({ error: "origin_not_allowed" }, 403, "");
