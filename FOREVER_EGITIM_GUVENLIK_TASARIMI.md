@@ -48,22 +48,20 @@ Davet güvenliği:
 ## 4. E-posta gönderim mimarisi
 
 - E-posta gönderimi sadece Supabase Edge Function üzerinden yapılır.
-- AWS SES erişim bilgileri GitHub'a veya HTML/JS istemci koduna konmaz; yalnızca Supabase Edge Function Secrets olarak saklanır.
-- Gönderici adresi Forever'ın kontrol ettiği doğrulanmış bir alan adından olur. MEB alan adı taklit edilmez.
-- Gönderici alan adı için DKIM, SPF ve DMARC yapılandırılır.
-- OTP doğrulaması ile e-posta gönderme birbirinden ayrı işlemlerdir; SES yalnızca iletiyi teslim eder. Okul yetkisini veritabanındaki doğrulama işlemi verir.
-- Üretim gönderimi öncesinde SES sandbox durumunun kaldırılması gerekir. Sandbox ortamında doğrulanmamış alıcılara gerçek okul posta kutularına gönderim yapılamaz.
+- Ücretsiz başlangıç için Resend Free tercih edilir. Planın sınırları (3.000 e-posta/ay, günlük 100 e-posta) aşılmadan izlenir; kota aşımında kullanıcı onayı olmadan ücretli plana geçilmez.
+- Resend API anahtarı GitHub'a veya HTML/JS istemci koduna konmaz; yalnızca Supabase Edge Function Secrets içinde saklanır.
+- Gönderici adresi Forever'ın kontrol ettiği ve Resend'de doğrulanmış kendi alan adından olur. MEB alan adı taklit edilmez.
+- Gönderici alan adı için SPF/DKIM ve mümkünse DMARC yapılandırılır.
+- OTP doğrulaması ile e-posta gönderme birbirinden ayrı işlemlerdir; Resend yalnızca iletiyi teslim eder. Okul yetkisini veritabanındaki doğrulama işlemi verir.
+- E-posta gövdesinde OTP dışında öğrenci/öğretmen kişisel verisi gönderilmez.
 
-Gerekli sunucu sırları (örnek adlar; değerler kullanıcı tarafından güvenli AWS/Supabase panellerinde tanımlanır):
-- `AWS_REGION`
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `SES_FROM_EMAIL`
+Gerekli sunucu sırları:
+- `RESEND_API_KEY`
+- `MAIL_FROM`
 - `OTP_HMAC_SECRET`
 - `APP_BASE_URL`
 
-AWS anahtarlarına yalnızca gerekli SES gönderme izni verilir; tam yönetici izni verilmez.
-
+Sırlar yalnızca Supabase Edge Function Secrets içinde tanımlanır. Resend API anahtarına erişim sınırlandırılır; GitHub Actions, HTML, JavaScript ve tarayıcı loglarına yazılmaz.
 ## 5. Veritabanı ve erişim sınırları
 
 Eğitim için ayrı ilişkisel tablolar:
@@ -104,17 +102,16 @@ Yönetici, öğretmen, öğrenci ve sınıf öğretmeni yetkileri ayrı ayrı ko
 
 ## 8. Yayına çıkmadan önce gerekli operatör ayarları
 
-- AWS hesabı ve SES gönderici kimliği kurulmalı.
-- Forever'ın gönderici alan adında DNS kayıtları (DKIM/SPF/DMARC) eklenmeli.
-- SES sandbox'tan üretim gönderimine geçiş onaylanmalı.
-- AWS ve Supabase sırları yalnızca sunucu tarafında tanımlanmalı.
-- Gerçek MEB kurumsal posta kutusuyla uçtan uca test yapılmalı.
+- Resend hesabı ve Forever'ın kontrol ettiği bir gönderici alan adı gerekir. Domain satın alma maliyeti ücretsiz değildir; zaten sahip olunan alan adı kullanılabiliyorsa ayrıca domain maliyeti oluşmaz.
+- Resend panelinin istediği SPF/DKIM DNS kayıtları eklenir; alan adı sahibi DMARC politikasını da yapılandırır.
+- Resend Free gönderim limitleri izlenir. Ücretli plana otomatik geçiş yapılmaz.
+- `RESEND_API_KEY`, `MAIL_FROM`, `OTP_HMAC_SECRET` ve `APP_BASE_URL` yalnızca Supabase Edge Function Secrets içinde tanımlanır.
+- Gerçek MEB kurumsal posta kutusuyla uçtan uca test yapılmadan okul doğrulaması yayına alınmaz.
+- Gerçek öğrenci verisi ancak sorumlu okul/kurumun onayı, KVKK değerlendirmesi, aydınlatma ve gerekli veli süreçleri, saklama/silme politikası, yedekleme ve olay müdahale planı tamamlandıktan sonra işlenir.
 
 ## Resmî teknik kaynaklar
 
 - MEB kurumsal e-posta hizmeti: https://www.meb.gov.tr/eposta/
-- Amazon SES fiyatlandırması: https://aws.amazon.com/ses/pricing/
-- Amazon SES gönderime başlama ve sandbox: https://docs.aws.amazon.com/ses/latest/dg/getting-started-sending.html
-- Amazon SES üretim erişimi: https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html
-- Amazon SES alan adı/kimlik doğrulaması: https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html
-- Amazon SES e-posta gönderme API'si: https://docs.aws.amazon.com/ses/latest/dg/send-email-api.html
+- Resend ücretsiz planı ve limitleri: https://resend.com/pricing
+- Resend alan adı doğrulama: https://resend.com/docs/dashboard/domains/introduction
+- Supabase Edge Function Secrets: https://supabase.com/docs/guides/functions/secrets
