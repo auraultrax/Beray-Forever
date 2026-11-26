@@ -35,6 +35,7 @@ Güvenlik kuralları:
 - Sınıf kimliği ile okul kimliğinin eşleşmesi, ilgili tablolarda tetikleyiciyle de zorlanır.
 - Puan verme, öğretmen atama, öğrenci/öğretmen onayı ve tahta temizleme gibi ayrıcalıklı işlemler sunucu RPC'leri üzerinden ve rol kontrolüyle yapılır.
 - Denetim tablosuna OTP, davet tokenı, parola veya servis anahtarı yazılmaz.
+- Eğitimdeki 6 ayrıcalıklı RPC ile oda/takipteki 9 ayrıcalıklı RPC'nin uygulama mantığı API'ye açık olmayan `private` şemasına taşındı. Aynı public RPC adları `SECURITY INVOKER` sarmalayıcı olarak korunuyor; anonim EXECUTE kaldırıldı.
 - Sınıf akışı, tahta, ders oturumu ve başvuru değişiklikleri için Realtime yayınları açılmıştır; RLS erişim kontrolü yürürlüktedir.
 
 ## Eğitim arayüzünde dalda bulunanlar
@@ -99,7 +100,10 @@ Gerçek öğrenci/çocuk verisi ancak sorumlu okul/kurumun yazılı onayı, gere
 
 Resend'in ücretsiz planı 3.000 e-posta/ay ve günde 100 e-posta sınırı bildirir. Ücretsiz planın limitleri aşılırsa ücretli plana otomatik geçiş yapılmamalıdır; doğrulanmış gönderici alan adı gerekir. Mevcut bir alan adı yoksa alan adı satın alma ücretsiz olmayabilir. Kaynak: https://resend.com/pricing/
 
-Service-role/secret anahtarı tarayıcıya konmaz. Mevcut Supabase güvenlik taramasında, bazı kontrollü SECURITY DEFINER RPC'leri için uyarılar ve kapalı leaked-password protection uyarısı sürmektedir. Bu uyarılar göz ardı edilmemelidir.
+Service-role/secret anahtarı tarayıcıya konmaz. Supabase Security Advisor'ın son taramasında:
+- Kullanıcılara açık SECURITY DEFINER RPC uyarısı kalmadı; oda/takip ve Eğitim RPC'leri private implementation + public invoker wrapper modeline taşındı.
+- `private.forever_room_secrets` ve `public.forever_bai_usage_daily` için RLS var ama politika yok bilgisi görülüyor. Ayrıcalık kontrolünde anon ve authenticated rollerinin bu tablolarda SELECT/INSERT/UPDATE yetkisi olmadığı doğrulandı; bu tablolar bilerek kapalı tutuluyor.
+- Tek kalan WARN, Supabase Auth'ın Leaked Password Protection özelliğinin kapalı olmasıdır. Authentication panelinden açılmalıdır.
 
 ## Sonuç
 
