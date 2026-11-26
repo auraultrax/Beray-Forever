@@ -57,10 +57,11 @@ Canlı ses aktarımı ve ekran paylaşımı bu sürümde uygulanmamıştır. Ö�
 ## Okul e-posta doğrulama fonksiyonu
 
 - Edge Function: `education-school-verify`
-- Canlı durum: ACTIVE, version 2, `verify_jwt=true`
+- Canlı durum: ACTIVE, version 4, `verify_jwt=true`; `withSupabase({auth:'user'})` ile kullanıcı JWT'si doğrulanır, ayrıcalıklı istemci yalnızca sunucu tarafında kullanılır.
 - Kod 8 haneli; 5 dakika geçerli; en fazla 5 yanlış deneme.
 - E-posta, kurum kodundan sunucu tarafında `kurumkodu@meb.k12.tr` olarak oluşturulur.
 - Kodun HMAC-SHA-256 özeti saklanır; düz kod veritabanına yazılmaz.
+- Yeni kod gönderildiğinde aynı kullanıcı/kurum kodu için önceki bekleyen kodlar geçersizleştirilir. 8 haneli kod üretimi modülo yanlılığını önleyen rejection-sampling kullanır.
 - Kurum ve kullanıcı bazlı hız sınırı ve 60 saniye tekrar gönderme aralığı vardır.
 - Fonksiyon Resend API üzerinden e-posta gönderilecek biçimde hazırdır; ancak gerçek e-posta gönderimi henüz yapılandırılmış değildir.
 
