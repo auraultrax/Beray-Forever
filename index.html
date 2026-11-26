@@ -2289,6 +2289,7 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
         // ==================== SUPABASE ====================
         // Yeni sıfır Supabase projesinin bilgilerini buraya gir. Secret key kullanma.
         const SUPABASE_URL = "https://zblbsjmtituericpmazj.supabase.co";
+        window.FOREVER_APP_SUPABASE_URL = SUPABASE_URL;
         const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0XUjb6u_goYIjSB6m7vYsQ_hpyI0Az7";
         const SUPABASE_BUCKET = "media";
         const SUPABASE_VAPID_PUBLIC_KEY = "BHVWWL_nmUDrj4NbkxIoQ3c2ZkF3EmHbfwrMwHRcjxvRzcv9wDi0psKzh64pjfZ7Wm_aHwQViADnJGfg18kv50w";
@@ -4893,6 +4894,8 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
         }
 
         function logout() {
+            window.__foreverCurrentUsername = null;
+            if (window.ForeverEducation) window.ForeverEducation.onLogout();
             stopLastSeenHeartbeat();
             leaveLiveSupportQueue();
             if (securityHeartbeatTimer) { clearInterval(securityHeartbeatTimer); securityHeartbeatTimer = null; }
@@ -4955,6 +4958,8 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             }).catch(() => showPushPermissionPrompt());
             tryResumeActiveRoom();
             setTimeout(() => showMandatoryAnnouncement(), 350);
+            window.__foreverCurrentUsername = currentUser;
+            window.dispatchEvent(new CustomEvent("forever:login", { detail: { username: currentUser } }));
         }
 
         // Sayfa yenilense/uygulama kapanıp açılsa bile, "Çık" düğmesine
@@ -9059,6 +9064,7 @@ if ('serviceWorker' in navigator) {
 </script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7f7f4dd494b941d7ae107f46c046bf87"}'></script><!-- End Cloudflare Web Analytics -->
     <script src="./aurai-widget.js" defer></script>
+    <script src="./forever-education.js" defer></script>
 </body>
 </html>
 <!--
