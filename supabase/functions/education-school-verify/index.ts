@@ -90,16 +90,20 @@ async function sendGmailVerificationEmail(
     }
 
     const authHeaders = { Authorization: "Bearer " + accessToken };
-    const profileResponse = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+    // OpenID email scope verifies the sender identity without granting mailbox-read access.
+    const identityResponse = await fetch(
+      "https://openidconnect.googleapis.com/v1/userinfo",
       { headers: authHeaders },
     );
-    if (!profileResponse.ok) {
-      return { ok: false, status: profileResponse.status, reason: "gmail_profile_check_failed" };
+    if (!identityResponse.ok) {
+      return { ok: false, status: identityResponse.status, reason: "google_identity_check_failed" };
     }
-    const profile = await profileResponse.json() as { emailAddress?: string };
-    const actualSender = (profile.emailAddress || "").trim().toLowerCase();
-    if (actualSender !== GMAIL_SENDER_EMAIL.toLowerCase()) {
+    const identity = await identityResponse.json() as {
+      email?: string;
+      email_verified?: boolean;
+    };
+    const actualSender = (identity.email || "").trim().toLowerCase();
+    if (!identity.email_verified || actualSender !== GMAIL_SENDER_EMAIL.toLowerCase()) {
       return { ok: false, status: 409, reason: "gmail_sender_account_mismatch" };
     }
 
