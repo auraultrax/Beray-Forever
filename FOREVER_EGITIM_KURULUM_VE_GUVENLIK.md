@@ -17,29 +17,41 @@ Mevcut `index.html` hâlâ `zblbsjmtituericpmazj` Supabase projesine bağlanır.
 
 Bu sebeple Eğitim arayüzü farklı iki Supabase kimliğini otomatik eşleştirmez. Sosyal giriş ve köprü, kullanıcı hesaplarını/verileri bozmadan aynı FOREVER projesine taşınmadan gerçek okul veya öğrenci kaydı alınmamalıdır. Bu dosyadaki ayarları yapmak tek başına bu kimlik bağlantısı problemini çözmez.
 
-## Resend Free e-posta ayarı
+## Gmail API e-posta ayarı
 
-Okul kodu doğrulama fonksiyonu Resend ile gönderim yapacak şekilde hazırlanmıştır. Gönderim, şu üç Edge Function secret değeri girilene kadar 503 `mail_service_not_configured` döndürür:
+Okul doğrulama kodları, HTTPS üzerinden Gmail API kullanılarak **xauraultra@gmail.com** hesabından gönderilecek şekilde hazırlanmıştır. Supabase Edge Functions SMTP'nin 25 ve 587 numaralı portlarına giden bağlantıları engellediği için SMTP yerine Gmail API kullanılır.
 
-- `RESEND_API_KEY`: Resend hesabından oluşturulan API anahtarı.
-- `MAIL_FROM`: Resend'de doğrulanmış kendi alan adındaki gönderici, ör. `Forever <no-reply@mailer.senin-alanin.example>`.
-- `OTP_HMAC_SECRET`: En az 32 rastgele byte uzunluğunda gizli HMAC anahtarı.
+Gmail API için tek seferlik OAuth 2.0 izni gerekir. Uygulama yalnızca `https://www.googleapis.com/auth/gmail.send` kapsamını ister; posta kutusunu okumak için bir yetki kullanılmaz. Function, her gönderimden önce Gmail profilindeki hesabın tam olarak `xauraultra@gmail.com` olduğunu kontrol eder.
 
-HMAC secret'ı kendi makinenin terminalinde üret:
+### Google Cloud tarafı
+
+1. Google Cloud Console'da bir proje oluştur ve **Gmail API**'yi etkinleştir.
+2. OAuth consent screen / Google Auth Platform kısmında uygulama bilgilerini ayarla. Geliştirme sırasında `xauraultra@gmail.com` hesabını test user olarak ekle.
+3. Bir OAuth Client ID oluştur. OAuth Playground ile yetki vereceksen redirect URI listesine `https://developers.google.com/oauthplayground` ekle.
+4. OAuth 2.0 Playground ayarlarında **Use your own OAuth credentials** seçeneğini etkinleştir ve kendi Client ID / Client Secret değerlerini gir.
+5. Yalnızca `https://www.googleapis.com/auth/gmail.send` kapsamı için yetki ver; authorization code'u access token ile değiştirirken **refresh token** al. Google, refresh token'ı `access_type=offline` talep edildiğinde verir.
+6. Yetki verilen Google hesabının `xauraultra@gmail.com` olduğundan emin ol.
+
+Google OAuth uygulaması **Testing** durumunda ve External kullanıcı türündeyse Gmail kapsamı nedeniyle refresh token 7 gün sonra sona erebilir. Kalıcı kullanıma geçmeden önce OAuth uygulamasının yayın/verification gereksinimleri tamamlanmalıdır. Google, refresh token'ın güvenli uzun süreli saklanmasını ve iptal/sona erme ihtimallerinin ele alınmasını ister.
+
+### Supabase Edge Function Secrets
+
+Supabase Dashboard > Edge Functions > Secrets bölümüne şu değerleri gir:
+
+- `GMAIL_CLIENT_ID`: Google OAuth Client ID.
+- `GMAIL_CLIENT_SECRET`: Google OAuth Client Secret.
+- `GMAIL_REFRESH_TOKEN`: `xauraultra@gmail.com` hesabına ait Gmail API refresh token.
+- `OTP_HMAC_SECRET`: en az 32 rastgele byte uzunluğunda gizli HMAC anahtarı.
+
+HMAC secret'ı kendi cihazında üret:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Üretilen değeri yalnızca Supabase Dashboard > Edge Functions > Secrets bölümüne gir. Sohbete, GitHub'a, HTML/JavaScript'e veya ekran görüntüsüne koyma. Resend API anahtarını da aynı şekilde sadece Edge Function Secret olarak gir.
+Bu sırları yalnızca Supabase'in **Edge Function Secrets** alanına gir. Sohbete, GitHub'a, HTML/JavaScript'e veya ekran görüntüsüne koyma. Google hesabının parolasını veya OAuth sırlarını bana gönderme.
 
-Resend'de:
-1. Kendi kontrol ettiğin gönderici alan adını ekle.
-2. Resend'in verdiği SPF/DKIM DNS kayıtlarını alan adı DNS panelinde aynen tanımla.
-3. Alan adı Resend'de doğrulanmadan gerçek okul posta kutularına gönderim testi yapma.
-4. Ücretli kullanıma otomatik geçiş veya otomatik kullanım aşımı ayarlarını etkinleştirme. Ücretsiz plan limitine ulaşınca okul doğrulama gönderimi durmalı.
-
-Resend Free plan sınırları değişebilir; açılış tarihinde fiyat/limit sayfasını tekrar kontrol et: https://resend.com/pricing/
+Kod 8 haneli, 5 dakika geçerli ve en fazla 5 yanlış denemelidir. Veritabanında kodun kendisi değil HMAC özeti saklanır. E-postanın gönderim zamanı, gönderici hesabı, Gmail sağlayıcısı ve sağlayıcı mesaj kimliği de challenge satırına kaydedilir. Böylece doğrulama için gereken kayıt kalır; veritabanı okunursa kod düz metin olarak açığa çıkmaz.
 
 ## Okul adına yetki ve çocuk verileri
 
