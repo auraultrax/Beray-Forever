@@ -25,8 +25,8 @@
     roomMessages: 'room_messages'
   };
 
+  // User profiles are read from the safe public_profiles projection; every other collection is inside forever_documents.
   const READ_TABLE_MAP = { users: 'public_profiles' };
-  // Cache only authoritative table rows (never the sanitized public_profiles projection).
   const DOC_CACHE = new Map();
   const cacheKey = (table, id) => `${table}:${String(id)}`;
 
@@ -429,38 +429,62 @@
     }
 
     async _queryRows() {
-      // Kullanıcı listesini hassas `users` tablosundan değil, allow-list public_profiles tablosundan okur.
-      const readTable = READ_TABLE_MAP[this._table] || this._table;
-      // Keep the query shape generic: all Aura data lives in each table's JSONB `data` field.
-      // Realtime changes cause a fresh query, preserving the existing application behaviour.
-      // Basit "==" filtreleri sunucuda uygulanır (bildirimler gibi kişiye özel sorgular 1000 satır
-      // sınırına takılmasın); kalan filtreler ve sıralama aşağıda istemcide yapılır.
-      let query = window.supabaseClient.from(readTable).select('id,data,updated_at');
-      const safeKey = /^[A-Za-z0-9_]+$/;
-      for (const f of this._filters) {
-        if (f.op === '==' && typeof f.value === 'string' && safeKey.test(String(f.field))) query = query.eq('data->>' + f.field, f.value);
+      let data = [];
+      if (this._table === 'users') {
+        const {data:profiles,error}=await window.supabaseClient.from('public_profiles')
+          .select('id,data,updated_at').order('updated_at',{ascending:false}).limit(1000);
+        if(error)throw errorObject(error);
+        const {data:plusRows,error:plusError}=await window.supabaseClient.from('forever_plus_members')
+          .select('user_id').limit(5000);
+        if(plusError)throw errorObject(plusError);
+        const plusIds=new Set((plusRows||[]).map(row=>String(row.user_id)));
+        const auth=await getCurrentAuthUser(),isAdmin=auth?await isForeverAdmin():false;
+        data=(profiles||[]).map(row=>{
+          const profileData=clone(row.data||{}),uid=String(profileData.uid||'');
+          profileData.plusMember=plusIds.has(uid);
+          if(auth?.id&&uid===auth.id){
+            profileData.authUid=auth.id;profileData.authEmail=auth.email||null;
+            profileData.authProvider=auth.app_metadata?.provider||null;
+            profileData.googleUid=profileData.authProvider==='google'?auth.id:profileData.googleUid||null;
+            profileData.googleEmail=profileData.authProvider==='google'?auth.email||null:profileData.googleEmail||null;
+            profileData.appleUid=profileData.authProvider==='apple'?auth.id:profileData.appleUid||null;
+            profileData.appleEmail=profileData.authProvider==='apple'?auth.email||null:profileData.appleEmail||null;
+          }
+          if(isAdmin&&uid===auth?.id)profileData.role='admin';
+          return {id:row.id,data:profileData,updated_at:row.updated_at,storageId:uid};
+        });
+        if(isAdmin&&auth?.id&&!data.some(row=>row.id==='A_UR_A_XX')){
+          const alias=await readForeverUser('A_UR_A_XX');if(alias)data.push(alias);
+        }
+      } else {
+        let query=window.supabaseClient.from('forever_documents')
+          .select('id,data,updated_at').eq('collection_name',this._table);
+        const safeKey=/^[A-Za-z0-9_]+$/;
+        for(const f of this._filters){
+          if(f.op==='=='&&typeof f.value==='string'&&safeKey.test(String(f.field)))
+            query=query.eq('data->>'+f.field,f.value);
+        }
+        if(this._context&&this._context.username!=null&&typeof this._context.username==='string')
+          query=query.eq('data->>username',this._context.username);
+        const result=await query.order('updated_at',{ascending:false}).limit(1000);
+        if(result.error)throw errorObject(result.error);
+        data=result.data||[];
+        for(const row of data){
+          DOC_CACHE.set(cacheKey(this._table,row.id),{data:clone(row.data||{}),updatedAt:row.updated_at||null,storageId:row.id});
+        }
       }
-      if (this._context && this._context.username != null && typeof this._context.username === 'string') query = query.eq('data->>username', this._context.username);
-      const { data, error } = await query.order('updated_at', { ascending: false }).limit(1000);
-      if (error) throw errorObject(error);
-      // users koleksiyonu public_profiles görünümünden okunur; bunu güvenilir belge
-      // önbelleğine yazmayız çünkü users tablosu hassas alanlar taşır.
-      if (readTable === this._table) {
-        for (const row of data || []) DOC_CACHE.set(cacheKey(this._table, row.id), { data: clone(row.data || {}), updatedAt: row.updated_at || null });
-      }
-      let rows = (data || []).filter(r => this._matches(r));
-      if (this._order) {
-        const { field, direction } = this._order;
-        rows.sort((a, b) => {
-          const av = getPath(a.data || {}, field);
-          const bv = getPath(b.data || {}, field);
-          const aa = av && typeof av === 'object' && av.seconds ? av.seconds * 1000 : av;
-          const bb = bv && typeof bv === 'object' && bv.seconds ? bv.seconds * 1000 : bv;
-          if (aa === bb) return 0;
-          return (aa < bb ? -1 : 1) * (direction === 'desc' ? -1 : 1);
+      let rows=data.filter(row=>this._matches(row));
+      if(this._order){
+        const {field,direction}=this._order;
+        rows.sort((a,b)=>{
+          const av=getPath(a.data||{},field),bv=getPath(b.data||{},field);
+          const aa=av&&typeof av==='object'&&av.seconds?av.seconds*1000:av;
+          const bb=bv&&typeof bv==='object'&&bv.seconds?bv.seconds*1000:bv;
+          if(aa===bb)return 0;
+          return (aa<bb?-1:1)*(direction==='desc'?-1:1);
         });
       }
-      if (this._limit != null) rows = rows.slice(0, this._limit);
+      if(this._limit!=null)rows=rows.slice(0,this._limit);
       return rows;
     }
 
@@ -487,9 +511,10 @@
       };
       emit();
       window.addEventListener('aurax:write', onLocalWrite);
-      const realtimeTable = READ_TABLE_MAP[this._table] || this._table;
-      channel = window.supabaseClient.channel(`aurax-${realtimeTable}-${Math.random().toString(36).slice(2)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: realtimeTable }, schedule)
+      const realtimeTable = this._table === 'users' ? 'public_profiles' : 'forever_documents';
+      const realtimeFilter = this._table === 'users' ? undefined : `collection_name=eq.${this._table}`;
+      channel = window.supabaseClient.channel(`forever-${realtimeTable}-${Math.random().toString(36).slice(2)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: realtimeTable, ...(realtimeFilter ? { filter: realtimeFilter } : {}) }, schedule)
         .subscribe((status) => {
           if (stopped) return;
           if (status === 'SUBSCRIBED') { if (poll) { clearInterval(poll); poll = null; } }
