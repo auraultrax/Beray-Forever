@@ -144,7 +144,7 @@ Bu örnekleri kelimesi kelimesine tekrar etmek zorunda değilsin; konuşmanın b
     { groups: [['gonderi', 'paylas'], ['gonderi', 'at'], ['post', 'at'], ['gonderi', 'duzenle'], ['gonderi', 'sil']],
       a: 'Keşfet’teki paylaşım alanından metin, görsel veya video ile gönderi paylaşabilirsin. Kendi gönderini düzenleyebilir veya silebilirsin; başkalarının gönderilerine beğeni ve yorum yapabilirsin.' },
     { groups: [['cizim'], ['cizim', 'tahta']],
-      a: 'Odada “Çizim” düğmesiyle ortak çizim tahtası açılır. Bu özellik oda ayarına bağlıdır; kilitliyse oda yöneticisinden izin istemen gerekir.' },
+      a: 'Forever Sosyal’de çizim özelliği kaldırıldı. Canlı oyunlar Forever Plus ile odalarda oynanabilir.' },
     { groups: [['youtube'], ['video', 'senkron']],
       a: 'Odalarda senkron YouTube oynatma oda ayarına ve yetkiye bağlıdır. Kilitliyse oda yöneticisinden izin istemen gerekir.' },
     { groups: [['iphone', 'centik'], ['centik'], ['iphone', 'kesik'], ['ust', 'kisim', 'kesik']],

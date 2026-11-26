@@ -13,7 +13,7 @@ ANA PLATFORM ÖZELLİKLERİ
 4. Kullanıcı bulma: kullanıcı adıyla arama, takipçiler/takip edilenler, çevrimiçi durumu ve hesap rozetleri.
 5. Hikâyeler/durumlar: metin, görsel ve video durumları; görünürlük mevcut takip/erişim kurallarına bağlıdır.
 6. Odalar: oda oluşturma/katılma, erişim ayarları, sohbet, mesaj düzenleme/silme, medya, özel bildirimler ve kullanıcı etkileşimi.
-7. Oda etkileşimi: emoji tepkileri, kişisel çıkartmalar, hazır Forever animasyon paketi, emoji birleştirme, ortak çizim ve oda ayarına bağlı YouTube özelliği.
+7. Oda etkileşimi: emoji tepkileri, kişisel çıkartmalar, hazır Forever animasyon paketi, emoji birleştirme ve oda ayarına bağlı YouTube özelliği.
 8. Bildirimler: uygulama içi bildirimler; VAPID/Web Push secret'ları ve dağıtım doğru kurulduğunda tarayıcı/işletim sistemi bildirimleri.
 9. Liderlik ve yönetim: liderlik sıralaması, şikâyet yönetimi, sistem kısıtlamaları ve A_UR_A_XX yönetici paneli.
 10. BAI: Edge Function üzerinden sohbet; yapılandırıldığında internet araması. Model ve arama anahtarları Supabase Edge Function Secrets bölümünde tutulur.
