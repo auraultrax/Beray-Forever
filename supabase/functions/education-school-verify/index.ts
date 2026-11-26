@@ -36,7 +36,12 @@ async function hmacHex(secret: string, value: string): Promise<string> {
 }
 
 function randomEightDigitCode(): string {
-  const value = crypto.getRandomValues(new Uint32Array(1))[0];
+  // Rejection sampling avoids modulo bias when mapping 32 random bits to 8 digits.
+  const ceiling = Math.floor(0x1_0000_0000 / 100_000_000) * 100_000_000;
+  let value = 0;
+  do {
+    value = crypto.getRandomValues(new Uint32Array(1))[0];
+  } while (value >= ceiling);
   return String(value % 100_000_000).padStart(8, "0");
 }
 
@@ -107,6 +112,17 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
         reason: rateResult?.reason || "try_later",
         message: "Doğrulama kodu sınırına ulaşıldı. Bir dakika sonra tekrar deneyin.",
       }, 429, origin);
+    }
+
+    // Only the newest code for this user/school pair remains valid.
+    const { error: revokeOldChallengesError } = await admin
+      .from("education_email_challenges")
+      .update({ consumed_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("institution_code", institutionCode)
+      .is("consumed_at", null);
+    if (revokeOldChallengesError) {
+      return response({ error: "challenge_rotation_failed" }, 503, origin);
     }
 
     const code = randomEightDigitCode();
