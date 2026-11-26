@@ -29,7 +29,7 @@ Gmail API için tek seferlik OAuth 2.0 izni gerekir. Uygulama yalnızca `https:/
 2. OAuth consent screen / Google Auth Platform kısmında uygulama bilgilerini ayarla. Geliştirme sırasında `xauraultra@gmail.com` hesabını test user olarak ekle.
 3. Bir OAuth Client ID oluştur. OAuth Playground ile yetki vereceksen redirect URI listesine `https://developers.google.com/oauthplayground` ekle.
 4. OAuth 2.0 Playground ayarlarında **Use your own OAuth credentials** seçeneğini etkinleştir ve kendi Client ID / Client Secret değerlerini gir.
-5. Yalnızca `https://www.googleapis.com/auth/gmail.send` kapsamı için yetki ver; authorization code'u access token ile değiştirirken **refresh token** al. Google, refresh token'ı `access_type=offline` talep edildiğinde verir.
+5. Yalnızca `openid`, `email` ve `https://www.googleapis.com/auth/gmail.send` kapsamları için yetki ver; authorization code'u access token ile değiştirirken **refresh token** al. `openid` ve `email`, function'ın gönderen hesabı doğrulamasını sağlar; Gmail posta kutusunun içeriğini okuma yetkisi vermez. Google, refresh token'ı `access_type=offline` talep edildiğinde verir.
 6. Yetki verilen Google hesabının `xauraultra@gmail.com` olduğundan emin ol.
 
 Google OAuth uygulaması **Testing** durumunda ve External kullanıcı türündeyse Gmail kapsamı nedeniyle refresh token 7 gün sonra sona erebilir. Kalıcı kullanıma geçmeden önce OAuth uygulamasının yayın/verification gereksinimleri tamamlanmalıdır. Google, refresh token'ın güvenli uzun süreli saklanmasını ve iptal/sona erme ihtimallerinin ele alınmasını ister.
