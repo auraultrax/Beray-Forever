@@ -8,7 +8,7 @@ Bu belge, Eğitim modülünün neden henüz gerçek okul/öğrenci kullanımına
 - Okul/sınıf eşleşmesi veritabanı tetikleyicileriyle korunur.
 - Öğretmen daveti ve öğrenci başvuruları ayrı onay adımları kullanır.
 - Denetim kayıtları, başvuru kararları, sınıf/tahta işlemleri ve ders oturumları için eklenmiştir.
-- `education-school-verify` Edge Function sürüm 4 olarak dağıtılmıştır; JWT doğrulaması açıktır.
+- `education-school-verify` Edge Function sürüm 5 olarak dağıtılmıştır; JWT doğrulaması açıktır.
 - Eğitim arayüzü kodu çalışma dalındadır ve normal girişe bir alan seçimi ekler.
 
 ## Kritik bağlantı engeli
@@ -21,7 +21,7 @@ Bu sebeple Eğitim arayüzü farklı iki Supabase kimliğini otomatik eşleştir
 
 Okul doğrulama kodları, HTTPS üzerinden Gmail API kullanılarak **xauraultra@gmail.com** hesabından gönderilecek şekilde hazırlanmıştır. Supabase Edge Functions SMTP'nin 25 ve 587 numaralı portlarına giden bağlantıları engellediği için SMTP yerine Gmail API kullanılır.
 
-Gmail API için tek seferlik OAuth 2.0 izni gerekir. Uygulama yalnızca `https://www.googleapis.com/auth/gmail.send` kapsamını ister; posta kutusunu okumak için bir yetki kullanılmaz. Function, her gönderimden önce Gmail profilindeki hesabın tam olarak `xauraultra@gmail.com` olduğunu kontrol eder.
+Gmail API için tek seferlik OAuth 2.0 izni gerekir. Uygulama `openid`, `email` ve `https://www.googleapis.com/auth/gmail.send` kapsamlarını ister; posta kutusu içeriğini okuma yetkisi istemez. Function, her gönderimden önce Google kimlik yanıtındaki doğrulanmış e-posta adresinin tam olarak `xauraultra@gmail.com` olduğunu kontrol eder. Google, `gmail.send` kapsamını hassas kapsam olarak sınıflandırır ve genel kullanıma açılan uygulamalarda OAuth doğrulaması gerekebilir.
 
 ### Google Cloud tarafı
 
@@ -51,7 +51,7 @@ openssl rand -hex 32
 
 Bu sırları yalnızca Supabase'in **Edge Function Secrets** alanına gir. Sohbete, GitHub'a, HTML/JavaScript'e veya ekran görüntüsüne koyma. Google hesabının parolasını veya OAuth sırlarını bana gönderme.
 
-Kod 8 haneli, 5 dakika geçerli ve en fazla 5 yanlış denemelidir. Veritabanında kodun kendisi değil HMAC özeti saklanır. E-postanın gönderim zamanı, gönderici hesabı, Gmail sağlayıcısı ve sağlayıcı mesaj kimliği de challenge satırına kaydedilir. Böylece doğrulama için gereken kayıt kalır; veritabanı okunursa kod düz metin olarak açığa çıkmaz.
+Veritabanı kolon genişletmesi `SUPABASE_FOREVER_EDUCATION_GMAIL_DELIVERY.sql` dosyasındadır; bu migration canlı FOREVER veritabanına da uygulanmıştır. Kod 8 haneli, 5 dakika geçerli ve en fazla 5 yanlış denemelidir. Veritabanında kodun kendisi değil HMAC özeti saklanır. E-postanın gönderim zamanı, gönderici hesabı, Gmail sağlayıcısı ve sağlayıcı mesaj kimliği de challenge satırına kaydedilir. Böylece doğrulama için gereken kayıt kalır; veritabanı okunursa kod düz metin olarak açığa çıkmaz.
 
 ## Okul adına yetki ve çocuk verileri
 
