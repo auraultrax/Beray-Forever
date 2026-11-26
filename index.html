@@ -562,21 +562,6 @@
         .msg-box.show { display: flex; }
         .search-empty-state { text-align: center; opacity: 0.6; font-size: 13px; padding: 30px 10px; }
 
-        #drawModalOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
-        #drawModalOverlay.show { display: flex; opacity: 1; }
-        #drawModal { background: #1c1c20; border: 1px solid var(--border); border-radius: 20px; width: 96%; max-width: 760px; max-height: 94vh; display: flex; flex-direction: column; overflow: hidden; }
-        #drawModalBody { overflow-y: auto; padding: 6px 18px 20px; display: flex; flex-direction: column; gap: 14px; }
-        #drawCanvas { width: 100%; height: min(70vh, 640px); background: #101014; border: 1px solid var(--border); border-radius: 10px; touch-action: none; cursor: crosshair; }
-        .draw-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-        .draw-colors { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .draw-color-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
-        .draw-color-btn.active { border-color: var(--primary, #fff); transform: scale(1.15); }
-        .draw-custom-color { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; padding: 0; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
-        .draw-sizes { display: flex; gap: 8px; align-items: center; }
-        .draw-brush-btn { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; background: #2a2a30; display: flex; align-items: center; justify-content: center; }
-        .draw-brush-btn.active { border-color: var(--primary, #fff); }
-        .draw-brush-dot { border-radius: 50%; background: #fff; }
-
         #notifModalOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 99999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
         #notifModalOverlay.show { display: flex; opacity: 1; }
         #notifModal { background: #1c1c20; border: 1px solid var(--border); border-radius: 20px; width: 92%; max-width: 420px; max-height: 78vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -692,7 +677,7 @@
                dinamik viewport birimi (dvh) kullanılır; dvh desteklenmiyorsa
                yukarıdaki 100vh geçerli kalır. */
             .sidebar, .main-content,
-            #actionSheetOverlay, #searchModalOverlay, #drawModalOverlay,
+            #actionSheetOverlay, #searchModalOverlay,
             #notifModalOverlay, #profileModalOverlay, #roomMembersModalOverlay,
             #reportTypeSheetOverlay, #voiceRecorderOverlay {
                 height: 100dvh;
@@ -1412,7 +1397,7 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
 
         /* Pencere / panel açılışları */
         @keyframes modalPop { from { opacity: 0; transform: translateY(24px) scale(.95); } to { opacity: 1; transform: none; } }
-        #searchModalOverlay.show > *, #drawModalOverlay.show > *, #notifModalOverlay.show > *, #profileModalOverlay.show > *,
+        #searchModalOverlay.show > *, #notifModalOverlay.show > *, #profileModalOverlay.show > *,
         #roomMembersModalOverlay.show > *, .room-private-notif-overlay.show > *, #roomAddMemberOverlay.show > *,
         #statusViewModalOverlay.show > *, #roomThemeOverlay.show > *, #emojiMixerOverlay.show > *,
         .restrict-duration-overlay.show > *, .restriction-verify-overlay.show > *, #roomYoutubeOverlay.show > * { animation: modalPop .34s cubic-bezier(.22,1,.36,1) backwards; }
@@ -1645,11 +1630,7 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
                             <input type="text" id="newRoomName" class="input-box" placeholder="Oda Adı">
                             <input type="password" id="newRoomPass" class="input-box" placeholder="Oda Şifresi">
                             <div class="room-create-options">
-                                <label class="room-option-card">
-                                    <input type="checkbox" id="newRoomDrawingEnabled">
-                                    <span class="room-option-icon"><i class="fa-solid fa-palette"></i></span>
-                                    <span class="room-option-copy"><strong>Çizim</strong><small>İstersen aç</small></span>
-                                </label>
+                                
                                 <label class="room-option-card">
                                     <input type="checkbox" id="newRoomYoutubeEnabled">
                                     <span class="room-option-icon youtube"><i class="fa-brands fa-youtube"></i></span>
@@ -1904,17 +1885,6 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
                 <input type="text" id="searchUserInput" placeholder="Kullanıcı adı ile ara..." oninput="renderUserSearch()">
             </div>
             <div id="searchResultsList"></div>
-        </div>
-    </div>
-
-    <!-- BİRLİKTE ÇİZ (ORTAK ÇİZİM TAHTASI) -->
-    <div id="drawModalOverlay" onclick="if(event.target===this) closeDrawPanel()">
-        <div id="drawModal">
-            <div class="search-modal-header">
-                <h3>🎨 Birlikte Çiz</h3>
-                <i class="fa-solid fa-xmark" onclick="closeDrawPanel()"></i>
-            </div>
-            <div id="drawModalBody"></div>
         </div>
     </div>
 
@@ -2319,6 +2289,7 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
         // ==================== SUPABASE ====================
         // Yeni sıfır Supabase projesinin bilgilerini buraya gir. Secret key kullanma.
         const SUPABASE_URL = "https://zblbsjmtituericpmazj.supabase.co";
+        window.FOREVER_APP_SUPABASE_URL = SUPABASE_URL;
         const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0XUjb6u_goYIjSB6m7vYsQ_hpyI0Az7";
         const SUPABASE_BUCKET = "media";
         const SUPABASE_VAPID_PUBLIC_KEY = "BHVWWL_nmUDrj4NbkxIoQ3c2ZkF3EmHbfwrMwHRcjxvRzcv9wDi0psKzh64pjfZ7Wm_aHwQViADnJGfg18kv50w";
@@ -4197,7 +4168,6 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
         function notifIcon(type) {
             if (type === 'reply') return 'fa-reply';
             if (type === 'comment') return 'fa-comment';
-            if (type === 'draw') return 'fa-palette';
             if (type === 'room_invite_request') return 'fa-key';
             if (type === 'room_invite') return 'fa-door-open';
             if (type === 'admin_message') return 'fa-bullhorn';
@@ -4293,10 +4263,7 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             closeNotifPanel();
             if (!n) return;
             dataStore.collection('notifications').doc(notifId).update({ read: true }).catch(() => {});
-            if (n.type === 'draw' && n.roomId) {
-                switchView('odalar');
-                if (db.rooms[n.roomId]) { enterRoomUI(n.roomId); setTimeout(openDrawPanel, 250); }
-            } else if (n.type === 'room_invite' && n.roomName) {
+            if (n.type === 'room_invite' && n.roomName) {
                 switchView('odalar');
                 document.getElementById('roomSelectionArea').style.display = 'block';
                 document.getElementById('roomChatArea').style.display = 'none';
@@ -4927,6 +4894,8 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
         }
 
         function logout() {
+            window.__foreverCurrentUsername = null;
+            if (window.ForeverEducation) window.ForeverEducation.onLogout();
             stopLastSeenHeartbeat();
             leaveLiveSupportQueue();
             if (securityHeartbeatTimer) { clearInterval(securityHeartbeatTimer); securityHeartbeatTimer = null; }
@@ -4989,6 +4958,8 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             }).catch(() => showPushPermissionPrompt());
             tryResumeActiveRoom();
             setTimeout(() => showMandatoryAnnouncement(), 350);
+            window.__foreverCurrentUsername = currentUser;
+            window.dispatchEvent(new CustomEvent("forever:login", { detail: { username: currentUser } }));
         }
 
         // Sayfa yenilense/uygulama kapanıp açılsa bile, "Çık" düğmesine
@@ -6562,7 +6533,6 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                 await backendReady;
                 const n = document.getElementById('newRoomName').value.trim();
                 const p = document.getElementById('newRoomPass').value;
-                const drawingEnabled = !!document.getElementById('newRoomDrawingEnabled')?.checked;
                 const youtubeEnabled = !!document.getElementById('newRoomYoutubeEnabled')?.checked;
                 if (!n || !p) return showToast("Oda adı ve şifre zorunludur.", "error");
                 // GÜVENLİK: Oda adında tehlikeli karakterlere izin verme (bkz. kullanıcı adı ile aynı gerekçe).
@@ -6581,7 +6551,6 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                     messages: [],
                     createdAt: supabaseFieldValue.serverTimestamp(),
                     videoAccess: { enabled: youtubeEnabled, grantedMinutes: 0, grantedAt: youtubeEnabled ? Date.now() : null, expiresAt: null },
-                    drawingAccess: { enabled: drawingEnabled, grantedAt: drawingEnabled ? Date.now() : null },
                     roomAccess: { locked: false },
                     youtubeQueue: [], youtubeCurrentIndex: 0,
                     pinnedMessageId: null,
@@ -6675,12 +6644,9 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                 }
                 const isOwner = activeRoomData.admin === currentUser || currentUser === ADMIN_USER;
                 const isMod = isRoomAdmin(activeRoomData);
-                document.getElementById('roomChatHeaderActions').innerHTML = `<button class="btn btn-outline" onclick="openRoomPrivateNotifPanel()" title="Özel Bildirimler" id="roomPrivateNotifBtn" style="position:relative;"><i class="fa-solid fa-user-lock"></i><span class="notif-count-badge" id="roomPrivateBadge" style="position:absolute;top:-4px;right:-4px;margin:0;"></span></button><button class="btn btn-outline" onclick="openDrawPanel()" title="Birlikte Çiz" id="roomDrawHeaderBtn"><i class="fa-solid fa-lock"></i></button><button class="btn btn-outline" onclick="openRoomYoutube()" title="YouTube" id="roomYoutubeHeaderBtn"><i class="fa-solid fa-lock"></i></button>${isMod ? '<button class="btn btn-outline" onclick="openRoomMembersPanel()" title="Üyeler"><i class="fa-solid fa-users"></i></button>' : ''}${isOwner ? '<button class="btn btn-danger" onclick="deleteActiveRoom()">Odayı Sil</button>' : ''}<button class="btn btn-outline" onclick="leaveRoom()">Çık</button>`; updateRoomFeatureButtons(); updateRoomPrivateBadge();
-                if (!roomDrawingIsActive() && document.getElementById('drawModalOverlay')?.classList.contains('show')) closeDrawPanel();
+                document.getElementById('roomChatHeaderActions').innerHTML = `<button class="btn btn-outline" onclick="openRoomPrivateNotifPanel()" title="Özel Bildirimler" id="roomPrivateNotifBtn" style="position:relative;"><i class="fa-solid fa-user-lock"></i><span class="notif-count-badge" id="roomPrivateBadge" style="position:absolute;top:-4px;right:-4px;margin:0;"></span></button><button class="btn btn-outline" onclick="openRoomYoutube()" title="YouTube" id="roomYoutubeHeaderBtn"><i class="fa-solid fa-lock"></i></button>${isMod ? '<button class="btn btn-outline" onclick="openRoomMembersPanel()" title="Üyeler"><i class="fa-solid fa-users"></i></button>' : ''}${isOwner ? '<button class="btn btn-danger" onclick="deleteActiveRoom()">Odayı Sil</button>' : ''}<button class="btn btn-outline" onclick="leaveRoom()">Çık</button>`; updateRoomFeatureButtons(); updateRoomPrivateBadge();
                 if (!roomYoutubeIsActive() && document.getElementById('roomYoutubeOverlay')?.classList.contains('show')) closeRoomYoutube();
                 renderChat();
-                const drawOverlay = document.getElementById('drawModalOverlay');
-                if (drawOverlay && drawOverlay.classList.contains('show') && !isDrawingStroke) renderDrawPanel();
                 const membersOverlay = document.getElementById('roomMembersModalOverlay');
                 if (membersOverlay && membersOverlay.classList.contains('show')) renderRoomMembersPanel();
             });
@@ -6701,7 +6667,6 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             if (roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
             if (roomYoutubeUnsubscribe) { roomYoutubeUnsubscribe(); roomYoutubeUnsubscribe = null; }
             closeRoomYoutube();
-            closeDrawPanel();
             cancelChatCompose();
             activeRoom = null; activeRoomData = null;
             localStorage.removeItem('aurax_active_room');
@@ -6747,7 +6712,6 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                 db.rooms = roomData;
                 renderRoomList();
                 closeRoomYoutube();
-                closeDrawPanel();
                 cancelChatCompose();
                 document.getElementById('roomSelectionArea').style.display = 'block';
                 document.getElementById('roomChatArea').style.display = 'none';
@@ -6785,13 +6749,8 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                 : '<i class="fa-solid fa-lock"></i> Odayı Girişe Kapat';
             const featureWrap = document.getElementById('roomFeatureSettings');
             if (featureWrap) {
-                const drawingEnabled = !!(r.drawingAccess?.enabled);
                 const youtubeEnabled = !!(r.videoAccess?.enabled);
                 featureWrap.innerHTML = `
-                    <div class="room-feature-row">
-                        <div class="feature-label"><i class="fa-solid fa-palette"></i><div><strong>Çizim</strong><div class="room-feature-state">${drawingEnabled ? 'Açık' : 'Kapalı'}</div></div></div>
-                        <button class="btn ${drawingEnabled ? 'btn-danger' : ''}" style="width:auto;padding:7px 10px;" onclick="toggleRoomFeature('drawing', ${!drawingEnabled})">${drawingEnabled ? 'Kapat' : 'Aç'}</button>
-                    </div>
                     <div class="room-feature-row">
                         <div class="feature-label"><i class="fa-brands fa-youtube youtube"></i><div><strong>YouTube</strong><div class="room-feature-state">${youtubeEnabled ? 'Açık' : 'Kapalı'}</div></div></div>
                         <button class="btn ${youtubeEnabled ? 'btn-danger' : ''}" style="width:auto;padding:7px 10px;" onclick="toggleRoomFeature('youtube', ${!youtubeEnabled})">${youtubeEnabled ? 'Kapat' : 'Aç'}</button>
@@ -6868,110 +6827,18 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
         }
 
         async function toggleRoomFeature(feature, enabled) {
+            if (feature !== 'youtube') return;
             if (!activeRoom || !activeRoomData || !isRoomAdmin(activeRoomData)) return showToast('Bu işlem yalnızca oda yöneticisi içindir.', 'error');
             try {
-                const field = feature === 'drawing' ? 'drawingAccess' : feature === 'youtube' ? 'videoAccess' : null;
-                if (!field) return;
-                const value = field === 'drawingAccess'
-                    ? { enabled: !!enabled, grantedAt: enabled ? Date.now() : null }
-                    : { ...(activeRoomData.videoAccess || {}), enabled: !!enabled, grantedAt: enabled ? Date.now() : null, expiresAt: null, grantedMinutes: 0 };
-                await dataStore.collection('rooms').doc(activeRoom).update({ [field]: value });
-                showToast(`${feature === 'drawing' ? 'Çizim' : 'YouTube'} ${enabled ? 'açıldı' : 'kapatıldı'}.`, 'success');
+                const value = { ...(activeRoomData.videoAccess || {}), enabled: !!enabled, grantedAt: enabled ? Date.now() : null, expiresAt: null, grantedMinutes: 0 };
+                await dataStore.collection('rooms').doc(activeRoom).update({ videoAccess: value });
+                showToast(`YouTube ${enabled ? 'açıldı' : 'kapatıldı'}.`, 'success');
             } catch (e) {
                 console.error('Oda özelliği değiştirilemedi:', e);
                 showToast('Özellik ayarı değiştirilemedi.', 'error');
             }
         }
 
-        function roomDrawingIsActive() {
-            return !!(activeRoomData && activeRoomData.drawingAccess?.enabled);
-        }
-
-        function updateRoomDrawButton() {
-            const btn = document.getElementById('roomDrawHeaderBtn');
-            if (!btn) return;
-            const active = roomDrawingIsActive();
-            btn.title = active ? 'Birlikte Çiz' : 'Çizim kilitli';
-            btn.innerHTML = active ? '<i class="fa-solid fa-palette"></i>' : '<i class="fa-solid fa-lock"></i>';
-        }
-
-        function toggleRoomLock() {
-            if (!activeRoom || !activeRoomData || !isRoomAdmin(activeRoomData)) return;
-            const roomLocked = !!(activeRoomData.roomAccess && activeRoomData.roomAccess.locked);
-            return dataStore.collection('rooms').doc(activeRoom).update({ 'roomAccess.locked': !roomLocked })
-                .then(() => { if (activeRoomData) activeRoomData.roomAccess = { ...(activeRoomData.roomAccess || {}), locked: !roomLocked }; renderRoomMembersPanel(); })
-                .catch(e => { console.error(e); showToast("İşlem başarısız.", "error"); });
-        }
-
-        function removeRoomAdmin(username) {
-            if (!activeRoom || !activeRoomData || !isRoomAdmin(activeRoomData)) return;
-            const admins = [...(activeRoomData.admins || [])].filter(u => u !== username);
-            dataStore.collection('rooms').doc(activeRoom).update({ admins })
-                .then(() => showToast(`${username} yöneticilikten çıkarıldı.`))
-                .catch(e => { console.error(e); showToast("İşlem başarısız.", "error"); });
-        }
-
-        function makeRoomAdmin(username) {
-            if (!activeRoom || !activeRoomData || !isRoomAdmin(activeRoomData)) return;
-            const admins = [...(activeRoomData.admins || [])];
-            if (admins.includes(username)) return;
-            admins.push(username);
-            dataStore.collection('rooms').doc(activeRoom).update({ admins })
-                .then(() => showToast(`${username} yönetici yapıldı.`))
-                .catch(e => { console.error(e); showToast("İşlem başarısız.", "error"); });
-        }
-
-
-        // ===================== ODA YOUTUBE =====================
-        let roomYoutubePlayer = null;
-        let roomYoutubeReady = false;
-        let roomYoutubeCurrentIndex = 0;
-        let roomYoutubeUnsubscribe = null;
-        let roomYoutubeApplyingRemote = false; // uzaktan gelen oynat/durdur/sar uygulanırken tekrar yazmayı önler
-        let roomYoutubeSyncTimer = null;
-        let roomYoutubeLastReportedPosition = -1;
-        let roomYoutubeLastAppliedAt = 0;
-        let roomYoutubeLastSyncAt = 0;
-        // Her sekme/cihaz için benzersiz kimlik: aynı hesapla birden fazla
-        // sekme/cihazdan girilse bile "bu değişikliği ben mi yaptım" ayrımını
-        // kullanıcı adına değil bu kimliğe göre yapar.
-        const roomYoutubeClientId = Math.random().toString(36).slice(2) + '_' + Date.now();
-
-        function onYouTubeIframeAPIReady() { roomYoutubeReady = true; }
-        function extractYouTubeId(input) {
-            try {
-                const raw = String(input || '').trim();
-                if (!raw) return null;
-                let u = new URL(raw);
-                if (u.hostname.includes('youtu.be')) return u.pathname.split('/').filter(Boolean)[0] || null;
-                if (u.hostname.includes('youtube.com')) {
-                    if (u.pathname === '/watch') return u.searchParams.get('v');
-                    if (u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2] || null;
-                    if (u.pathname.startsWith('/embed/')) return u.pathname.split('/')[2] || null;
-                }
-            } catch (e) {}
-            return null;
-        }
-        function roomYoutubeIsActive() {
-            const a = activeRoomData && activeRoomData.videoAccess;
-            if (!a || !a.enabled) return false;
-            if (!a.expiresAt) return true;
-            const ts = typeof a.expiresAt.toMillis === 'function' ? a.expiresAt.toMillis() : Number(a.expiresAt);
-            return !ts || Date.now() < ts;
-        }
-        function updateRoomFeatureButtons() {
-            updateRoomDrawButton();
-            updateRoomYoutubeButton();
-        }
-
-        function updateRoomYoutubeButton() {
-            const btn = document.getElementById('roomYoutubeHeaderBtn');
-            if (!btn) return;
-            const active = roomYoutubeIsActive();
-            btn.title = active ? 'YouTube' : 'YouTube kilitli';
-            btn.innerHTML = `<i class="fa-brands fa-youtube" style="color:${active ? '#ff0000' : 'inherit'}"></i>`;
-            if (!active) btn.innerHTML = '<i class="fa-solid fa-lock"></i>';
-        }
         function openRoomYoutube() {
             if (!activeRoomData) return;
             if (!roomYoutubeIsActive()) return showToast('Bu oda için YouTube özelliği henüz açılmadı veya süresi doldu.', 'error');
@@ -8736,189 +8603,6 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             }
         }
 
-        /* --- BİRLİKTE ÇİZ (ORTAK ÇİZİM TAHTASI) --- */
-        const DRAW_COLORS = ['#ffffff', '#000000', '#ff4d4d', '#ff9f4d', '#ffd93d', '#4dff88', '#4da6ff', '#4d5bff', '#c34dff', '#ff4dc4', '#8a5a3c', '#9aa0a6'];
-        const DRAW_SIZES = [3, 6, 10, 18];
-        const ERASER_COLOR = '#101014';
-        let drawCtx = null;
-        let drawCanvasBound = false;
-        let isDrawingStroke = false;
-        let currentStrokePoints = [];
-        let currentDrawColor = DRAW_COLORS[0];
-        let currentDrawWidth = DRAW_SIZES[1];
-        let currentDrawOpacity = 1;
-
-        function openDrawPanel() {
-            if (!activeRoom) return;
-            if (!roomDrawingIsActive()) return showToast('Bu oda için Çizim özelliği kilitli.', 'error');
-            document.getElementById('drawModalOverlay').classList.add('show');
-            renderDrawPanel();
-        }
-        function closeDrawPanel() {
-            document.getElementById('drawModalOverlay').classList.remove('show');
-            isDrawingStroke = false;
-            currentStrokePoints = [];
-        }
-
-        function setupDrawCanvas() {
-            const canvas = document.getElementById('drawCanvas');
-            if (!canvas) return null;
-            if (!drawCanvasBound) {
-                canvas.addEventListener('pointerdown', drawPointerDown);
-                canvas.addEventListener('pointermove', drawPointerMove);
-                canvas.addEventListener('pointerup', drawPointerUp);
-                canvas.addEventListener('pointerleave', drawPointerUp);
-                canvas.addEventListener('pointercancel', drawPointerUp);
-                drawCanvasBound = true;
-            }
-            drawCtx = canvas.getContext('2d');
-            return canvas;
-        }
-
-        function addDrawPoint(e) {
-            const canvas = document.getElementById('drawCanvas');
-            if (!canvas) return;
-            const rect = canvas.getBoundingClientRect();
-            currentStrokePoints.push({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
-            if (currentStrokePoints.length < 2 || !drawCtx) return;
-            const a = currentStrokePoints[currentStrokePoints.length - 2];
-            const b = currentStrokePoints[currentStrokePoints.length - 1];
-            drawCtx.strokeStyle = currentDrawColor;
-            drawCtx.globalAlpha = currentDrawOpacity;
-            drawCtx.lineWidth = currentDrawWidth;
-            drawCtx.lineCap = 'round';
-            drawCtx.beginPath();
-            drawCtx.moveTo(a.x * canvas.width, a.y * canvas.height);
-            drawCtx.lineTo(b.x * canvas.width, b.y * canvas.height);
-            drawCtx.stroke();
-            drawCtx.globalAlpha = 1;
-        }
-
-        function drawPointerDown(e) {
-            if (!activeRoom || !roomDrawingIsActive()) return;
-            isDrawingStroke = true;
-            currentStrokePoints = [];
-            addDrawPoint(e);
-        }
-        function drawPointerMove(e) {
-            if (!isDrawingStroke) return;
-            addDrawPoint(e);
-        }
-        function drawPointerUp() {
-            if (!isDrawingStroke) return;
-            isDrawingStroke = false;
-            if (activeRoom && roomDrawingIsActive() && currentStrokePoints.length > 1) {
-                const wasEmpty = !(activeRoomData && activeRoomData.drawing && (activeRoomData.drawing.strokes || []).length);
-                const stroke = { author: currentUser, color: currentDrawColor, width: currentDrawWidth, opacity: currentDrawOpacity, points: currentStrokePoints, ts: Date.now() };
-                dataStore.collection('rooms').doc(activeRoom).update({
-                    'drawing.strokes': supabaseFieldValue.arrayUnion(stroke)
-                }).then(() => {
-                    // Tahta bu odada boştan yeni dolmaya başladıysa, oda arkadaşlarına
-                    // haber ver ki çizime katılabilsinler (yarış özelliğindeki başlatma
-                    // bildirimiyle aynı mantık).
-                    if (wasEmpty) {
-                        const members = (activeRoomData && Array.isArray(activeRoomData.members)) ? activeRoomData.members : [];
-                        const starterName = db.users[currentUser]?.displayName || currentUser;
-                        members.forEach(member => {
-                            if (member === currentUser) return;
-                            sendNotification(member, 'draw', `${starterName}, "${activeRoom}" odasında birlikte çizmeye başladı! Katılmak için dokun 🎨`, { roomId: activeRoom });
-                        });
-                    }
-                }).catch(e => console.error('Çizim kaydedilemedi:', e));
-            }
-            currentStrokePoints = [];
-        }
-
-        function selectDrawColor(color) {
-            currentDrawColor = color;
-            document.querySelectorAll('.draw-color-btn').forEach(b => b.classList.toggle('active', b.dataset.color === color));
-        }
-
-        function selectDrawSize(size) {
-            currentDrawWidth = size;
-            document.querySelectorAll('.draw-brush-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.size) === size));
-        }
-
-        function selectCustomDrawColor(input) {
-            selectDrawColor(input.value);
-        }
-
-        function clearDrawing() {
-            if (!activeRoom || !roomDrawingIsActive()) return showToast('Çizim özelliği kilitli.', 'error');
-            if (!isRoomAdmin(activeRoomData)) return showToast('Tahtayı yalnızca oda yöneticisi temizleyebilir.', 'error');
-            dataStore.collection('rooms').doc(activeRoom).update({ 'drawing.strokes': [] }).catch(e => console.error('Tahta temizlenemedi:', e));
-        }
-
-        function redrawCanvasFromData() {
-            const canvas = document.getElementById('drawCanvas');
-            if (!canvas || !drawCtx) return;
-            drawCtx.clearRect(0, 0, canvas.width, canvas.height);
-            const strokes = (activeRoomData && activeRoomData.drawing && activeRoomData.drawing.strokes) || [];
-            strokes.forEach(s => {
-                if (!s.points || s.points.length < 2) return;
-                drawCtx.strokeStyle = s.color || '#ffffff';
-                drawCtx.globalAlpha = Number(s.opacity ?? 1);
-                drawCtx.lineWidth = s.width || 4;
-                drawCtx.lineCap = 'round';
-                drawCtx.beginPath();
-                drawCtx.moveTo(s.points[0].x * canvas.width, s.points[0].y * canvas.height);
-                for (let i = 1; i < s.points.length; i++) drawCtx.lineTo(s.points[i].x * canvas.width, s.points[i].y * canvas.height);
-                drawCtx.stroke();
-                drawCtx.globalAlpha = 1;
-            });
-        }
-
-        async function undoMyLastStroke() {
-            if (!activeRoom || !activeRoomData || !roomDrawingIsActive()) return showToast('Çizim özelliği kilitli.', 'error');
-            try {
-                await dataStore.runTransaction(async tx => {
-                    const ref = dataStore.collection('rooms').doc(activeRoom);
-                    const snap = await tx.get(ref);
-                    const data = snap.data() || {};
-                    const strokes = Array.isArray(data.drawing?.strokes) ? [...data.drawing.strokes] : [];
-                    let idx = -1;
-                    for (let i = strokes.length - 1; i >= 0; i--) if (strokes[i]?.author === currentUser) { idx = i; break; }
-                    if (idx < 0) return;
-                    strokes.splice(idx, 1);
-                    tx.update(ref, { 'drawing.strokes': strokes });
-                });
-            } catch (e) { console.error(e); showToast('Son çizim geri alınamadı.', 'error'); }
-        }
-        function setDrawOpacity(value) { currentDrawOpacity = Math.max(0.1, Math.min(1, Number(value) || 1)); }
-
-        function renderDrawPanel() {
-            const wrap = document.getElementById('drawModalBody');
-            if (!wrap || !activeRoomData) return;
-            if (!document.getElementById('drawCanvas')) {
-                const colorBtns = DRAW_COLORS.map((c, i) => `<button class="draw-color-btn ${i === 0 ? 'active' : ''}" data-color="${c}" style="background:${c};" onclick="selectDrawColor(${safeJsArg(c)})"></button>`).join('');
-                const sizeBtns = DRAW_SIZES.map((s, i) => `<button class="draw-brush-btn ${s === currentDrawWidth ? 'active' : ''}" data-size="${s}" title="Fırça: ${s}px" onclick="selectDrawSize(${s})"><span class="draw-brush-dot" style="width:${Math.min(s, 16)}px;height:${Math.min(s, 16)}px;"></span></button>`).join('');
-                wrap.innerHTML = `
-                    <canvas id="drawCanvas"></canvas>
-                    <div class="draw-toolbar">
-                        <div class="draw-colors">
-                            ${colorBtns}
-                            <input type="color" class="draw-custom-color" title="Özel renk seç" oninput="selectCustomDrawColor(this)">
-                        </div>
-                        <div class="draw-sizes">${sizeBtns}</div>
-                        <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text-muted);">Şeffaflık <input type="range" min="0.1" max="1" step="0.05" value="1" oninput="setDrawOpacity(this.value)"></label>
-                    </div>
-                    <div class="draw-toolbar">
-                        <button class="btn btn-outline" onclick="selectDrawColor(${safeJsArg(ERASER_COLOR)})"><i class="fa-solid fa-eraser"></i> Silgi</button>
-                        <button class="btn btn-outline" onclick="undoMyLastStroke()"><i class="fa-solid fa-rotate-left"></i> Son Çizimimi Geri Al</button>
-                        <button class="btn btn-outline" onclick="clearDrawing()">Tahtayı Temizle</button>
-                    </div>
-                    <div style="text-align:center;font-size:12px;opacity:0.6;">Parmağınla veya farenle çiz, arkadaşların anlık görsün!</div>`;
-            }
-            const canvas = setupDrawCanvas();
-            if (!canvas) return;
-            const rect = canvas.getBoundingClientRect();
-            if (canvas.width !== rect.width || canvas.height !== rect.height) {
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-            }
-            redrawCanvasFromData();
-        }
-
         /* --- IOS ACTION SHEET (UZUN BASMA KOŞULLARI) --- */
         function startPress(msgId) {
             const r = activeRoomData;
@@ -9380,6 +9064,7 @@ if ('serviceWorker' in navigator) {
 </script>
     <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "7f7f4dd494b941d7ae107f46c046bf87"}'></script><!-- End Cloudflare Web Analytics -->
     <script src="./aurai-widget.js" defer></script>
+    <script src="./forever-education.js" defer></script>
 </body>
 </html>
 <!--
