@@ -1,4 +1,4 @@
-# FOREVER güvenlik ve Eğitim uygulama durumu — 26 Kasım 2026
+# FOREVER güvenlik ve Eğitim uygulama durumu — 27 Kasım 2026
 
 Bu rapor, bu tarihte GitHub çalışma dalında ve canlı Supabase projesinde yapılan işleri, testleri ve devam eden engelleri ayırır. Bu belge bağımsız sızma testi, KVKK uygunluk raporu veya hukuki güvence değildir.
 
@@ -58,7 +58,7 @@ Canlı ses aktarımı ve ekran paylaşımı bu sürümde uygulanmamıştır. Ö�
 ## Okul e-posta doğrulama fonksiyonu
 
 - Edge Function: `education-school-verify`
-- Canlı durum: ACTIVE, version 4, `verify_jwt=true`; `withSupabase({auth:'user'})` ile kullanıcı JWT'si doğrulanır, ayrıcalıklı istemci yalnızca sunucu tarafında kullanılır.
+- Canlı durum: Gmail API güncellemesi sonrası version 5 olarak doğrulanacak; `verify_jwt=true` korunur; `withSupabase({auth:'user'})` ile kullanıcı JWT'si doğrulanır, ayrıcalıklı istemci yalnızca sunucu tarafında kullanılır.
 - Kod 8 haneli; 5 dakika geçerli; en fazla 5 yanlış deneme.
 - E-posta, kurum kodundan sunucu tarafında `kurumkodu@meb.k12.tr` olarak oluşturulur.
 - Kodun HMAC-SHA-256 özeti saklanır; düz kod veritabanına yazılmaz.
