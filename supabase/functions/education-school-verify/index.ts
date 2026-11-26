@@ -1,5 +1,7 @@
 import { withSupabase } from "npm:@supabase/server@1";
 
+const GMAIL_SENDER_EMAIL = "xauraultra@gmail.com";
+
 const ALLOWED_ORIGINS = new Set([
   "https://auraultrax.github.io",
   "http://localhost:5500",
@@ -51,6 +53,123 @@ function escapeHtml(input: string): string {
   })[char] || char);
 }
 
+async function base64Utf8(value: string, wrapLines = false): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const encoded = btoa(binary);
+  if (!wrapLines) return encoded;
+  return (encoded.match(/.{1,76}/g) || []).join("\r\n");
+}
+
+async function sendGmailVerificationEmail(
+  to: string,
+  code: string,
+  clientId: string,
+  clientSecret: string,
+  refreshToken: string,
+): Promise<{ ok: boolean; status: number; reason: string; messageId?: string }> {
+  try {
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+    if (!tokenResponse.ok) {
+      return { ok: false, status: tokenResponse.status, reason: "oauth_token_exchange_failed" };
+    }
+    const tokenPayload = await tokenResponse.json() as { access_token?: string };
+    const accessToken = tokenPayload.access_token || "";
+    if (!accessToken) {
+      return { ok: false, status: 502, reason: "oauth_access_token_missing" };
+    }
+
+    const authHeaders = { Authorization: "Bearer " + accessToken };
+    const profileResponse = await fetch(
+      "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+      { headers: authHeaders },
+    );
+    if (!profileResponse.ok) {
+      return { ok: false, status: profileResponse.status, reason: "gmail_profile_check_failed" };
+    }
+    const profile = await profileResponse.json() as { emailAddress?: string };
+    const actualSender = (profile.emailAddress || "").trim().toLowerCase();
+    if (actualSender !== GMAIL_SENDER_EMAIL.toLowerCase()) {
+      return { ok: false, status: 409, reason: "gmail_sender_account_mismatch" };
+    }
+
+    const safeCode = escapeHtml(code);
+    const safeEmail = escapeHtml(to);
+    const plainText = "Forever okul doğrulama kodunuz: " + code +
+      "\n\nBu kod 5 dakika geçerlidir ve en fazla 5 kez yanlış denenebilir. " +
+      "Bu isteği siz başlatmadıysanız kodu kullanmayın.";
+    const html = "<!doctype html><html lang='tr'><body style='font-family:Arial,sans-serif;background:#080b0a;color:#e9f7ef;padding:24px'>" +
+      "<main style='max-width:480px;margin:auto;background:#111a15;border:1px solid #244333;border-radius:16px;padding:24px'>" +
+      "<h2>Forever okul doğrulaması</h2><p>" + safeEmail +
+      " posta kutusu için doğrulama kodu:</p><p style='font-size:32px;font-weight:800;letter-spacing:8px;color:#7be3ad'>" +
+      safeCode + "</p><p>Bu kod 5 dakika geçerlidir ve en fazla 5 kez yanlış denenebilir.</p>" +
+      "<p>Bu isteği siz başlatmadıysanız kodu kullanmayın.</p></main></body></html>";
+
+    const boundary = "forever-" + crypto.randomUUID();
+    const senderName = await base64Utf8("Forever Eğitim");
+    const subject = await base64Utf8("Forever okul doğrulama kodu");
+    const plainEncoded = await base64Utf8(plainText, true);
+    const htmlEncoded = await base64Utf8(html, true);
+    const mime = [
+      "From: =?UTF-8?B?" + senderName + "?= <" + GMAIL_SENDER_EMAIL + ">",
+      "To: " + to,
+      "Subject: =?UTF-8?B?" + subject + "?=",
+      "Date: " + new Date().toUTCString(),
+      "MIME-Version: 1.0",
+      "Content-Type: multipart/alternative; boundary=\"" + boundary + "\"",
+      "",
+      "--" + boundary,
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      plainEncoded,
+      "--" + boundary,
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      htmlEncoded,
+      "--" + boundary + "--",
+      "",
+    ].join("\r\n");
+
+    const rawBytes = await base64Utf8(mime);
+    const raw = rawBytes.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    const sendResponse = await fetch(
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+      {
+        method: "POST",
+        headers: {
+          ...authHeaders,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ raw }),
+      },
+    );
+    if (!sendResponse.ok) {
+      return { ok: false, status: sendResponse.status, reason: "gmail_send_failed" };
+    }
+    const sent = await sendResponse.json() as { id?: string };
+    return {
+      ok: true,
+      status: 200,
+      reason: "sent",
+      ...(typeof sent.id === "string" ? { messageId: sent.id } : {}),
+    };
+  } catch {
+    return { ok: false, status: 502, reason: "gmail_transport_error" };
+  }
+}
+
 Deno.serve(withSupabase({ auth: "user", cors: false }, async (req, ctx) => {
   const origin = req.headers.get("origin") || "";
   if (req.method === "OPTIONS") {
@@ -63,13 +182,14 @@ Deno.serve(withSupabase({ auth: "user", cors: false }, async (req, ctx) => {
   const userId = ctx.userClaims?.sub;
   if (!userId) return response({ error: "authentication_required" }, 401, origin);
 
-  const resendApiKey = Deno.env.get("RESEND_API_KEY") || "";
-  const mailFrom = Deno.env.get("MAIL_FROM") || "";
+  const gmailClientId = Deno.env.get("GMAIL_CLIENT_ID") || "";
+  const gmailClientSecret = Deno.env.get("GMAIL_CLIENT_SECRET") || "";
+  const gmailRefreshToken = Deno.env.get("GMAIL_REFRESH_TOKEN") || "";
   const otpHmacSecret = Deno.env.get("OTP_HMAC_SECRET") || "";
-  if (!resendApiKey || !mailFrom || otpHmacSecret.length < 32) {
+  if (!gmailClientId || !gmailClientSecret || !gmailRefreshToken || otpHmacSecret.length < 32) {
     return response({
       error: "mail_service_not_configured",
-      message: "Okul doğrulama e-postası henüz yapılandırılmadı.",
+      message: "Gmail gönderimi henüz güvenli şekilde yapılandırılmadı.",
     }, 503, origin);
   }
 
@@ -147,32 +267,36 @@ Deno.serve(withSupabase({ auth: "user", cors: false }, async (req, ctx) => {
 
     if (insertError) return response({ error: "challenge_create_failed" }, 503, origin);
 
-    const safeCode = escapeHtml(code);
-    const safeEmail = escapeHtml(officialEmail);
-    const mailResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + resendApiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: mailFrom,
-        to: [officialEmail],
-        subject: "Forever okul doğrulama kodu",
-        text: "Forever okul doğrulama kodunuz: " + code + "\n\nKod 5 dakika geçerlidir. Bu kodu kimseyle paylaşmayın.",
-        html: "<!doctype html><html lang='tr'><body style='font-family:Arial,sans-serif;background:#080b0a;color:#e9f7ef;padding:24px'><main style='max-width:480px;margin:auto;background:#111a15;border:1px solid #244333;border-radius:16px;padding:24px'><h2>Forever okul doğrulaması</h2><p>" +
-          safeEmail + " posta kutusu için doğrulama kodu:</p><p style='font-size:32px;font-weight:800;letter-spacing:8px;color:#7be3ad'>" +
-          safeCode + "</p><p>Bu kod 5 dakika geçerlidir ve en fazla 5 kez yanlış denenebilir.</p><p>Bu isteği siz başlatmadıysanız kodu kullanmayın.</p></main></body></html>",
-      }),
-    });
+    const delivery = await sendGmailVerificationEmail(
+      officialEmail,
+      code,
+      gmailClientId,
+      gmailClientSecret,
+      gmailRefreshToken,
+    );
 
-    if (!mailResponse.ok) {
+    if (!delivery.ok) {
       await admin.from("education_email_challenges").delete().eq("id", challengeId);
-      console.error("Resend delivery failed; status:", mailResponse.status);
+      console.error("Gmail delivery failed; reason/status:", delivery.reason, delivery.status);
       return response({
         error: "email_delivery_failed",
-        message: "E-posta gönderilemedi. Gönderici alan adı ayarlarını kontrol edin.",
+        message: "E-posta gönderilemedi. Gmail OAuth izinlerini ve gönderici hesabını kontrol edin.",
       }, 502, origin);
+    }
+
+    const { error: deliveryRecordError } = await admin
+      .from("education_email_challenges")
+      .update({
+        sent_at: new Date().toISOString(),
+        sender_email: GMAIL_SENDER_EMAIL,
+        mail_provider: "gmail-api",
+        provider_message_id: delivery.messageId || null,
+      })
+      .eq("id", challengeId);
+    if (deliveryRecordError) {
+      // The HMAC challenge is already stored and the message was accepted by Gmail.
+      // Keep it valid even if delivery metadata could not be updated.
+      console.error("Gmail delivery metadata could not be stored:", deliveryRecordError.code || "unknown");
     }
 
     return response({
@@ -180,7 +304,7 @@ Deno.serve(withSupabase({ auth: "user", cors: false }, async (req, ctx) => {
       challengeId,
       expiresInSeconds: 300,
       officialEmail,
-      message: "Doğrulama kodu " + officialEmail + " adresine gönderildi.",
+      message: "Doğrulama kodu " + officialEmail + " adresine " + GMAIL_SENDER_EMAIL + " üzerinden gönderildi.",
     }, 200, origin);
   }
 
