@@ -64,9 +64,9 @@ Canlı ses aktarımı ve ekran paylaşımı bu sürümde uygulanmamıştır. Ö�
 - Kodun HMAC-SHA-256 özeti saklanır; düz kod veritabanına yazılmaz.
 - Yeni kod gönderildiğinde aynı kullanıcı/kurum kodu için önceki bekleyen kodlar geçersizleştirilir. 8 haneli kod üretimi modülo yanlılığını önleyen rejection-sampling kullanır.
 - Kurum ve kullanıcı bazlı hız sınırı ve 60 saniye tekrar gönderme aralığı vardır.
-- Fonksiyon Resend API üzerinden e-posta gönderilecek biçimde hazırdır; ancak gerçek e-posta gönderimi henüz yapılandırılmış değildir.
+- Fonksiyon Gmail API üzerinden `xauraultra@gmail.com` hesabıyla e-posta gönderecek biçimde güncellendi. Gerçek gönderim, Google OAuth izinleri ve Edge Function secrets tamamlanana kadar yapılandırılmış sayılmaz.
 
-**Eksik operatör ayarları:** `RESEND_API_KEY`, `MAIL_FROM`, `OTP_HMAC_SECRET` değerleri Supabase Dashboard > Edge Functions > Secrets kısmına eklenmelidir. Anahtarlar GitHub'a, sohbete veya tarayıcı koduna yazılmamalıdır. HMAC secret en az 32 rastgele byte olmalı ve kullanıcı tarafından kendi makinesinde üretilmelidir. Resend'de gönderici alan adı doğrulanmalı ve SPF/DKIM DNS kayıtları yapılmalıdır. Bu değerler olmadığı sürece fonksiyon güvenli şekilde `mail_service_not_configured` hatası verir; gerçek MEB posta kutusuna e-posta gönderildiği iddia edilmemelidir.
+**Eksik operatör ayarları:** `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `OTP_HMAC_SECRET` değerleri Supabase Dashboard > Edge Functions > Secrets kısmına eklenmelidir. Gizli değerler GitHub'a, sohbete veya tarayıcı koduna yazılmamalıdır. Google OAuth uygulaması Testing durumunda ise Gmail kapsamlı refresh token 7 gün sonra sona erebilir. Bu değerler olmadan fonksiyon `mail_service_not_configured` hatası verir; gerçek MEB posta kutusuna e-posta gönderildiği iddia edilmemelidir.
 
 ## Testler
 
@@ -92,13 +92,13 @@ Gerçek öğrenci/çocuk verisi ancak sorumlu okul/kurumun yazılı onayı, gere
 
 1. Mevcut Sosyal auth ve `supabase-bridge.js` katmanını veri kaybetmeden gerçek FOREVER projesindeki kimlik ve `forever_documents` modeline taşımak; bu yapılmadan Eğitim'e gerçek kullanıcı erişimi verilmez.
 2. Supabase Auth içinde Leaked Password Protection özelliğini açmak. Güvenlik taraması bu özelliğin kapalı olduğunu bildiriyor; panelden açılması gerekiyor.
-3. Resend hesabı, doğrulanmış gönderici alan adı ve üç Edge Function secret değerini yapılandırmak; gerçek posta kutusuyla uçtan uca test yapmak.
+3. Google OAuth uygulamasını ve dört Gmail/HMAC Edge Function secret değerini yapılandırmak; gerçek posta kutusuyla uçtan uca test yapmak.
 4. Okul yöneticisinin temsil yetkisini e-posta kutusu erişiminden bağımsız şekilde doğrulayacak okul prosedürünü belirlemek.
 5. KVKK/veli/yayın onaylarını, yedeklemeyi ve bağımsız güvenlik testini tamamlamak.
 
-## Maliyet ilkesi
+## E-posta gönderim ilkesi
 
-Resend'in ücretsiz planı 3.000 e-posta/ay ve günde 100 e-posta sınırı bildirir. Ücretsiz planın limitleri aşılırsa ücretli plana otomatik geçiş yapılmamalıdır; doğrulanmış gönderici alan adı gerekir. Mevcut bir alan adı yoksa alan adı satın alma ücretsiz olmayabilir. Kaynak: https://resend.com/pricing/
+Gönderim için xauraultra@gmail.com hesabına Gmail API yetkisi gerekir. Gmail/Google hesap limitleri ve OAuth token sona ermesi nedeniyle gönderim hacmi sınırsız kabul edilmemelidir. Ücretli e-posta sağlayıcısı veya otomatik ücretlendirme yapılandırılmamıştır.
 
 Service-role/secret anahtarı tarayıcıya konmaz. Supabase Security Advisor'ın son taramasında:
 - Kullanıcılara açık SECURITY DEFINER RPC uyarısı kalmadı; oda/takip ve Eğitim RPC'leri private implementation + public invoker wrapper modeline taşındı.
