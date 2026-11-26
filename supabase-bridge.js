@@ -97,7 +97,7 @@
     constructor(rows, table) {
       // doc.ref gerekli: batch.update(doc.ref, ...) / batch.delete(doc.ref) çağrıları bunu kullanıyor
       // (özel mesaj düzenle/sil, ay sonu oy sıfırlama, hesap silme). Önceden tanımsızdı.
-      this.docs = rows.map(row => new DocumentSnapshot(row.id, row.data || {}, true, row.updated_at || null, new DocumentRef(table, row.id)));
+      this.docs = rows.map(row => new DocumentSnapshot(row.id, row.data || {}, true, row.updated_at || null, new DocumentRef(table, row.id, null, row.storageId || null)));
       this.empty = this.docs.length === 0;
       this.size = this.docs.length;
     }
@@ -123,100 +123,208 @@
     delete(ref) { this.ops.push({ type: 'delete', ref }); }
   }
 
+  async function getCurrentAuthUser() {
+    if (window.authService && window.authService.currentUser) return window.authService.currentUser;
+    try {
+      const {data,error}=await window.supabaseClient.auth.getUser();
+      if(error)return null;
+      if(window.authService)window.authService.currentUser=data?.user||null;
+      return data?.user||null;
+    } catch(_){return null;}
+  }
+  let adminCheckCache={at:0,value:false};
+  async function isForeverAdmin(){
+    if(Date.now()-adminCheckCache.at<5000)return adminCheckCache.value;
+    try{
+      const {data,error}=await window.supabaseClient.rpc('aurax_is_admin');
+      if(error)throw error;
+      adminCheckCache={at:Date.now(),value:data===true};return adminCheckCache.value;
+    }catch(_){return false;}
+  }
+  async function readForeverUser(username){
+    const auth=await getCurrentAuthUser(),isAdmin=auth?await isForeverAdmin():false;
+    let profile=null;
+    if(username!=='A_UR_A_XX'){
+      const {data,error}=await window.supabaseClient.from('public_profiles')
+        .select('id,data,updated_at').eq('id',String(username)).maybeSingle();
+      if(error)throw errorObject(error);profile=data;
+    }
+    let uid=String(profile?.data?.uid||'');
+    const adminAlias=username==='A_UR_A_XX'&&isAdmin&&!!auth?.id;
+    if(adminAlias)uid=auth.id;
+    if(!profile&&!adminAlias)return null;
+    let data=clone(profile?.data||{}),updatedAt=profile?.updated_at||null;
+    if(auth?.id&&uid&&(uid===auth.id||isAdmin)){
+      const {data:privateDoc,error}=await window.supabaseClient.from('forever_documents')
+        .select('id,data,updated_at').eq('collection_name','users').eq('id',uid).maybeSingle();
+      if(error)throw errorObject(error);
+      if(privateDoc){data={...data,...(privateDoc.data||{})};updatedAt=privateDoc.updated_at||updatedAt;}
+    }
+    if(auth?.id&&uid===auth.id){
+      data.authUid=auth.id;data.authEmail=auth.email||null;data.authProvider=auth.app_metadata?.provider||null;
+      data.googleUid=data.authProvider==='google'?auth.id:data.googleUid||null;
+      data.googleEmail=data.authProvider==='google'?auth.email||null:data.googleEmail||null;
+      data.appleUid=data.authProvider==='apple'?auth.id:data.appleUid||null;
+      data.appleEmail=data.authProvider==='apple'?auth.email||null:data.appleEmail||null;
+    }
+    if(isAdmin&&uid===auth?.id)data.role='admin';
+    if(uid){
+      const {data:plusRow,error:plusError}=await window.supabaseClient.from('forever_plus_members')
+        .select('user_id').eq('user_id',uid).maybeSingle();
+      if(plusError)throw errorObject(plusError);data.plusMember=!!plusRow;
+    }
+    data.username=adminAlias?'A_UR_A_XX':(data.username||username);
+    return {id:String(username),data,updated_at:updatedAt,storageId:uid||String(username)};
+  }
+
   class DocumentRef {
-    constructor(table, id, parent = null) {
+    constructor(table, id, parent = null, storageId = null) {
       this._table = table;
       this._id = String(id);
       this.id = String(id);
       this._parent = parent;
+      this._storageId = storageId ? String(storageId) : null;
     }
 
     async get() {
-      const q = window.supabaseClient.from(this._table).select('id,data,updated_at').eq('id', this._id).maybeSingle();
-      const { data, error } = await q;
-      if (error) throw errorObject(error);
-      if (data) DOC_CACHE.set(cacheKey(this._table, this._id), { data: clone(data.data || {}), updatedAt: data.updated_at || null });
-      else DOC_CACHE.delete(cacheKey(this._table, this._id));
-      return data ? new DocumentSnapshot(data.id, data.data || {}, true, data.updated_at || null, this) : new DocumentSnapshot(this._id, {}, false, null, this);
+      let row = null;
+      if (this._table === 'users') {
+        row = await readForeverUser(this._id);
+      } else {
+        const { data, error } = await window.supabaseClient.from('forever_documents').select('id,data,updated_at')
+          .eq('collection_name', this._table).eq('id', this._id).maybeSingle();
+        if (error) throw errorObject(error);
+        if (data) row = { id:this._id, data:data.data || {}, updated_at:data.updated_at || null, storageId:data.id };
+      }
+      if (row) {
+        this._storageId = row.storageId || row.id;
+        DOC_CACHE.set(cacheKey(this._table,this._id), {data:clone(row.data || {}),updatedAt:row.updated_at || null,storageId:this._storageId});
+      } else {
+        this._storageId = null;
+        DOC_CACHE.delete(cacheKey(this._table,this._id));
+      }
+      return row ? new DocumentSnapshot(this._id,row.data || {},true,row.updated_at || null,this)
+        : new DocumentSnapshot(this._id,{},false,null,this);
     }
 
     async set(value, options = {}) {
       let payload = clone(value || {});
       if (this._parent && this._parent._context) payload = { ...this._parent._context, ...payload };
-      if (options.merge) {
+
+      if (this._table === 'rooms') {
         const current = await this.get();
-        payload = applyPatch(current.exists ? current.data() : {}, payload, true);
-      } else {
-        payload = applyPatch({}, payload, false);
+        if (!current.exists) {
+          if (!await getCurrentAuthUser()) throw permissionError('rooms');
+          const { data, error } = await window.supabaseClient.rpc('forever_create_room', {
+            p_room_id: this._id,
+            p_room_name: String(payload.displayName || payload.name || this._id).trim(),
+            p_password: String(payload.password || ''),
+            p_username: String(payload.admin || payload.createdByUsername || ''),
+            p_features: payload.features && typeof payload.features === 'object' ? payload.features : {youtube:!!payload.youtubeEnabled}
+          });
+          if (error) throw errorObject(error);
+          this._storageId = String(data || this._id);
+          DOC_CACHE.delete(cacheKey(this._table,this._id)); emitWrite(this._table); return this;
+        }
       }
-      const { error } = await window.supabaseClient.from(this._table).upsert({ id: this._id, data: payload }, { onConflict: 'id' });
-      if (error) throw errorObject(error);
-      // set() can replace fields entirely; discard any prior snapshot so a following update()
-      // cannot merge against stale data from before the write.
-      DOC_CACHE.delete(cacheKey(this._table, this._id));
-      emitWrite(this._table);
-      return this;
+
+      const current = await this.get();
+      if (this._table === 'users' && !current.exists) throw permissionError('users (profil oluşturma sunucu RPC üzerinden yapılır)');
+      payload = options.merge ? applyPatch(current.exists ? current.data() : {},payload,true) : applyPatch({},payload,false);
+
+      if (this._table === 'rooms') {
+        const { error } = await window.supabaseClient.rpc('aurax_room_legacy_update',{p_room_id:this._id,p_patch:payload});
+        if (error) throw errorObject(error);
+      } else {
+        const auth = await getCurrentAuthUser();
+        if (!auth) throw permissionError(this._table);
+        if (this._table === 'users') {
+          const storageId = this._storageId || current._storageId || auth.id;
+          const { error } = await window.supabaseClient.from('forever_documents').update({data:payload})
+            .eq('collection_name','users').eq('id',storageId);
+          if (error) throw errorObject(error);
+        } else {
+          const { error } = await window.supabaseClient.from('forever_documents').upsert({
+            collection_name:this._table,id:this._id,owner_id:auth.id,data:payload
+          },{onConflict:'collection_name,id'});
+          if (error) throw errorObject(error);
+        }
+      }
+      DOC_CACHE.delete(cacheKey(this._table,this._id)); emitWrite(this._table); return this;
     }
 
     async update(value) {
-      // Güncel snapshot varsa ilk okuma isteğini atla. updated_at karşılaştırması korunur;
-      // başka cihaz aynı anda yazdıysa yeni veriyi oku ve güvenli biçimde yeniden dene.
-      for (let attempt = 0; attempt < 6; attempt++) {
-        let current;
-        const cached = attempt === 0 ? DOC_CACHE.get(cacheKey(this._table, this._id)) : null;
-        if (cached && cached.updatedAt) {
-          current = new DocumentSnapshot(this._id, cached.data, true, cached.updatedAt, this);
-        } else {
-          current = await this.get();
-        }
-        if (!current.exists) {
-          const err = new Error('Belge bulunamadı.'); err.code = 'not-found'; throw err;
-        }
-        const payload = applyPatch(current.data(), value, true);
-        let q = window.supabaseClient.from(this._table).update({ data: payload }).eq('id', this._id);
-        if (current._updatedAt) q = q.eq('updated_at', current._updatedAt);
-        const { data, error } = await q.select('id,data,updated_at');
-        if (error) throw errorObject(error);
-        if (data && data.length) {
-          DOC_CACHE.set(cacheKey(this._table, this._id), { data: clone(data[0].data || payload), updatedAt: data[0].updated_at || null });
-          emitWrite(this._table);
-          return this;
-        }
-        const fresh = await this.get();
-        if (!fresh.exists) { const err = new Error('Belge bulunamadı.'); err.code = 'not-found'; throw err; }
-        if (fresh._updatedAt === current._updatedAt) throw permissionError(this._table);
-        // başkası araya yazmış: yeniden oku ve tekrar dene
+      if (this._table === 'rooms') {
+        const current = await this.get();
+        if (!current.exists) { const err=new Error('Belge bulunamadı.');err.code='not-found';throw err; }
+        const { error } = await window.supabaseClient.rpc('aurax_room_legacy_update',{
+          p_room_id:this._id,p_patch:applyPatch(current.data(),value,true)
+        });
+        if(error)throw errorObject(error);
+        DOC_CACHE.delete(cacheKey(this._table,this._id));emitWrite(this._table);return this;
       }
-      const err = new Error('Kayıt aynı anda çok kişi tarafından değiştiriliyor, tekrar dene.'); err.code = 'write-conflict'; throw err;
+      for(let attempt=0;attempt<6;attempt++){
+        const cached=attempt===0?DOC_CACHE.get(cacheKey(this._table,this._id)):null;
+        const current=cached&&cached.updatedAt
+          ? new DocumentSnapshot(this._id,cached.data,true,cached.updatedAt,this)
+          : await this.get();
+        if(!current.exists){const err=new Error('Belge bulunamadı.');err.code='not-found';throw err;}
+        const storageId=this._storageId||current._storageId||this._id;
+        let query=window.supabaseClient.from('forever_documents')
+          .update({data:applyPatch(current.data(),value,true)})
+          .eq('collection_name',this._table).eq('id',storageId);
+        if(current._updatedAt)query=query.eq('updated_at',current._updatedAt);
+        const {data,error}=await query.select('id,data,updated_at');
+        if(error)throw errorObject(error);
+        if(data&&data.length){
+          DOC_CACHE.set(cacheKey(this._table,this._id),{data:clone(data[0].data||{}),updatedAt:data[0].updated_at||null,storageId});
+          emitWrite(this._table);return this;
+        }
+        const fresh=await this.get();
+        if(!fresh.exists){const err=new Error('Belge bulunamadı.');err.code='not-found';throw err;}
+        if(fresh._updatedAt===current._updatedAt)throw permissionError(this._table);
+      }
+      const err=new Error('Kayıt aynı anda çok kişi tarafından değiştiriliyor, tekrar dene.');err.code='write-conflict';throw err;
     }
 
     // Aynı belgeyi birden fazla kişi aynı anda değiştirebilsin diye: her denemede en güncel veriyi okur,
     // fn(veri) ile yeni veriyi üretir ve updated_at kilidiyle yazar. fn null dönerse hiçbir şey yazılmaz.
     async transform(fn) {
-      for (let attempt = 0; attempt < 8; attempt++) {
-        const current = await this.get();
-        if (!current.exists) { const err = new Error('Belge bulunamadı.'); err.code = 'not-found'; throw err; }
-        const next = fn(current.data());
-        if (next == null) return this;
-        let q = window.supabaseClient.from(this._table).update({ data: next }).eq('id', this._id);
-        if (current._updatedAt) q = q.eq('updated_at', current._updatedAt);
-        const { data, error } = await q.select('id,data,updated_at');
-        if (error) throw errorObject(error);
-        if (data && data.length) {
-          DOC_CACHE.set(cacheKey(this._table, this._id), { data: clone(data[0].data || next), updatedAt: data[0].updated_at || null });
-          emitWrite(this._table);
-          return this;
+      for(let attempt=0;attempt<8;attempt++){
+        const current=await this.get();
+        if(!current.exists){const err=new Error('Belge bulunamadı.');err.code='not-found';throw err;}
+        const next=fn(current.data());if(next==null)return this;
+        if(this._table==='rooms'){
+          const {error}=await window.supabaseClient.rpc('aurax_room_legacy_update',{p_room_id:this._id,p_patch:next});
+          if(error)throw errorObject(error);
+          DOC_CACHE.delete(cacheKey(this._table,this._id));emitWrite(this._table);return this;
         }
-        // Başka biri araya yazdı: en güncel veriyi yeniden oku ve tekrar dene.
+        const storageId=this._storageId||current._storageId||this._id;
+        let query=window.supabaseClient.from('forever_documents').update({data:next})
+          .eq('collection_name',this._table).eq('id',storageId);
+        if(current._updatedAt)query=query.eq('updated_at',current._updatedAt);
+        const {data,error}=await query.select('id,data,updated_at');
+        if(error)throw errorObject(error);
+        if(data&&data.length){
+          DOC_CACHE.set(cacheKey(this._table,this._id),{data:clone(data[0].data||next),updatedAt:data[0].updated_at||null,storageId});
+          emitWrite(this._table);return this;
+        }
       }
-      const err = new Error('Kayıt aynı anda çok kişi tarafından değiştiriliyor, tekrar dene.'); err.code = 'write-conflict'; throw err;
+      const err=new Error('Kayıt aynı anda çok kişi tarafından değiştiriliyor, tekrar dene.');err.code='write-conflict';throw err;
     }
 
     async delete() {
-      const { error } = await window.supabaseClient.from(this._table).delete().eq('id', this._id);
-      if (error) throw errorObject(error);
-      DOC_CACHE.delete(cacheKey(this._table, this._id));
-      emitWrite(this._table);
+      if(this._table==='rooms'){
+        const {error}=await window.supabaseClient.rpc('forever_delete_room',{p_room_id:this._id});
+        if(error)throw errorObject(error);
+      }else{
+        const current=await this.get();if(!current.exists)return;
+        const storageId=this._storageId||current._storageId||this._id;
+        const {error}=await window.supabaseClient.from('forever_documents').delete()
+          .eq('collection_name',this._table).eq('id',storageId);
+        if(error)throw errorObject(error);
+      }
+      DOC_CACHE.delete(cacheKey(this._table,this._id));emitWrite(this._table);
     }
 
     // Tek belgeyi canlı dinler (oda içi sohbet, oda YouTube senkronu, ban dinleyicisi).
