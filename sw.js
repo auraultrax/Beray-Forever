@@ -1,11 +1,11 @@
-const CACHE_NAME = 'forever-v23';
+const CACHE_NAME = 'forever-v24';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
   './manifest-violet.json',
-  './icons/forever-violet-192.png',
-  './icons/forever-violet-512.png'
+  './icons/forever-emerald-192.png',
+  './icons/forever-emerald-512.png'
 ];
 
 self.addEventListener('push', event => {
@@ -19,8 +19,8 @@ self.addEventListener('push', event => {
   const targetUrl = data.url || './';
   event.waitUntil(self.registration.showNotification(title, {
     body: String(body).slice(0, 240),
-    icon: './icons/forever-violet-192.png',
-    badge: './icons/forever-violet-192.png',
+    icon: './icons/forever-emerald-192.png',
+    badge: './icons/forever-emerald-192.png',
     tag,
     renotify: true,
     requireInteraction: false,
