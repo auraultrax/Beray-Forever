@@ -2402,8 +2402,8 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
         // YouTube API anahtarı istemci kaynak kodunda tutulmaz; arama gerekiyorsa sunucu proxy kullanılır.
         // ==================== SUPABASE ====================
         // Yeni sıfır Supabase projesinin bilgilerini buraya gir. Secret key kullanma.
-        const SUPABASE_URL = "https://zblbsjmtituericpmazj.supabase.co";
-        const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0XUjb6u_goYIjSB6m7vYsQ_hpyI0Az7";
+        const SUPABASE_URL = "https://gfuewsdkytfssumxwyxz.supabase.co";
+        const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_-CX6sFOEApna11EOem6oOg_39DkcaIq";
         const SUPABASE_BUCKET = "media";
         const SUPABASE_VAPID_PUBLIC_KEY = "BHVWWL_nmUDrj4NbkxIoQ3c2ZkF3EmHbfwrMwHRcjxvRzcv9wDi0psKzh64pjfZ7Wm_aHwQViADnJGfg18kv50w";
         const REGISTRATION_GATEWAY_URL = "";
@@ -2412,6 +2412,15 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
             auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
         });
         const supabaseClient = window.supabaseClient;
+        // Successful sign-ins are recorded server-side; passwords and access tokens are never logged.
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event !== 'SIGNED_IN' || !session?.user) return;
+            setTimeout(() => {
+                supabaseClient.rpc('forever_record_login').then(({ error }) => {
+                    if (error) console.warn('Forever giriş kaydı yazılamadı:', error.code || error.message);
+                }).catch(error => console.warn('Forever giriş kaydı yazılamadı:', error?.message || error));
+            }, 0);
+        });
         const backendReady = Promise.resolve();
 
         function withTimeout(promise, ms, label) {
