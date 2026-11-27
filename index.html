@@ -959,6 +959,19 @@
             .nav-link:hover { transform:translateX(2px); }
         }
 
+
+        /* Existing Forever users: record a fresh, versioned acknowledgement before entering the app. */
+        #legacyKvkkGate { position:fixed; inset:0; z-index:100100; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(2,10,7,.88); backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px); overflow:auto; }
+        #legacyKvkkGate .legacy-kvkk-card { width:min(100%,640px); max-height:90dvh; overflow:auto; padding:26px; border:1px solid var(--border-light); border-radius:22px; background:linear-gradient(155deg,#10251c,#0a1711); color:var(--text-main); box-shadow:0 28px 90px rgba(0,0,0,.55); }
+        #legacyKvkkTitle { margin:8px 0 16px; font-size:1.45rem; font-weight:800; }
+        .legacy-kvkk-eyebrow { color:#65d5ad; font-size:.7rem; font-weight:800; letter-spacing:.14em; }
+        .legacy-kvkk-text { max-height:38dvh; overflow:auto; white-space:pre-wrap; padding:15px; border:1px solid var(--border); border-radius:14px; background:rgba(0,0,0,.18); color:var(--text-muted); font-size:.82rem; line-height:1.65; }
+        .legacy-kvkk-check { display:flex; align-items:flex-start; gap:10px; margin:17px 0; color:var(--text-main); font-size:.84rem; line-height:1.55; }
+        .legacy-kvkk-check input { flex:0 0 auto; width:18px; height:18px; margin-top:2px; accent-color:var(--primary); }
+        #legacyKvkkError { min-height:18px; margin:8px 0 12px; color:#ff8e8e; font-size:.78rem; font-weight:700; }
+        #legacyKvkkAcceptBtn { width:100%; }
+        @media(max-width:520px){#legacyKvkkGate .legacy-kvkk-card{padding:19px 16px;border-radius:18px}#legacyKvkkTitle{font-size:1.2rem}.legacy-kvkk-text{max-height:42dvh;font-size:.76rem}}
+
     </style>
 
 
@@ -1572,6 +1585,21 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
             <p class="auth-switch" onclick="toggleAuthMode()" id="authSwitchText">Hesabın yok mu? <span>Kayıt Ol</span></p>
             <p style="margin-top:1.2rem; font-size:0.72rem; color:var(--text-muted); opacity:0.55;">Tüm Hakları Forever'a Saklıdır. — Muhammed Tanrıkulu</p>
         </div>
+    </div>
+
+    <!-- ESKİ HESAPLAR İÇİN SÜRÜMLÜ KVKK AÇIK RIZA KAYDI -->
+    <div id="legacyKvkkGate" role="dialog" aria-modal="true" aria-labelledby="legacyKvkkTitle" style="display:none;">
+        <section class="legacy-kvkk-card">
+            <span class="legacy-kvkk-eyebrow">HESAP GİZLİLİĞİ</span>
+            <h2 id="legacyKvkkTitle">Güncel KVKK Açık Rıza Metni</h2>
+            <div id="legacyKvkkText" class="legacy-kvkk-text"></div>
+            <label class="legacy-kvkk-check">
+                <input type="checkbox" id="legacyKvkkCheck">
+                <span>Metni okudum, anladım ve belirtilen kişisel veri işleme faaliyetlerine açık rıza veriyorum. 15 yaşını doldurduğumu beyan ediyorum.</span>
+            </label>
+            <p id="legacyKvkkError" role="alert" aria-live="polite"></p>
+            <button id="legacyKvkkAcceptBtn" type="button" class="btn">Onayla ve Forever'a devam et</button>
+        </section>
     </div>
 
     <!-- GİRİŞTEN SONRA ZORUNLU DUYURU -->
@@ -2818,6 +2846,49 @@ html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
             });
             if (error) throw Object.assign(new Error('Açık rıza kaydı oluşturulamadı.'), { code: error.code || 'consent-log-failed' });
         }
+        
+        function showLegacyKvkkGate(username, adminLogin, silent, provider) {
+            pendingLegacyKvkkLogin = { username, adminLogin, silent, provider };
+            const text = document.getElementById('legacyKvkkText');
+            if (text) text.textContent = KVKK_CONSENT_TEXT;
+            const check = document.getElementById('legacyKvkkCheck');
+            if (check) check.checked = false;
+            const error = document.getElementById('legacyKvkkError');
+            if (error) error.textContent = '';
+            const button = document.getElementById('legacyKvkkAcceptBtn');
+            if (button) { button.disabled = false; button.textContent = "Onayla ve Forever'a devam et"; }
+            const overlay = document.getElementById('legacyKvkkGate');
+            if (overlay) overlay.style.display = 'flex';
+        }
+
+        async function acceptLegacyKvkkAndContinue() {
+            const pending = pendingLegacyKvkkLogin;
+            if (!pending) return;
+            const error = document.getElementById('legacyKvkkError');
+            const button = document.getElementById('legacyKvkkAcceptBtn');
+            if (!document.getElementById('legacyKvkkCheck')?.checked) {
+                if (error) error.textContent = 'Devam etmek için açık rıza kutusunu işaretlemelisin.';
+                return;
+            }
+            if (button) { button.disabled = true; button.textContent = 'Onay kaydediliyor...'; }
+            if (error) error.textContent = '';
+            try {
+                if (!currentNetwork) currentNetwork = await getNetworkIdentity();
+                kvkkCheckedAt = Date.now();
+                await recordKvkkConsent(pending.username, pending.provider);
+                pendingLegacyKvkkLogin = null;
+                const overlay = document.getElementById('legacyKvkkGate');
+                if (overlay) overlay.style.display = 'none';
+                await loginSuccess(pending.username, pending.adminLogin, pending.silent);
+            } catch (e) {
+                console.error('Eski Forever hesabının KVKK kaydı yazılamadı:', e);
+                if (error) error.textContent = 'Onay Supabase kayıt tablosuna yazılamadı. Bağlantı kontrol edilmeden uygulamaya devam edemezsin.';
+                if (button) { button.disabled = false; button.textContent = 'Yeniden dene'; }
+            }
+        }
+        document.getElementById('legacyKvkkAcceptBtn')?.addEventListener('click', acceptLegacyKvkkAndContinue);
+
+
 
         function isMissingRpcError(e) {
             const code = String((e && (e.code || e.status)) || '');
@@ -4155,6 +4226,7 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             localStorage.setItem('aurax_banned', JSON.stringify(db.banned));
         }
 
+        let pendingLegacyKvkkLogin = null;
         let currentUser = sessionStorage.getItem('aurax_active_user') || localStorage.getItem('aurax_active_user');
         if (currentUser) {
             // Normal kullanıcı: hem bu sekmede hem sonraki ziyaretlerde otomatik
@@ -4671,7 +4743,7 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                         return;
                     }
                 }
-                startSecurityHeartbeat(); detachGlobalListeners(); attachGlobalListeners(); setupAppUI();
+                await loginSuccess(currentUser, currentUser === ADMIN_USER, true);
             } catch (e) {
                 // Geçici hatada kayıtlı kullanıcıyı silme; Supabase oturumu zaten kalıcı, sonraki açılışta otomatik giriş tekrar denenir.
                 console.error('Otomatik giriş doğrulanamadı:', e); currentUser = null;
@@ -5002,7 +5074,30 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
             document.addEventListener('visibilitychange', () => { if (!document.hidden) enforceSecurityState(); }, { passive: true });
         }
 
-        function loginSuccess(u, adminLogin = false, silent = false) {
+        async function loginSuccess(u, adminLogin = false, silent = false) {
+            // Require a real server-side record for the current consent text before opening the app.
+            try {
+                const { data: sessionResult, error: sessionError } = await supabaseClient.auth.getSession();
+                if (sessionError) throw sessionError;
+                const authUser = sessionResult?.session?.user;
+                if (!authUser?.id) throw new Error('Giriş oturumu doğrulanamadı.');
+                const { data: consentRecord, error: consentError } = await supabaseClient
+                    .from('forever_consent_logs')
+                    .select('id')
+                    .eq('user_id', authUser.id)
+                    .eq('consent_version', KVKK_CONSENT_VERSION)
+                    .maybeSingle();
+                if (consentError) throw consentError;
+                if (!consentRecord) {
+                    showLegacyKvkkGate(u, adminLogin, silent, authUser.app_metadata?.provider || '');
+                    return;
+                }
+            } catch (e) {
+                console.error('Forever KVKK kaydı doğrulanamadı:', e);
+                showToast('KVKK kayıt durumu doğrulanamadı. Güvenlik nedeniyle oturum açılışı durduruldu.', 'error');
+                return;
+            }
+
             currentUser = u;
             sessionStorage.setItem('aurax_custom_auth_session', '1');
             sessionStorage.setItem('aurax_active_user', u);
