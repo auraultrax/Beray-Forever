@@ -4864,7 +4864,7 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                 const { data, error } = await supabaseClient.rpc('aurax_admin_set_plus_member', { p_username: username, p_enabled: !!enabled });
                 if (error) throw error;
                 if (!data || data.ok !== true) throw new Error('Sunucu üyelik işlemini onaylamadı.');
-                const { data: row, error: readError } = await supabaseClient.from('users').select('id,data').eq('id', data.userId || data.username || username).maybeSingle();
+                const { data: row, error: readError } = await supabaseClient.from('forever_documents').select('id,data').eq('collection_name', 'users').eq('id', data.userId || data.username || username).maybeSingle();
                 if (readError) throw readError;
                 if (row?.data) db.users[row.id] = row.data;
                 if (feedback) feedback.textContent = enabled ? `@${data.username || username} Plus üyesi yapıldı.` : `@${data.username || username} Plus üyeliği kaldırıldı.`;
