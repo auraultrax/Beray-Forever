@@ -4967,23 +4967,32 @@ Bu kod süresiz kısıtlamayı kaldırmak için bir kez kullanılır. Doğru gir
                     if (sessionError) throw sessionError;
                     await authService.refresh();
                     const authUser = authService.currentUser;
-                    const userSnap = await dataStore.collection('users').doc(u).get();
-                    if (!userSnap.exists) { await authService.signOut().catch(() => {}); return showToast('Forever kullanıcı kaydı bulunamadı.', 'error'); }
-                    const userData = userSnap.data() || {};
-                    if (!authUser || String(userData.authUid || '') !== String(authUser.id)) { await authService.signOut().catch(() => {}); return showToast('Hesap kimliği doğrulanamadı.', 'error'); }
+                    let userData = {};
+                    if (!authUser) { await authService.signOut().catch(() => {}); return showToast('Supabase oturumu doğrulanamadı.', 'error'); }
+                    if (u === ADMIN_USER) {
+                        // A_UR_A_XX normal kullanıcı profili değildir; sunucu allow-list RPC'siyle doğrulanır.
+                        const { data: adminAllowed, error: adminCheckError } = await supabaseClient.rpc('aurax_is_admin');
+                        if (adminCheckError) throw adminCheckError;
+                        if (adminAllowed !== true) { await authService.signOut().catch(() => {}); return showToast('Bu hesap yönetici izin listesinde bulunmuyor.', 'error'); }
+                    } else {
+                        const userSnap = await dataStore.collection('users').doc(u).get();
+                        if (!userSnap.exists) { await authService.signOut().catch(() => {}); return showToast('Forever kullanıcı kaydı bulunamadı.', 'error'); }
+                        userData = userSnap.data() || {};
+                        if (String(userData.authUid || '') !== String(authUser.id)) { await authService.signOut().catch(() => {}); return showToast('Hesap kimliği doğrulanamadı.', 'error'); }
+                    }
                     currentNetwork = await getNetworkIdentity();
                     if (u !== ADMIN_USER && await isBannedNetwork(currentNetwork)) { await authService.signOut().catch(() => {}); return showToast('Bu ağ veya cihaz Aura Ultra sisteminden kalıcı olarak engellenmiştir.', 'error'); }
-                    const restriction = await getRestrictionState(u, userData);
+                    const restriction = u === ADMIN_USER ? { expired: false, restricted: false, restrictedUntil: null } : await getRestrictionState(u, userData);
                     if (restriction.expired) clearExpiredRestrictionAtServer(u);
                     if (u !== ADMIN_USER && restriction.restricted && Number(restriction.restrictedUntil || 0) > Date.now()) {
-                        if (await requireSysAdminCodeIfNeeded(u, p, userData)) return;
+                        if (u !== ADMIN_USER && await requireSysAdminCodeIfNeeded(u, p, userData)) return;
                         await supabaseClient.rpc('aurax_record_login_seen', { p_ip_hash: currentNetwork.ipHash || null, p_device_hash: currentNetwork.deviceHash || null });
                         loginSuccess(u, u === ADMIN_USER);
                         showTimedRestriction(u, restriction.restrictedUntil);
                         return;
                     }
                     if (u !== ADMIN_USER && restriction.restricted && !isRestrictionVerifiedForSession(u, restriction.restrictionCodeHash)) { pendingRestrictedLogin = { username: u, password: p }; showRestrictionVerify(u, p, 'restricted', restriction.restrictedUntil); return; }
-                    if (await requireSysAdminCodeIfNeeded(u, p, userData)) return;
+                    if (u !== ADMIN_USER && await requireSysAdminCodeIfNeeded(u, p, userData)) return;
                     await supabaseClient.rpc('aurax_record_login_seen', { p_ip_hash: currentNetwork.ipHash || null, p_device_hash: currentNetwork.deviceHash || null });
                     loginSuccess(u, u === ADMIN_USER);
                     return;
